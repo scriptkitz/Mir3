@@ -10,7 +10,7 @@
  Target Server Version : 3021000
  File Encoding         : 65001
 
- Date: 19/01/2021 13:39:39
+ Date: 25/01/2021 12:13:54
 */
 
 PRAGMA foreign_keys = false;
@@ -360,10 +360,23 @@ CREATE TABLE "TBL_MONGEN" (
 );
 
 -- ----------------------------
+-- Table structure for TBL_MONITEM
+-- ----------------------------
+DROP TABLE IF EXISTS "TBL_MONITEM";
+CREATE TABLE "TBL_MONITEM" (
+  "FLD_MONSTER" integer NOT NULL,
+  "FLD_TYPE" integer NOT NULL,
+  "FLD_ITEM" integer NOT NULL,
+  "FLD_PROBABLY" integer,
+  "FLD_COUNT" integer
+);
+
+-- ----------------------------
 -- Table structure for TBL_MONSTER
 -- ----------------------------
 DROP TABLE IF EXISTS "TBL_MONSTER";
 CREATE TABLE "TBL_MONSTER" (
+  "FLD_INDEX" integer NOT NULL,
   "FLD_NAME" text(14) NOT NULL,
   "FLD_RACE" integer,
   "FLD_RACEIMG" integer,
@@ -610,6 +623,71 @@ CREATE TABLE "TBL_USERITEM" (
   "FLD_VALUE13" integer NOT NULL,
   "FLD_VALUE14" integer NOT NULL,
   CONSTRAINT "PK_USERITEM" PRIMARY KEY ("FLD_MAKEINDEX")
+);
+
+-- ----------------------------
+-- Table structure for _TBL_MONITEM_old_20210125
+-- ----------------------------
+DROP TABLE IF EXISTS "_TBL_MONITEM_old_20210125";
+CREATE TABLE "_TBL_MONITEM_old_20210125" (
+  "FLD_MONSTER" integer,
+  "FLD_TYPE" integer,
+  "FLD_ITEM" integer,
+  "FLD_PROBABLY" integer,
+  "FLD_COUNT" integer
+);
+
+-- ----------------------------
+-- Table structure for _TBL_MONSTER_old_20210125
+-- ----------------------------
+DROP TABLE IF EXISTS "_TBL_MONSTER_old_20210125";
+CREATE TABLE "_TBL_MONSTER_old_20210125" (
+  "FLD_NAME" text(14) NOT NULL,
+  "FLD_RACE" integer,
+  "FLD_RACEIMG" integer,
+  "FLD_APPR" integer,
+  "FLD_LEVEL" integer,
+  "FLD_UNDEAD" integer,
+  "FLD_EXP" integer,
+  "FLD_HP" integer,
+  "FLD_MP" integer,
+  "FLD_AC" integer,
+  "FLD_MAXAC" integer,
+  "FLD_MAC" integer,
+  "FLD_MAXMAC" integer,
+  "FLD_DC" integer,
+  "FLD_MAXDC" integer,
+  "FLD_SPEED" integer,
+  "FLD_HIT" integer,
+  "FLD_WALKSPEED" integer,
+  "FLD_ATTACKSPEED" integer
+);
+
+-- ----------------------------
+-- Table structure for _TBL_MONSTER_old_20210125_1
+-- ----------------------------
+DROP TABLE IF EXISTS "_TBL_MONSTER_old_20210125_1";
+CREATE TABLE "_TBL_MONSTER_old_20210125_1" (
+  "FLD_NAME" text(14) NOT NULL,
+  "FLD_RACE" integer,
+  "FLD_RACEIMG" integer,
+  "FLD_APPR" integer,
+  "FLD_LEVEL" integer,
+  "FLD_UNDEAD" integer,
+  "FLD_EXP" integer,
+  "FLD_HP" integer,
+  "FLD_MP" integer,
+  "FLD_AC" integer,
+  "FLD_MAXAC" integer,
+  "FLD_MAC" integer,
+  "FLD_MAXMAC" integer,
+  "FLD_DC" integer,
+  "FLD_MAXDC" integer,
+  "FLD_SPEED" integer,
+  "FLD_HIT" integer,
+  "FLD_WALKSPEED" integer,
+  "FLD_ATTACKSPEED" integer,
+  "FLD_INDEX" integer
 );
 
 -- ----------------------------
