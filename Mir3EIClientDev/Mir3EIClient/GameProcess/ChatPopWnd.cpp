@@ -60,7 +60,7 @@ BOOL CChatPopWnd::MsgAdd(DWORD dwFontColor, DWORD dwFontBackColor, CHAR* szMsg)
 
 	if ( szMsg != NULL )
 	{
-		strcpy(szChatMsg, szMsg);
+		strcpy_s(szChatMsg, szMsg);
 		
 		if ( szChatMsg[0] != NULL )
 		{
@@ -73,7 +73,7 @@ BOOL CChatPopWnd::MsgAdd(DWORD dwFontColor, DWORD dwFontBackColor, CHAR* szMsg)
 
 			g_xMainWnd.StringDivide(m_rcChatPopFrame.right-m_rcChatPopFrame.left-10, nLineCnt, szChatMsg, szDivied);
 
-			sscanf(szDivied, "%[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c", szArg[0], szArg[1], szArg[2], szArg[3], szArg[4]);
+			sscanf_s(szDivied, "%[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c", szArg[0], szArg[1], szArg[2], szArg[3], szArg[4]);
 			if ( nLineCnt > 5 )		nLineCnt = 5;
 
 			for ( INT nCnt = 0; nCnt < nLineCnt; nCnt++ )

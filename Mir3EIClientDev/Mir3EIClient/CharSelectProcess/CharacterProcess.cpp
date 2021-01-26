@@ -422,7 +422,7 @@ void CCharacterProcess::OnSocketMessageRecieve(char* pszMsg)
 						*pszJob = '\0';
 						pszJob++;
 
-						strcpy(pxChInfo->ChrName, pszID);
+						strcpy_s(pxChInfo->ChrName, pszID);
 						
 						pxChInfo->Class = atoi(pszJob);
 
@@ -494,7 +494,7 @@ void CCharacterProcess::OnSocketMessageRecieve(char* pszMsg)
 			{
 				*pszPort = '\0';
 				pszPort++;
-				strcpy(g_szServerIP, pszIP);
+				strcpy_s(g_szServerIP, pszIP);
 				g_nServerPort = atoi(pszPort);
 				g_xLoginSocket.DisconnectToServer();
 				m_xSelectChr.m_nRenderState = 2;			// Set Select Renderstaet to Ready startgame

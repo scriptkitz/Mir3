@@ -333,7 +333,7 @@ VOID CStatusWnd::ShowCharEquipWnd()
 		SetRect(&rc, l, t, r, b);
 		g_xMainWnd.DrawWithGDI(rc, NULL, RGB(0, 0, 255), 1);
 		CHAR szNum[8];
-		sprintf( szNum, "%d", nCnt );
+		sprintf_s( szNum, "%d", nCnt );
 		g_xMainWnd.PutsHan(NULL, rc, RGB(255,0,0), 0, szNum);
 
 	}
@@ -821,49 +821,49 @@ VOID CStatusWnd::ShowCharStatus()
 	POINT	ptStart = {m_rcWnd.left+255+15, m_rcWnd.top+67};
 
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "LEVEL", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "%d", g_xGameProc.m_pMyHero->m_stAbility.bLevel);
+	sprintf_s(szBuff, "%d", g_xGameProc.m_pMyHero->m_stAbility.bLevel);
 	g_xMainWnd.PutsHan(NULL, ptStart.x+53, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "HP", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "%d / %d", g_xGameProc.m_pMyHero->m_stAbility.wHP, g_xGameProc.m_pMyHero->m_stAbility.wMaxHP);
+	sprintf_s(szBuff, "%d / %d", g_xGameProc.m_pMyHero->m_stAbility.wHP, g_xGameProc.m_pMyHero->m_stAbility.wMaxHP);
 	g_xMainWnd.PutsHan(NULL, ptStart.x+53, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "MP", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "%d / %d", g_xGameProc.m_pMyHero->m_stAbility.wMP, g_xGameProc.m_pMyHero->m_stAbility.wMaxMP);
+	sprintf_s(szBuff, "%d / %d", g_xGameProc.m_pMyHero->m_stAbility.wMP, g_xGameProc.m_pMyHero->m_stAbility.wMaxMP);
 	g_xMainWnd.PutsHan(NULL, ptStart.x+53, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 	
 	ptStart.y += 20;
 
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "AC", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "%d-%d", LOBYTE(g_xGameProc.m_pMyHero->m_stAbility.wAC), HIBYTE(g_xGameProc.m_pMyHero->m_stAbility.wAC));
+	sprintf_s(szBuff, "%d-%d", LOBYTE(g_xGameProc.m_pMyHero->m_stAbility.wAC), HIBYTE(g_xGameProc.m_pMyHero->m_stAbility.wAC));
 	g_xMainWnd.PutsHan(NULL, ptStart.x+53, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "MAC", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "%d-%d", LOBYTE(g_xGameProc.m_pMyHero->m_stAbility.wMAC), HIBYTE(g_xGameProc.m_pMyHero->m_stAbility.wMAC));
+	sprintf_s(szBuff, "%d-%d", LOBYTE(g_xGameProc.m_pMyHero->m_stAbility.wMAC), HIBYTE(g_xGameProc.m_pMyHero->m_stAbility.wMAC));
 	g_xMainWnd.PutsHan(NULL, ptStart.x+53, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "DC", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "%d-%d", LOBYTE(g_xGameProc.m_pMyHero->m_stAbility.wDC), HIBYTE(g_xGameProc.m_pMyHero->m_stAbility.wDC));
+	sprintf_s(szBuff, "%d-%d", LOBYTE(g_xGameProc.m_pMyHero->m_stAbility.wDC), HIBYTE(g_xGameProc.m_pMyHero->m_stAbility.wDC));
 	g_xMainWnd.PutsHan(NULL, ptStart.x+53, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "MC", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "%d-%d", LOBYTE(g_xGameProc.m_pMyHero->m_stAbility.wMC), HIBYTE(g_xGameProc.m_pMyHero->m_stAbility.wMC));
+	sprintf_s(szBuff, "%d-%d", LOBYTE(g_xGameProc.m_pMyHero->m_stAbility.wMC), HIBYTE(g_xGameProc.m_pMyHero->m_stAbility.wMC));
 	g_xMainWnd.PutsHan(NULL, ptStart.x+53, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "SC", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "%d-%d", LOBYTE(g_xGameProc.m_pMyHero->m_stAbility.wSC), HIBYTE(g_xGameProc.m_pMyHero->m_stAbility.wSC));
+	sprintf_s(szBuff, "%d-%d", LOBYTE(g_xGameProc.m_pMyHero->m_stAbility.wSC), HIBYTE(g_xGameProc.m_pMyHero->m_stAbility.wSC));
 	g_xMainWnd.PutsHan(NULL, ptStart.x+53, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.x = m_rcWnd.left+255+145;
@@ -871,67 +871,67 @@ VOID CStatusWnd::ShowCharStatus()
 
 	FLOAT fExpRate = (FLOAT)((FLOAT)g_xGameProc.m_pMyHero->m_stAbility.dwExp/(FLOAT)g_xGameProc.m_pMyHero->m_stAbility.dwMaxExp);
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "°æÇè", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "%.2f%s", fExpRate*100, "%%");
+	sprintf_s(szBuff, "%.2f%s", fExpRate*100, "%%");
 	g_xMainWnd.PutsHan(NULL, ptStart.x+55, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "°¡¹æ¹«°Ô", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "%d / %d", g_xGameProc.m_pMyHero->m_stAbility.wWeight, g_xGameProc.m_pMyHero->m_stAbility.wMaxWeight);
+	sprintf_s(szBuff, "%d / %d", g_xGameProc.m_pMyHero->m_stAbility.wWeight, g_xGameProc.m_pMyHero->m_stAbility.wMaxWeight);
 	g_xMainWnd.PutsHan(NULL, ptStart.x+55, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "Âø¿ë¹«°Ô", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "%d / %d", g_xGameProc.m_pMyHero->m_stAbility.bWearWeight, g_xGameProc.m_pMyHero->m_stAbility.bMaxWearWeight);
+	sprintf_s(szBuff, "%d / %d", g_xGameProc.m_pMyHero->m_stAbility.bWearWeight, g_xGameProc.m_pMyHero->m_stAbility.bMaxWearWeight);
 	g_xMainWnd.PutsHan(NULL, ptStart.x+55, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "¾ç¼Õ¹«°Ô", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "%d / %d", g_xGameProc.m_pMyHero->m_stAbility.bHandWeight, g_xGameProc.m_pMyHero->m_stAbility.bMaxHandWeight);
+	sprintf_s(szBuff, "%d / %d", g_xGameProc.m_pMyHero->m_stAbility.bHandWeight, g_xGameProc.m_pMyHero->m_stAbility.bMaxHandWeight);
 	g_xMainWnd.PutsHan(NULL, ptStart.x+55, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "Á¤È®", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "+%d%", g_xGameProc.m_pMyHero->m_stSubAbility.bHitPoint);
+	sprintf_s(szBuff, "+%d%%", g_xGameProc.m_pMyHero->m_stSubAbility.bHitPoint);
 	g_xMainWnd.PutsHan(NULL, ptStart.x+55, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "¹ÎÃ¸", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "+%d%", g_xGameProc.m_pMyHero->m_stSubAbility.bSpeedPoint);
+	sprintf_s(szBuff, "+%d%%", g_xGameProc.m_pMyHero->m_stSubAbility.bSpeedPoint);
 	g_xMainWnd.PutsHan(NULL, ptStart.x+55, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 	
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "¸¶¹ýÈ¸ÇÇ", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "+%d%", g_xGameProc.m_pMyHero->m_stSubAbility.wAntiMagic*10);
+	sprintf_s(szBuff, "+%d%%", g_xGameProc.m_pMyHero->m_stSubAbility.wAntiMagic*10);
 	g_xMainWnd.PutsHan(NULL, ptStart.x+55, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 	
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "Áßµ¶È¸ÇÇ", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "+%d%", g_xGameProc.m_pMyHero->m_stSubAbility.bAntiPoison*10);
+	sprintf_s(szBuff, "+%d%%", g_xGameProc.m_pMyHero->m_stSubAbility.bAntiPoison*10);
 	g_xMainWnd.PutsHan(NULL, ptStart.x+55, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 	
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "Áßµ¶È¸º¹", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "+%d%", g_xGameProc.m_pMyHero->m_stSubAbility.bPoisonRecover*10);
+	sprintf_s(szBuff, "+%d%%", g_xGameProc.m_pMyHero->m_stSubAbility.bPoisonRecover*10);
 	g_xMainWnd.PutsHan(NULL, ptStart.x+55, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 	
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "Ã¼·ÂÈ¸º¹", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "+%d%", g_xGameProc.m_pMyHero->m_stSubAbility.bHealthRecover*10);
+	sprintf_s(szBuff, "+%d%%", g_xGameProc.m_pMyHero->m_stSubAbility.bHealthRecover*10);
 	g_xMainWnd.PutsHan(NULL, ptStart.x+55, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 	ptStart.y += 20;
 	
 	g_xMainWnd.PutsHan(NULL, ptStart.x, ptStart.y, RGB(200, 225, 250), RGB(0, 0, 0), "¸¶·ÂÈ¸º¹", g_xMainWnd.CreateGameFont("ËÎÌå", 9, 0, FW_BOLD));
-	sprintf(szBuff, "+%d%", g_xGameProc.m_pMyHero->m_stSubAbility.bSpellRecover*10);
+	sprintf_s(szBuff, "+%d%%", g_xGameProc.m_pMyHero->m_stSubAbility.bSpellRecover*10);
 	g_xMainWnd.PutsHan(NULL, ptStart.x+55, ptStart.y, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 }
 
@@ -999,19 +999,19 @@ VOID CStatusWnd::ShowCharSetMagicWnd()
 											g_xGameProc.m_xImage.m_xImageList[_IMAGE_MICON].m_lpstNewCurrWilImageInfo->shHeight,
 											(WORD*)(g_xGameProc.m_xImage.m_xImageList[_IMAGE_MICON].m_pbCurrImage));
 
-			sprintf(szKey, "F%c", (char)m_pstMyMagic[nLine].bUseKey);
+			sprintf_s(szKey, "F%c", (char)m_pstMyMagic[nLine].bUseKey);
 			g_xMainWnd.PutsHan(NULL, nStartX+140, nStartY+7, RGB(255, 255, 255), RGB(125, 125, 255), szKey);
 		}
 
 	
 		if ( m_pstMyMagic[nLine].bLevel < 3 )
 		{
-			sprintf(szLevel, "%d        %d/%d", m_pstMyMagic[nLine].bLevel, m_pstMyMagic[nLine].nCurrTrain, m_pstMyMagic[nLine].stStdMagic.nTrain[m_pstMyMagic[nLine].bLevel]);
+			sprintf_s(szLevel, "%d        %d/%d", m_pstMyMagic[nLine].bLevel, m_pstMyMagic[nLine].nCurrTrain, m_pstMyMagic[nLine].stStdMagic.nTrain[m_pstMyMagic[nLine].bLevel]);
 			g_xMainWnd.PutsHan(NULL, nStartX+50, nStartY+23, RGB(255, 255, 220), RGB(0, 0, 0), szLevel);
 		}
 		else
 		{
-			sprintf(szLevel, "%d        ", m_pstMyMagic[nLine].bLevel);
+			sprintf_s(szLevel, "%d        ", m_pstMyMagic[nLine].bLevel);
 			g_xMainWnd.PutsHan(NULL, nStartX+50, nStartY+23, RGB(255, 255, 220), RGB(0, 0, 0), szLevel);
 		}
 

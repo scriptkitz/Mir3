@@ -258,12 +258,13 @@ HRESULT TextureContainer::LoadImageData()
     // First check if the file exists in the global texture path
     lstrcpy( strPathname, g_strTexturePath );
     lstrcat( strPathname, m_strName );
-    if( NULL == ( file = fopen( strPathname, "rb" ) ) )
+    
+    if(0 != fopen_s(&file, strPathname, "rb"))
     {
         // Then check if the file exists in the DirectX SDK media path
         lstrcpy( strPathname, D3DUtil_GetDXSDKMediaPath() );
         lstrcat( strPathname, m_strName );
-        if( NULL == ( file = fopen( strPathname, "rb" ) ) )
+        if(0 != fopen_s(&file, strPathname, "rb"))
             return DDERR_NOTFOUND;
     }
     fclose( file );
@@ -312,8 +313,9 @@ HRESULT TextureContainer::LoadBitmapFile( TCHAR* strPathname )
 //-----------------------------------------------------------------------------
 HRESULT TextureContainer::LoadTargaFile( TCHAR* strPathname )
 {
-    FILE* file = fopen( strPathname, "rb" );
-    if( NULL == file )
+
+    FILE* file = NULL;
+    if(0 != fopen_s(&file, strPathname, "rb"))
         return E_FAIL;
 
     struct TargaHeader

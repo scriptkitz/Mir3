@@ -116,7 +116,7 @@ CHAR* CNPCTxtAnalysis::GetValidStr(CHAR* szSource,CHAR* szDest,CHAR* Divider)
 				{
 					szBuffer[nBuf_Count] = '\0';	// End String (sz)
 					strcpy(szDest,szBuffer);
-					strncpy(m_InnerResult,szSource + nCount+1,nSrcLen-nCount);
+					strncpy_s(m_InnerResult,szSource + nCount+1,nSrcLen-nCount);
 				}
 				break;
 			}
@@ -125,7 +125,7 @@ CHAR* CNPCTxtAnalysis::GetValidStr(CHAR* szSource,CHAR* szDest,CHAR* Divider)
 				if(nCount>nSrcLen)
 				{
 					ZeroMemory(szDest,sizeof(szDest));
-					strncpy(m_InnerResult,szSource +nCount+2,nSrcLen-1);
+					strncpy_s(m_InnerResult,szSource +nCount+2,nSrcLen-1);
 					break;
 				}
 			}
@@ -196,7 +196,7 @@ CHAR* CNPCTxtAnalysis::GetValidStr(CHAR* szSource,CHAR* szDest,CHAR Divider)
 					strcpy(szDest,szBuffer);
 					ZeroMemory(m_InnerResult,MAX_BUFFER_SIZE);
 					if(nSrcLen-nCount>0) 
-						strncpy(m_InnerResult,szSource + nCount+1,nSrcLen-nCount);
+						strncpy_s(m_InnerResult,szSource + nCount+1,nSrcLen-nCount);
 				}
 				break;
 			}
@@ -206,7 +206,7 @@ CHAR* CNPCTxtAnalysis::GetValidStr(CHAR* szSource,CHAR* szDest,CHAR Divider)
 				{
 					ZeroMemory(szDest,sizeof(szDest));
 					ZeroMemory(m_InnerResult,MAX_BUFFER_SIZE);
-					if(nSrcLen-1>0) strncpy(m_InnerResult,szSource +nCount+2,nSrcLen-1);
+					if(nSrcLen-1>0) strncpy_s(m_InnerResult,szSource +nCount+2,nSrcLen-1);
 					break;
 				}
 			}
@@ -277,7 +277,7 @@ CHAR* CNPCTxtAnalysis::GetValidStr(CHAR* szSource,INT nSrcLen,CHAR* szDest,INT n
 					memcpy(szDest,szBuffer,nBuf_Count);
 					ZeroMemory(m_InnerResult,MAX_BUFFER_SIZE);
 					if(nSrcLen-nCount>0) 
-						strncpy(m_InnerResult,szSource + nCount+1,nSrcLen-nCount);
+						strncpy_s(m_InnerResult,szSource + nCount+1,nSrcLen-nCount);
 				}
 				break;
 			}
@@ -287,7 +287,7 @@ CHAR* CNPCTxtAnalysis::GetValidStr(CHAR* szSource,INT nSrcLen,CHAR* szDest,INT n
 				{
 					ZeroMemory(szDest,nDestLen);
 					ZeroMemory(m_InnerResult,MAX_BUFFER_SIZE);
-					if(nSrcLen-1>0) strncpy(m_InnerResult,szSource +nCount+2,nSrcLen-1);
+					if(nSrcLen-1>0) strncpy_s(m_InnerResult,szSource +nCount+2,nSrcLen-1);
 					break;
 				}
 			}
@@ -355,12 +355,12 @@ CHAR* CNPCTxtAnalysis::ArrestString(CHAR* szSource,CHAR SearchAfter,CHAR AssertB
 			if(n>=0)
 			{
 				strncpy(AssertStr,szSource,n);
-				strncpy(m_InnerResult,szSource+n,Src_Len - n);
+				strncpy_s(m_InnerResult,szSource+n,Src_Len - n);
 			}
 			else
 			{
-				strncat(m_InnerResult,&SearchAfter,1);
-				strcat(m_InnerResult,szSource);
+				strncat_s(m_InnerResult,&SearchAfter,1);
+				strcat_s(m_InnerResult,szSource);
 			}
 		}
 		else
@@ -370,7 +370,7 @@ CHAR* CNPCTxtAnalysis::ArrestString(CHAR* szSource,CHAR SearchAfter,CHAR AssertB
 				if(szSource[i] == SearchAfter)
 				{
 
-					strncpy(m_InnerResult,szSource+i,Src_Len-i+2);
+					strncpy_s(m_InnerResult,szSource+i,Src_Len-i+2);
 					break;
 				}
 			}
@@ -505,8 +505,8 @@ void CNPCTxtAnalysis::AnalySisText(CDLList<CHAR*>* pxpTxt,INT nLineMax)
 					if((szStr[0])!='<')
 					{
 						szTemp =  GetValidStr(szStr,Fdata,'<');
-						strcpy(szStr,"<");
-						strcat(szStr,szTemp);				
+						strcpy_s(szStr,2,"<");
+						strcat_s(szStr,strlen(szTemp)+1, szTemp);
 					}	// endif
 
 					// <>안에 있는 내용 CmdStr로

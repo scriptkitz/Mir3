@@ -59,7 +59,7 @@ VOID ClientSysMsg::AddSysMsg(CHAR* szStr)
 
 	m_stSysMsg.MoveCurrentToTail();
 	pstMsg = new CONSTSTRING;
-	strcpy(pstMsg->szMsg, szStr);
+	strcpy_s(pstMsg->szMsg, szStr);
 	m_stSysMsg.AddNode(pstMsg);
 	m_wCurrDelay = 0;
 }

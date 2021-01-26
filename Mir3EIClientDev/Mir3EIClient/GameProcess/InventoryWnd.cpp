@@ -222,7 +222,7 @@ VOID CInventoryWnd::ShowInventoryWnd()
 	// 金钱
 	CHAR szMoney[16];
 	RECT rcMoney = {m_rcWnd.left+80, m_rcWnd.top+406, m_rcWnd.left+120, m_rcWnd.top+446};
-	sprintf( szMoney, "%d", g_xGameProc.m_pMyHero->m_nGlod );
+	sprintf_s( szMoney, "%d", g_xGameProc.m_pMyHero->m_nGlod );
 	g_xMainWnd.PutsHan(NULL, rcMoney, RGB(200, 200, 255), RGB(0, 0, 0), szMoney, g_xMainWnd.CreateGameFont("宋体", 10, 0, FW_BOLD));
 
 	// 滚动条.

@@ -19,10 +19,6 @@
 #define _CHAR_SEL_PROC	2
 #define _GAME_PROC		3
 
-#ifndef WM_MOUSEWHEEL
-#define WM_MOUSEWHEEL WM_MOUSELAST+1 
-#endif
-
 #pragma warning (disable : 4244)
 #pragma warning (disable : 4018)
 

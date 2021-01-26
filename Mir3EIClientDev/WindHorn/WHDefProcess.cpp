@@ -48,7 +48,7 @@ VOID CWHDefProcess::ShowStatus(INT nStartX, INT nStartY)
 
     }
 
-    sprintf(szBuff, "FPS : %d", dwFPS);
+    sprintf_s(szBuff, "FPS : %d", dwFPS);
 	((CWHDXGraphicWindow*)m_pxDXGWnd)->PutsHan(((CWHDXGraphicWindow*)m_pxDXGWnd)->GetBackBuffer(), nStartX, nStartY, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 }
 

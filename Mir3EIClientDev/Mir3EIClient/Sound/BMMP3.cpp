@@ -73,11 +73,11 @@ BOOL CBMMp3::LoadMp3(CHAR*	szFileName,HWND hWnd)
 	{
 		if(InitBMMp3(hWnd))
 		{
-			strcpy( szSoundFile, "sound\\" );
-			strcat( szSoundFile, szFileName );
+			strcpy_s( szSoundFile, "sound\\" );
+			strcat_s( szSoundFile, szFileName );
 
 			MultiByteToWideChar(CP_ACP,0,szSoundFile,	-1,wcFileName,MAX_PATH);
-			strcpy(m_szFileName, szFileName);
+			strcpy_s(m_szFileName, szFileName);
 			if(SUCCEEDED(m_pGraphBuilder->RenderFile(wcFileName, NULL)))
 			{
 				m_bIsLoadMp3 = TRUE;

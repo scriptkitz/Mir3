@@ -94,7 +94,7 @@ HRESULT	CLogin::OnKeyDown(WPARAM wParam, LPARAM lParam)
 									&& lstrlen( m_xInputState[LGM_INPUT_PASSWORD-1].szData ) )
 					{	
 						g_xLoginSocket.OnLogin(m_xInputState[LGM_INPUT_ID-1].szData,m_xInputState[LGM_INPUT_PASSWORD-1].szData);
-						strcpy(g_szUserID,m_xInputState[LGM_INPUT_ID-1].szData);
+						strcpy_s(g_szUserID,m_xInputState[LGM_INPUT_ID-1].szData);
 						return 0L;
 					}						
 					m_nUserState = LGM_INPUT_ID;							
@@ -164,7 +164,7 @@ HRESULT	CLogin::OnButtonUp(WPARAM wParam, LPARAM lParam)
 									&& lstrlen( m_xInputState[LGM_INPUT_PASSWORD-1].szData ) )
 					{	
 						g_xLoginSocket.OnLogin(m_xInputState[LGM_INPUT_ID-1].szData,m_xInputState[LGM_INPUT_PASSWORD-1].szData);
-						strcpy(g_szUserID,m_xInputState[LGM_INPUT_ID-1].szData);
+						strcpy_s(g_szUserID,m_xInputState[LGM_INPUT_ID-1].szData);
 						return 0L;
 					}						
 					m_nUserState = LGM_INPUT_ID;							

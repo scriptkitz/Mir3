@@ -198,7 +198,7 @@ BOOL CNoticeBox::SetMsg(CHAR* szMsg)				// Init Messages
 	if(nLength!=0)
 	{
 		ZeroMemory(m_szMsg,MAX_PATH);
-		strcpy(m_szMsg,szMsg);
+		strcpy_s(m_szMsg,szMsg);
 		m_bInited = TRUE;
 	}
 	else

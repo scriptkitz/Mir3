@@ -137,7 +137,7 @@ BOOL CItem::DrawItem(INT nX, INT nY, BYTE bItemType)
 				m_stItemInfo.stStdItem.bStdMode == 3 )
 			{
 				CHAR szNum[16];
-				sprintf( szNum, "%3d", m_stItemInfo.bDrugNum );
+				sprintf_s( szNum, "%3d", m_stItemInfo.bDrugNum );
 				g_xMainWnd.PutsHan(NULL, x+_INVENTORY_CELL_WIDTH/2, y+26, RGB(255, 0, 0), RGB(0, 0, 0), szNum, NULL);
 			}
 		}
@@ -171,11 +171,11 @@ VOID CItem::ShowItemStatus(INT nX, INT nY)
 				if ( m_stItemInfo.stStdItem.szName[20] )
 					g_xMainWnd.StringPlus(szName, &m_stItemInfo.stStdItem.szName[20], " ", &m_stItemInfo.stStdItem.szName[0], "");
 				else
-					strcpy(szName, m_stItemInfo.stStdItem.szName);
+					strcpy_s(szName, m_stItemInfo.stStdItem.szName);
 				g_xMainWnd.PutsHan(NULL, nX, nY, RGB(250, 250, 0), RGB(0, 0, 0), szName);
 				sizeLen = g_xMainWnd.GetStrLength(NULL, NULL, szName);
 
-				sprintf(szLineBuf[0], " 무게%d 내구%d/%d", (m_stItemInfo.stStdItem.bWeight), (m_stItemInfo.nDura/1000), (m_stItemInfo.nDuraMax)/1000);
+				sprintf_s(szLineBuf[0], " 무게%d 내구%d/%d", (m_stItemInfo.stStdItem.bWeight), (m_stItemInfo.nDura/1000), (m_stItemInfo.nDuraMax)/1000);
 
 				g_xMainWnd.PutsHan(NULL, nX+sizeLen.cx, nY, RGB(250, 250, 250), RGB(0, 0, 0), szLineBuf[0]);
 				
@@ -249,20 +249,20 @@ VOID CItem::ShowItemStatus(INT nX, INT nY)
 					if ( m_stItemInfo.stStdItem.szName[20] )
 						g_xMainWnd.StringPlus(szName, "(*)", &m_stItemInfo.stStdItem.szName[20], " ", &m_stItemInfo.stStdItem.szName[0], "");
 					else
-						strcpy(szName, m_stItemInfo.stStdItem.szName);
+						strcpy_s(szName, m_stItemInfo.stStdItem.szName);
 				}
 				else																
 				{
 					if ( m_stItemInfo.stStdItem.szName[20] )
 						g_xMainWnd.StringPlus(szName, &m_stItemInfo.stStdItem.szName[20], " ", &m_stItemInfo.stStdItem.szName[0], "");
 					else
-						strcpy(szName, m_stItemInfo.stStdItem.szName);
+						strcpy_s(szName, m_stItemInfo.stStdItem.szName);
 				}
 
 				g_xMainWnd.PutsHan(NULL, nX, nY, RGB(250, 250, 0), RGB(0, 0, 0), szName);
 				sizeLen = g_xMainWnd.GetStrLength(NULL, NULL, szName);
 
-				sprintf(szLineBuf[0], " 무게%d 내구%d/%d", (m_stItemInfo.stStdItem.bWeight), (m_stItemInfo.nDura/1000), (m_stItemInfo.nDuraMax)/1000);
+				sprintf_s(szLineBuf[0], " 무게%d 내구%d/%d", (m_stItemInfo.stStdItem.bWeight), (m_stItemInfo.nDura/1000), (m_stItemInfo.nDuraMax)/1000);
 				g_xMainWnd.PutsHan(NULL, nX+sizeLen.cx, nY, RGB(250, 250, 250), RGB(0, 0, 0), szLineBuf[0]);
 
 				// 둘째줄.
@@ -352,11 +352,11 @@ VOID CItem::ShowItemStatus(INT nX, INT nY)
 				if ( m_stItemInfo.stStdItem.szName[20] )
 					g_xMainWnd.StringPlus(szName, &m_stItemInfo.stStdItem.szName[20], " ", &m_stItemInfo.stStdItem.szName[0], "");
 				else
-					strcpy(szName, m_stItemInfo.stStdItem.szName);
+					strcpy_s(szName, m_stItemInfo.stStdItem.szName);
 				g_xMainWnd.PutsHan(NULL, nX, nY, RGB(250, 250, 0), RGB(0, 0, 0), szName);
 				sizeLen = g_xMainWnd.GetStrLength(NULL, NULL, szName);
 
-				sprintf(szLineBuf[0], " 무게%d 내구%d/%d", (m_stItemInfo.stStdItem.bWeight), (m_stItemInfo.nDura/1000), (m_stItemInfo.nDuraMax)/1000);
+				sprintf_s(szLineBuf[0], " 무게%d 내구%d/%d", (m_stItemInfo.stStdItem.bWeight), (m_stItemInfo.nDura/1000), (m_stItemInfo.nDuraMax)/1000);
 
 				g_xMainWnd.PutsHan(NULL, nX+sizeLen.cx, nY, RGB(250, 250, 250), RGB(0, 0, 0), szLineBuf[0]);
 

@@ -787,10 +787,10 @@ VOID CMirSound::SetEnableAmbiance(INT nMapNum,INT nCount)
 
 		for(INT i = 0 ; i < MAX_AMBIANCE_COUNT ; i++)
 		{
-			_itoa(i,szTname,10);
-			strcat(szTname,".wav");
-			strcpy(szFname,szPname);
-			strcat(szFname,szTname);
+			_itoa_s(i,szTname,10);
+			strcat_s(szTname,".wav");
+			strcpy_s(szFname,szPname);
+			strcat_s(szFname,szTname);
 			m_pAmbianceBuffer[i] = new CSBuffer;
 			if(m_3DEnable)	m_pAmbianceBuffer[i]->Enable3d();
 			m_pAmbianceBuffer[i]->Load(m_pSound,szFname,2);

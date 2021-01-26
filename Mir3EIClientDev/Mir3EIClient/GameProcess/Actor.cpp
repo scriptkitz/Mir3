@@ -2071,7 +2071,7 @@ VOID CActor::DrawHPBar()
 	if ( !m_bIsDead )
 	{
 		FLOAT fHPPercent = (FLOAT)((FLOAT)m_bHPPercent/100);
-		RECT rcHP = {0, 0, (32*fHPPercent), 4};
+		RECT rcHP = {0, 0, (LONG)(32*fHPPercent), 4};
  		g_xGameProc.m_xImage.m_xImageList[_IMAGE_PROGUSE].NewSetIndex(2);
  		g_xMainWnd.DrawWithImageForComp(
 						m_shScrnPosX+7,
@@ -2090,7 +2090,7 @@ VOID CActor::DrawHPBar()
 	if( m_wMAXHP > 0 && !m_bIsDead )
 	{
 		CHAR szHealth[32];
-		sprintf( szHealth, "%d/%d", m_wHP, m_wMAXHP );
+		sprintf_s( szHealth, "%d/%d", m_wHP, m_wMAXHP );
 		g_xMainWnd.PutsHan(g_xMainWnd.GetBackBuffer(),
 			m_shScrnPosX+7,
 			m_shScrnPosY-62,
@@ -2133,7 +2133,7 @@ VOID CActor::ChatMsgAdd()
 	ZeroMemory(szDivied, MAX_PATH*2);
 
 	g_xMainWnd.StringDivide(_CHAT_WIDTH, m_nDividedChatLine, m_szChatMsg, szDivied);
-	sscanf(szDivied, "%[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c", 
+	sscanf_s(szDivied, "%*[^`] %*[^`] %*[^`] %*[^`] %*[^`]",
 		   m_szChatMsgArg[0], m_szChatMsgArg[1], m_szChatMsgArg[2], m_szChatMsgArg[3], m_szChatMsgArg[4]);
 
 	m_wCurrChatDelay = 0;
@@ -6173,7 +6173,7 @@ VOID CMyHero::DrawName()
 	//FOR DEBUG
 	//绘制自己的坐标
 	CHAR szPos[32];
-	sprintf( szPos, "%d,%d", m_wPosX, m_wPosY );
+	sprintf_s( szPos, "%d,%d", m_wPosX, m_wPosY );
 	sizeLen = g_xMainWnd.GetStrLength(NULL, NULL, szPos);
 
 	RECT rcPos = {m_rcActor.left + (m_rcActor.right-m_rcActor.left-sizeLen.cx)/2, m_rcActor.top + (m_rcActor.bottom-m_rcActor.top-sizeLen.cy)/2-20, 

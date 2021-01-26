@@ -241,7 +241,7 @@ BOOL CMapHandler::LoadMapData(CHAR* szMapFile)
 	HANDLE	hFile;
 	char	szFullPath[128];
 
-	sprintf(szFullPath, ".\\Map\\%s.map", szMapFile);
+	sprintf_s(szFullPath, ".\\Map\\%s.map", szMapFile);
 
 	hFile = CreateFile(szFullPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 

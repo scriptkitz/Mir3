@@ -165,7 +165,7 @@ VOID CSelectCharWnd::ShowAddChar()
 		{
 			CCharLine* pCharLine = new CCharLine;
 
-			strcpy( pCharLine->m_pszScriptText, pxActor->m_szName );
+			strcpy_s( pCharLine->m_pszScriptText, pxActor->m_szName );
 			m_ScriptList.AddNode(pCharLine);
 		}
 		g_xGameProc.m_xActorList.MoveNextNode();
@@ -182,7 +182,7 @@ VOID CSelectCharWnd::ShowDelChar()
 		pxActor = g_xGameProc.m_xInterface.m_xGroupWnd.m_xGroupList.GetCurrentData();
 		CCharLine* pCharLine = new CCharLine;
 	
-		strcpy( pCharLine->m_pszScriptText, pxActor->szMemberName );
+		strcpy_s( pCharLine->m_pszScriptText, pxActor->szMemberName );
 		m_ScriptList.AddNode(pCharLine);
 		
 		g_xGameProc.m_xActorList.MoveNextNode();

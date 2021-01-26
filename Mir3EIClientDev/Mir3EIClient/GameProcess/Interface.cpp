@@ -272,7 +272,7 @@ VOID CInterface::MsgAdd(DWORD dwFontColor, DWORD dwFontBackColor, CHAR* pszMsg)
 
 			g_xMainWnd.StringDivide(m_rcChat.right-m_rcChat.left, nLineCnt, pszMsg, pszDivied);
 
-			sscanf(pszDivied, "%[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c", pszArg[0], pszArg[1], pszArg[2], pszArg[3], pszArg[4]);
+			sscanf_s(pszDivied, "%[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c", pszArg[0], pszArg[1], pszArg[2], pszArg[3], pszArg[4]);
 
 			if ( nLineCnt > 5 )		
 			{
@@ -290,7 +290,7 @@ VOID CInterface::MsgAdd(DWORD dwFontColor, DWORD dwFontBackColor, CHAR* pszMsg)
 
 				stChat.dwFontColor = dwFontColor;
 				stChat.dwBackColor = dwFontBackColor;
-				strcpy(stChat.pszChat, pszArg[nCnt]);
+				strcpy_s(stChat.pszChat, pszArg[nCnt]);
 
 				m_xChat.AddNode(stChat);
 			}
@@ -718,19 +718,19 @@ VOID CInterface::ShowGameStatus()
 	dwFntClr = RGB(225, 225, 0);
 	// 饭骇嘛6扁.
 	//需要随聊天栏变化而改变
-	sprintf(pszBuff, "%d", g_xGameProc.m_pMyHero->m_stAbility.bLevel);
+	sprintf_s(pszBuff, "%d", g_xGameProc.m_pMyHero->m_stAbility.bLevel);
 	SetRect(&rcStats, m_rcMain.left+394, m_rcMain.top+2, m_rcMain.left+408, m_rcMain.top+16);
 	g_xMainWnd.PutsHan(NULL, rcStats, dwFntClr, RGB(0, 0, 0), pszBuff, g_xMainWnd.CreateGameFont("泵辑眉", 10, 0, FW_BOLD));
 
 	dwFntClr = RGB(255, 255, 200);
-	sprintf(pszBuff, "%s : [%d,%d]", g_xGameProc.m_szMapName, g_xGameProc.m_pMyHero->m_wPosX, g_xGameProc.m_pMyHero->m_wPosY);
+	sprintf_s(pszBuff, "%s : [%d,%d]", g_xGameProc.m_szMapName, g_xGameProc.m_pMyHero->m_wPosX, g_xGameProc.m_pMyHero->m_wPosY);
 	SetRect(&rcStats, 9, 579, 139, 592);
 	g_xMainWnd.PutsHan(NULL, rcStats, dwFntClr, RGB(0, 0, 0), pszBuff);
 
 	//FIXME 不明白什么意思
 	dwFntClr = RGB(255, 200, 50);
 	// 流诀喊 酒捞能棺 漂己摹 嘛扁.
-	sprintf(pszBuff, "%d-%d", LOBYTE(wMyAC), HIBYTE(wMyAC));
+	sprintf_s(pszBuff, "%d-%d", LOBYTE(wMyAC), HIBYTE(wMyAC));
 	SetRect(&rcStats, 662, 577, 703, 590);
 	g_xMainWnd.PutsHan(NULL, rcStats, dwFntClr, RGB(0, 0, 0), pszBuff);
 
@@ -741,7 +741,7 @@ VOID CInterface::ShowGameStatus()
 		{
 			wJobIcon = 66;
 			wImgNum	 = 123;
-			sprintf(pszBuff, "%d-%d", LOBYTE(wMySC), HIBYTE(wMySC));
+			sprintf_s(pszBuff, "%d-%d", LOBYTE(wMySC), HIBYTE(wMySC));
 			g_xMainWnd.PutsHan(NULL, rcStats, dwFntClr, RGB(0, 0, 0), pszBuff);
 		}
 		break;
@@ -749,7 +749,7 @@ VOID CInterface::ShowGameStatus()
 		{
 			wJobIcon = 65;	
 			wImgNum	 = 124;
-			sprintf(pszBuff, "%d-%d", LOBYTE(wMyMC), HIBYTE(wMyMC));
+			sprintf_s(pszBuff, "%d-%d", LOBYTE(wMyMC), HIBYTE(wMyMC));
 			g_xMainWnd.PutsHan(NULL, rcStats, dwFntClr, RGB(0, 0, 0), pszBuff);
 		}
 		break;
@@ -757,7 +757,7 @@ VOID CInterface::ShowGameStatus()
 		{
 			wJobIcon = 64;
 			wImgNum	 = 122;
-			sprintf(pszBuff, "%d-%d", LOBYTE(wMyDC), HIBYTE(wMyDC));
+			sprintf_s(pszBuff, "%d-%d", LOBYTE(wMyDC), HIBYTE(wMyDC));
 			g_xMainWnd.PutsHan(NULL, rcStats, dwFntClr, RGB(0, 0, 0), pszBuff);
 		}
 		break;
@@ -1695,7 +1695,7 @@ BOOL CInterface::OnLButtonUp(POINT ptMouse)
 						CHAR	  szMsg[MAX_PATH];
 						m_nIdxMsgBox = 12;
 
-						strcpy( szMsg, "你想要退出程序吗?" );
+						strcpy_s( szMsg, "你想要退出程序吗?" );
 						m_xMsgBox.ShowMessageBox(szMsg, 2);					// YES/No ?
 					}
 					break;

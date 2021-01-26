@@ -40,10 +40,10 @@ BOOL	CTextButton::AddButton(CHAR *pszTxt,RECT xRect,INT nLinePos,CHAR *pszParam,
 		tCMTxtBtn = new  CMTxtBtn;
 		tSize = g_xMainWnd.GetStrLength(NULL,NULL,pszTxt);
 		m_nTxtHeight  = xRect.bottom - xRect.top;
-		strcpy(tCMTxtBtn->Txt,pszTxt);
+		strcpy_s(tCMTxtBtn->Txt,pszTxt);
 		tCMTxtBtn->xRect = xRect;
 		tCMTxtBtn->nLinePos = nLinePos;
-		strcpy(tCMTxtBtn->Param,pszParam);
+		strcpy_s(tCMTxtBtn->Param,pszParam);
 		tCMTxtBtn->bIsClicked = FALSE;
 		tCMTxtBtn->nColor = nColor;
 		tCMTxtBtn->cColor = cColor;
@@ -67,13 +67,13 @@ BOOL	CTextButton::AddButton(CHAR *pszTxt,CHAR *pszTxt2,RECT xRect,INT nLinePos,C
 		tSize = g_xMainWnd.GetStrLength(NULL,NULL,pszTxt);
 		m_nTxtHeight  = tSize.cy;
 
-		strcpy(tCMTxtBtn->Txt,pszTxt);
-		strcpy(tCMTxtBtn->sTxt,pszTxt2);
+		strcpy_s(tCMTxtBtn->Txt,pszTxt);
+		strcpy_s(tCMTxtBtn->sTxt,pszTxt2);
 
 		tCMTxtBtn->xRect = xRect;
 		tCMTxtBtn->nLinePos = nLinePos;
 
-		strcpy(tCMTxtBtn->Param,pszParam);
+		strcpy_s(tCMTxtBtn->Param,pszParam);
 		tCMTxtBtn->bIsClicked = FALSE;
 		tCMTxtBtn->nColor = nColor;
 		tCMTxtBtn->cColor = cColor;

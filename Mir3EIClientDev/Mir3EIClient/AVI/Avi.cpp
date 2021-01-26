@@ -1,5 +1,5 @@
 #include "StdAfx.h"
-
+#include "Avi.h"
 
 //////////////////////////////////////////////////////////////////////////////////
 // CAvi Constructor
@@ -453,7 +453,7 @@ BOOL CAvi::ReadDatas(INT nLoopTime)
 	if(m_bPlaying)
 	{
 		dwDelay += nLoopTime;
-		nDivider = 1000/m_Fps;//´íÎóÖÐ¶Ïµ÷ÊÔ
+		nDivider = m_Fps ? 1000/m_Fps : 0;//´íÎóÖÐ¶Ïµ÷ÊÔ
 		if(dwDelay>nDivider)//
 		{//
 			NextFrame();

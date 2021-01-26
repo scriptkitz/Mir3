@@ -10,6 +10,7 @@
 *******************************************************************************************************************/
 
 #include "StdAfx.h"
+#include <stdio.h>
 
 #define MAX_NPCSTR_HEIGHT		129		
 #define MAX_SHOW_LINE			8		
@@ -132,11 +133,13 @@ char *AddScriptLine(char *pszLine, int nLineLen, int nType)
 					{
 						*pszDevide = '\0';
 
-						pScriptLine->m_pszScriptCommand = new char[pszEndCmd - pszDevide +1];
-						pScriptLine->m_pszScriptText	= new char[pszDevide - pszLine +1];
+						const int scl = pszEndCmd - pszDevide + 1;
+						const int stl = pszDevide - pszLine + 1;
+						pScriptLine->m_pszScriptCommand = new char[scl];
+						pScriptLine->m_pszScriptText	= new char[stl];
 						
-						strcpy(pScriptLine->m_pszScriptCommand, ++pszDevide);
-						strcpy(pScriptLine->m_pszScriptText, ++pszLine);
+						strcpy_s(pScriptLine->m_pszScriptCommand, scl, ++pszDevide);
+						strcpy_s(pScriptLine->m_pszScriptText, stl, ++pszLine);
 
 						ScriptList.AddNode(pScriptLine);
 					}
@@ -159,11 +162,13 @@ char *AddScriptLine(char *pszLine, int nLineLen, int nType)
 					{
 						*pszDevide = '\0';
 
-						pScriptLine->m_pszScriptCommand = new char[pszEndCmd - pszDevide +1];
-						pScriptLine->m_pszScriptText	= new char[pszDevide - pszLine +1];
+						const int scl = pszEndCmd - pszDevide + 1;
+						const int stl = pszDevide - pszLine + 1;
+						pScriptLine->m_pszScriptCommand = new char[scl];
+						pScriptLine->m_pszScriptText	= new char[stl];
 						
-						strcpy(pScriptLine->m_pszScriptCommand, ++pszDevide);
-						strcpy(pScriptLine->m_pszScriptText, ++pszLine);
+						strcpy_s(pScriptLine->m_pszScriptCommand, scl, ++pszDevide);
+						strcpy_s(pScriptLine->m_pszScriptText, stl, ++pszLine);
 
 						ScriptList.AddNode(pScriptLine);
 					}
@@ -565,7 +570,7 @@ BOOL CNPCWnd::OnLButtonUp(POINT ptMouse)
 					{
 						char szBuildGuild[128];
 
-						sprintf(szBuildGuild, "%s%c%s", pScriptLine->m_pszScriptCommand, 13, "가제트형사파");
+						sprintf_s(szBuildGuild, "%s%c%s", pScriptLine->m_pszScriptCommand, 13, "가제트형사파");
 
 						g_xGameProc.m_pSocket->SendNPCMessage(CM_MERCHANTDLGSELECT,(DWORD)m_nNpcId, 0, szBuildGuild);
 					}
@@ -795,7 +800,7 @@ VOID CNPCWnd::OnEnterKeyDown(VOID)
 		GetWindowText(g_xChatEditBox.GetSafehWnd(),szTxt,MAX_PATH);
 		if(szTxt[0]==NULL)
 		{
-			strncpy(szTxt,g_xChatEditBox.m_szInputMsg,strlen(g_xChatEditBox.m_szInputMsg));
+			strncpy_s(szTxt,g_xChatEditBox.m_szInputMsg,strlen(g_xChatEditBox.m_szInputMsg));
 		}
 		// For Editbox to Chatting
 		SetFocus(g_xMainWnd.GetSafehWnd());
@@ -811,9 +816,9 @@ VOID CNPCWnd::OnEnterKeyDown(VOID)
 			// 문쟁 신청
 			{
 				CHAR szMsg[MAX_PATH*2];
-				strcpy(szMsg,m_pClickedTxtBtn->Param);
-				strcat(szMsg,"/\0");
-				strcat(szMsg,szTxt);
+				strcpy_s(szMsg,m_pClickedTxtBtn->Param);
+				strcat_s(szMsg,"/\0");
+				strcat_s(szMsg,szTxt);
 				SendCommandToSrv(szMsg);
 			break;
 			}

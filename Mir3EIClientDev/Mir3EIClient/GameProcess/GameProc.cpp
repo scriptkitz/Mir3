@@ -1801,7 +1801,7 @@ LRESULT CGameProcess::OnTimer(WPARAM wParam, LPARAM lParam)
 
 			if (pszPacket)
 			{
-				strcpy(&m_szBuff[m_nBuff], pszPacket);
+				strcpy_s(&m_szBuff[m_nBuff], strlen(pszPacket)+1, pszPacket);
 
 				char *pszRemain = OnMessageReceive(m_szBuff);
 
@@ -2275,7 +2275,7 @@ LRESULT CGameProcess::OnMsgInputted(WPARAM wParam, LPARAM lParam)
 	ZeroMemory(szArg2, MAX_PATH);
 	ZeroMemory(szArg3, MAX_PATH);
 	ZeroMemory(szArg4, MAX_PATH);
-	sscanf(g_xChatEditBox.m_szInputMsg, "%[^ ]%*c %[^ ]%*c %[^ ]%*c %[^ ]%*c %[^ ]%*c", szCommand, szArg1, szArg2, szArg3, szArg4);
+	sscanf_s(g_xChatEditBox.m_szInputMsg, "%[^ ]%*c %[^ ]%*c %[^ ]%*c %[^ ]%*c %[^ ]%*c", szCommand, szArg1, szArg2, szArg3, szArg4);
 	INT nArg1;	INT nArg2;	INT nArg3;	INT nArg4;
 	nArg1 = nArg2 = nArg3 = nArg4 = 0;
 	if ( !strcmp(szCommand, "@¿Ê¿°»ö") )
@@ -2286,7 +2286,7 @@ LRESULT CGameProcess::OnMsgInputted(WPARAM wParam, LPARAM lParam)
 		
 		WORD wColor = g_xMainWnd.ConvertColor24To16(RGB(nArg3, nArg2, nArg1));
 
-		sprintf(g_xChatEditBox.m_szInputMsg, "@¿Ê¿°»ö %d", wColor );
+		sprintf_s(g_xChatEditBox.m_szInputMsg, "@¿Ê¿°»ö %d", wColor );
 		m_pMyHero->m_stFeatureEx.wDressColor = wColor;
 	}	
 	else if ( !strcmp(szCommand, "@speed") )
@@ -2379,7 +2379,7 @@ LRESULT CGameProcess::OnMsgInputted(WPARAM wParam, LPARAM lParam)
 		
 		if ( !m_pMyHero->ChangeFeature(stFeature, m_pMyHero->m_stFeatureEx) )
 		{
-			strcpy(g_xChatEditBox.m_szInputMsg, "º¯½ÅÇÒ¼ö ¾ø´Â ¸ó½ºÅÍÀÔ´Ï´Ù.");
+			strcpy_s(g_xChatEditBox.m_szInputMsg, "º¯½ÅÇÒ¼ö ¾ø´Â ¸ó½ºÅÍÀÔ´Ï´Ù.");
 		}
 		else
 		{
@@ -2394,7 +2394,7 @@ LRESULT CGameProcess::OnMsgInputted(WPARAM wParam, LPARAM lParam)
 		
 		WORD wColor = g_xMainWnd.ConvertColor24To16(RGB(nArg3, nArg2, nArg1));
 
-		sprintf(g_xChatEditBox.m_szInputMsg, "@¸Ó¸®¿°»ö %d", wColor );
+		sprintf_s(g_xChatEditBox.m_szInputMsg, "@¸Ó¸®¿°»ö %d", wColor );
 		m_pMyHero->m_stFeatureEx.wHairColor = wColor;
 	}	
 	else if ( !strcmp(szCommand, "@¸Ó¸®¸ð¾ç") )
@@ -2444,16 +2444,16 @@ VOID CGameProcess::ShowStatus(INT nStartX, INT nStartY)
 	{
 		TCHAR			szBuff[MAX_PATH];
 
-		sprintf(szBuff, "ÇöÀçÅ¸ÀÏÁÂÇ¥ x:%d, y:%d", m_ptCurrTile.x, m_ptCurrTile.y);
+		sprintf_s(szBuff, "ÇöÀçÅ¸ÀÏÁÂÇ¥ x:%d, y:%d", m_ptCurrTile.x, m_ptCurrTile.y);
 		g_xMainWnd.PutsHan(g_xMainWnd.GetBackBuffer(), nStartX, nStartY+10, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
-		sprintf(szBuff, "Á¢¼Ó¼­¹ö¹øÈ£ : %s", g_szServerIP);
+		sprintf_s(szBuff, "Á¢¼Ó¼­¹ö¹øÈ£ : %s", g_szServerIP);
 		g_xMainWnd.PutsHan(g_xMainWnd.GetBackBuffer(), nStartX, nStartY+25, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
-		sprintf(szBuff, "¸¶¿ì½ºÁÂÇ¥ x:%d, y:%d", m_ptMousePos.x, m_ptMousePos.y);
+		sprintf_s(szBuff, "¸¶¿ì½ºÁÂÇ¥ x:%d, y:%d", m_ptMousePos.x, m_ptMousePos.y);
 		g_xMainWnd.PutsHan(g_xMainWnd.GetBackBuffer(), nStartX, nStartY+40, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
-		sprintf(szBuff, "MYIDNUM:%x, %d", m_pMyHero->m_dwIdentity, m_xWaitPacketQueue.GetCount());
+		sprintf_s(szBuff, "MYIDNUM:%x, %d", m_pMyHero->m_dwIdentity, m_xWaitPacketQueue.GetCount());
 		g_xMainWnd.PutsHan(g_xMainWnd.GetBackBuffer(), nStartX, nStartY+55, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
 		m_xActorList.MoveCurrentToTop();
@@ -2462,17 +2462,17 @@ VOID CGameProcess::ShowStatus(INT nStartX, INT nStartY)
 		{
 			pxActor = m_xActorList.GetCurrentData();
 
-			sprintf(szBuff, "IDNUM:%d, X:%d, Y:%d, MSGCNT:%d", pxActor->m_dwIdentity, pxActor->m_wPosX, pxActor->m_wPosY, pxActor->m_xPacketQueue.GetCount());
+			sprintf_s(szBuff, "IDNUM:%d, X:%d, Y:%d, MSGCNT:%d", pxActor->m_dwIdentity, pxActor->m_wPosX, pxActor->m_wPosY, pxActor->m_xPacketQueue.GetCount());
 			g_xMainWnd.PutsHan(g_xMainWnd.GetBackBuffer(), pxActor->m_shScrnPosX, pxActor->m_shScrnPosY, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 			m_xActorList.MoveNextNode();
 
 		}
 
 		g_xMainWnd.UsedAndFreeMemoryCheck();
-		sprintf(szBuff, "ÅØ½ºÃçÀüÃ¼:%d, ÅØ½ºÃç¿©À¯:%d, »ç¿ëÇÑÅØ½ºÃç:%d", g_xMainWnd.m_dwTextureTotal, g_xMainWnd.m_dwTextureFree, g_xMainWnd.m_dwTextureTotal-g_xMainWnd.m_dwTextureFree);
+		sprintf_s(szBuff, "ÅØ½ºÃçÀüÃ¼:%d, ÅØ½ºÃç¿©À¯:%d, »ç¿ëÇÑÅØ½ºÃç:%d", g_xMainWnd.m_dwTextureTotal, g_xMainWnd.m_dwTextureFree, g_xMainWnd.m_dwTextureTotal-g_xMainWnd.m_dwTextureFree);
 		g_xMainWnd.PutsHan(g_xMainWnd.GetBackBuffer(), nStartX, nStartY+70, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 
-		sprintf(szBuff, "ºñµð¿À·¥ÀüÃ¼:%d, ºñµð¿À·¥¿©À¯:%d, »ç¿ëÇÑºñµð¿À·¥:%d", g_xMainWnd.m_dwVideoTotal, g_xMainWnd.m_dwVideoFree, g_xMainWnd.m_dwVideoTotal-g_xMainWnd.m_dwVideoFree);
+		sprintf_s(szBuff, "ºñµð¿À·¥ÀüÃ¼:%d, ºñµð¿À·¥¿©À¯:%d, »ç¿ëÇÑºñµð¿À·¥:%d", g_xMainWnd.m_dwVideoTotal, g_xMainWnd.m_dwVideoFree, g_xMainWnd.m_dwVideoTotal-g_xMainWnd.m_dwVideoFree);
 		g_xMainWnd.PutsHan(g_xMainWnd.GetBackBuffer(), nStartX, nStartY+85, RGB(250, 250, 250), RGB(0, 0, 0), szBuff);
 	}
 
@@ -2496,7 +2496,7 @@ VOID CGameProcess::CommandAnalyze()
 	ZeroMemory(szArg3, MAX_PATH);
 	ZeroMemory(szArg4, MAX_PATH);
 
-	sscanf(g_xChatEditBox.m_szInputMsg, "%[^ ]%*c %[^ ]%*c %[^ ]%*c %[^ ]%*c %[^ ]%*c", szCommand, szArg1, szArg2, szArg3, szArg4);
+	sscanf_s(g_xChatEditBox.m_szInputMsg, "%[^ ]%*c %[^ ]%*c %[^ ]%*c %[^ ]%*c %[^ ]%*c", szCommand, szArg1, szArg2, szArg3, szArg4);
 
 	INT nArg1;	INT nArg2;	INT nArg3;	INT nArg4;
 	nArg1 = nArg2 = nArg3 = nArg4 = 0;
@@ -2660,7 +2660,7 @@ VOID CGameProcess::RenderMapTileGrid()
 								g_xMainWnd.DrawWithGDI(rc, NULL, RGB(255, 0, 255), 1);
 
 								TCHAR szBuff[MAX_PATH];
-								sprintf(szBuff, "[%d]%d%d", nObjCnt1, nXCnt, nYCnt);
+								sprintf_s(szBuff, "[%d]%d%d", nObjCnt1, nXCnt, nYCnt);
 								g_xMainWnd.PutsHan(g_xMainWnd.GetBackBuffer(), 
 												   (nXCnt-m_xMap.m_shStartViewTileX)*_CELL_WIDTH +_VIEW_CELL_X_START-m_xMap.m_shViewOffsetX,
 												   (nYCnt-m_xMap.m_shStartViewTileY)*_CELL_HEIGHT+_VIEW_CELL_Y_START-m_xMap.m_pxTileImg[nObjFileIdx]->m_lpstNewCurrWilImageInfo->shHeight+_CELL_HEIGHT-m_xMap.m_shViewOffsetY,
@@ -2696,7 +2696,7 @@ VOID CGameProcess::RenderMapTileGrid()
 								g_xMainWnd.DrawWithGDI(rc, NULL, RGB(0, 255, 255), 1);
 
 								TCHAR szBuff[MAX_PATH];
-								sprintf(szBuff, "[%d]%d%d", nObjCnt2, nXCnt, nYCnt);
+								sprintf_s(szBuff, "[%d]%d%d", nObjCnt2, nXCnt, nYCnt);
 								g_xMainWnd.PutsHan(g_xMainWnd.GetBackBuffer(), 
 												   (nXCnt-m_xMap.m_shStartViewTileX)*_CELL_WIDTH +_VIEW_CELL_X_START-m_xMap.m_shViewOffsetX,
 												   (nYCnt-m_xMap.m_shStartViewTileY)*_CELL_HEIGHT+_VIEW_CELL_Y_START-m_xMap.m_pxTileImg[nObjFileIdx]->m_lpstNewCurrWilImageInfo->shHeight+_CELL_HEIGHT-m_xMap.m_shViewOffsetY,
@@ -2940,7 +2940,7 @@ void CGameProcess::OnSocketMessageRecieve(char *pszMsg)
 		
 		//for debug
 		char sztxt[128];
-		sprintf( sztxt, "RECV:nRecog=%08x,wIdent=%04x(%d),wParam=%04x,wTag=%04x,wSeries=%04x\n",
+		sprintf_s( sztxt, "RECV:nRecog=%08x,wIdent=%04x(%d),wParam=%04x,wTag=%04x,wSeries=%04x\n",
 			tdm.nRecog, tdm.wIdent, tdm.wIdent, tdm.wParam, tdm.wTag, tdm.wSeries );
 //		OutputDebugString( sztxt);
 
@@ -2998,7 +2998,7 @@ void CGameProcess::OnSocketMessageRecieve(char *pszMsg)
 				m_pMyHero->m_stAbility.dwExp = tdm.nRecog;
 
 				CHAR szExp[MAX_PATH];											
-				sprintf(szExp, "%s : »ñµÃ¾­ÑéÖµ %d µã, ÎäÆ÷ÐÞÁ¶Öµ %d", m_pMyHero->m_szName, tdm.wParam, tdm.wTag);
+				sprintf_s(szExp, "%s : »ñµÃ¾­ÑéÖµ %d µã, ÎäÆ÷ÐÞÁ¶Öµ %d", m_pMyHero->m_szName, tdm.wParam, tdm.wTag);
 
 				DWORD dwFont = GetChatColor(_CHAT_COLOR4);
 				DWORD dwBack = GetChatColor(_CHAT_COLOR3);
@@ -3136,7 +3136,7 @@ void CGameProcess::OnSocketMessageRecieve(char *pszMsg)
 				m_xInterface.m_xInventoryWnd.AddInvenItem(xItem, 0, FALSE);
 
 				CHAR szSysMsg[MAX_PATH];
-				sprintf(szSysMsg, "%s ±»·¢ÏÖ", xItem.m_stItemInfo.stStdItem.szName);
+				sprintf_s(szSysMsg, "%s ±»·¢ÏÖ", xItem.m_stItemInfo.stStdItem.szName);
 				m_xInterface.m_xClientSysMsg.AddSysMsg(szSysMsg);
 				break;
 			}
@@ -3152,7 +3152,7 @@ void CGameProcess::OnSocketMessageRecieve(char *pszMsg)
 				m_xInterface.m_xStatusWnd.DeleteEquipItem(stReceivedItem.nMakeIndex, stReceivedItem.stStdItem.szName);
 
 				CHAR szSysMsg[MAX_PATH];
-				sprintf(szSysMsg, "%s ¶ªÊ§", stReceivedItem.stStdItem.szName);
+				sprintf_s(szSysMsg, "%s ¶ªÊ§", stReceivedItem.stStdItem.szName);
 				m_xInterface.m_xClientSysMsg.AddSysMsg(szSysMsg);
 				break;
 			}
@@ -3189,7 +3189,7 @@ void CGameProcess::OnSocketMessageRecieve(char *pszMsg)
 							m_xInterface.m_xInventoryWnd.DeleteInvenItem(nItemIndex, szItemName);
 							m_xInterface.m_xStatusWnd.DeleteEquipItem(nItemIndex, szItemName);
 
-							sprintf(szSysMsg, "%s ¶ªÊ§", szItemName);
+							sprintf_s(szSysMsg, "%s ¶ªÊ§", szItemName);
 							m_xInterface.m_xClientSysMsg.AddSysMsg(szSysMsg);
 
 							nCount++;
@@ -3202,7 +3202,7 @@ void CGameProcess::OnSocketMessageRecieve(char *pszMsg)
 			case SM_EAT_OK:
 			{
 				CHAR szMsg[32];
-				sprintf( szMsg, "Ê¹ÓÃ %s", m_xInterface.m_stCommonItem.xItem.m_stItemInfo.stStdItem.szName );
+				sprintf_s( szMsg, "Ê¹ÓÃ %s", m_xInterface.m_stCommonItem.xItem.m_stItemInfo.stStdItem.szName );
 				m_xInterface.m_xClientSysMsg.AddSysMsg( szMsg );
 
 				m_xInterface.m_xInventoryWnd.AddNewBeltItem(&m_xInterface.m_stCommonItem);
@@ -3724,7 +3724,7 @@ void CGameProcess::OnSocketMessageRecieve(char *pszMsg)
 
 					if (pGroupMember)
 					{
-						strcpy(pGroupMember->szMemberName, pszMembers);
+						strcpy_s(pGroupMember->szMemberName, pszMembers);
 						m_xInterface.m_xGroupWnd.m_xGroupList.AddNode(pGroupMember);
 					}
 
@@ -3793,10 +3793,10 @@ void CGameProcess::OnSocketMessageRecieve(char *pszMsg)
 				{				
 					m_pMyHero->m_dwNameClr = GetUserNameColor(tdm.wParam);
 
-					strcpy(m_pMyHero->m_szName, szDecodeMsg);
+					strcpy_s(m_pMyHero->m_szName, szDecodeMsg);
 
 					if (pszGuildName)
-						strcpy(m_pMyHero->m_szGuildName, pszGuildName);
+						strcpy_s(m_pMyHero->m_szGuildName, pszGuildName);
 				}
 				else
 				{
@@ -3806,10 +3806,10 @@ void CGameProcess::OnSocketMessageRecieve(char *pszMsg)
 					{
 						pxActor->m_dwNameClr = GetUserNameColor(tdm.wParam);
 
-						strcpy(pxActor->m_szName, szDecodeMsg);
+						strcpy_s(pxActor->m_szName, szDecodeMsg);
 
 						if (pszGuildName)
-							strcpy(pxActor->m_szGuildName, pszGuildName);
+							strcpy_s(pxActor->m_szGuildName, pszGuildName);
 
 					}
 				}
@@ -3828,7 +3828,7 @@ void CGameProcess::OnSocketMessageRecieve(char *pszMsg)
 				{
 					*pszGuildPos = ' ';
 
-					strcpy(m_pMyHero->m_szGuildName, szDecodeMsg);
+					strcpy_s(m_pMyHero->m_szGuildName, szDecodeMsg);
 				}
 
 				break;
@@ -4022,7 +4022,7 @@ VOID CGameProcess::ProcessPacket()
 				char* pszPort = strstr( szMsg, "/" );
 				*pszPort = 0;
 				pszPort++;
-				strcpy( g_szServerIP, pszServer );
+				strcpy_s( g_szServerIP, pszServer );
 				g_nServerPort = atoi( pszPort );
 
 				ReLoad();
@@ -4267,7 +4267,7 @@ VOID CGameProcess::OnSvrMsgLogon(_TDEFAULTMESSAGE	*ptdm, char *pszMsg)
 	else
 		m_pMyHero->Create(&m_xImage, _MT_HORSESTAND, bDir, m_pMyHero->m_wPosX, m_pMyHero->m_wPosY, (FEATURE *)&wl.lParam1, &stFeatureEx);
 
-	strcpy(g_xGameProc.m_pMyHero->m_szName, g_szCharName);
+	strcpy_s(g_xGameProc.m_pMyHero->m_szName, g_szCharName);
 	
 	//ÉèÖÃÖ÷½ÇµØÍ¼
 	m_pMyHero->SetMapHandler(&m_xMap);
@@ -4301,7 +4301,7 @@ VOID CGameProcess::OnSvrMsgHear(_TDEFAULTMESSAGE *ptdm, char *pszMsg)
 	{
 		if ( ptdm->nRecog == m_pMyHero->m_dwIdentity )
 		{
-			strncpy(m_pMyHero->m_szChatMsg, szDecodeMsg, MAX_PATH-1);
+			strncpy_s(m_pMyHero->m_szChatMsg, szDecodeMsg, MAX_PATH-1);
 			
 			m_pMyHero->ChatMsgAdd();
 			m_pMyHero->m_wCurrChatDelay = 0;
@@ -4320,7 +4320,7 @@ VOID CGameProcess::OnSvrMsgHear(_TDEFAULTMESSAGE *ptdm, char *pszMsg)
 
 					if ( pxActor->m_dwIdentity == ptdm->nRecog )
 					{
-						strncpy(pxActor->m_szChatMsg, szDecodeMsg, MAX_PATH-1);
+						strncpy_s(pxActor->m_szChatMsg, szDecodeMsg, MAX_PATH-1);
 
 						pxActor->ChatMsgAdd();
 						pxActor->m_wCurrChatDelay = 0;

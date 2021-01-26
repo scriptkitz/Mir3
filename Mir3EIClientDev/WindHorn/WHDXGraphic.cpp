@@ -983,7 +983,7 @@ VOID CWHDXGraphicWindow::StringPlus(CHAR* szResult, CHAR* szSrc, ...)
 	
 	while ( TRUE )
 	{		
-		strcpy(&szResult[strlen(szResult)], pszString);
+		strcpy_s(&szResult[strlen(szResult)], _tcslen(pszString)+1, pszString);
 		if ( !strcmp(pszString,  "") )		break;
 		pszString = (CHAR*)va_arg(vaMarker, CHAR*);
 	}
@@ -996,7 +996,7 @@ CHAR* CWHDXGraphicWindow::IntToStr(INT nNum)
 {
 	static CHAR szResult[MAX_PATH];
 	ZeroMemory(szResult, MAX_PATH);
-	_itoa(nNum, szResult, 10);
+	_itoa_s(nNum, szResult, 10);
 	return szResult;
 }
 
@@ -1134,7 +1134,7 @@ SIZE CWHDXGraphicWindow::GetStrLength(LPDIRECTDRAWSURFACE7 pSurface, HFONT hFont
 	HRESULT hr = pSurface->GetDC(&hDC);
 
 	va_start(arg, szFormat);
-    vsprintf(szBuf, szFormat, arg);
+    vsprintf_s(szBuf, szFormat, arg);
     va_end(arg);
 
 	hOldFont = (HFONT)SelectObject(hDC, hFont);

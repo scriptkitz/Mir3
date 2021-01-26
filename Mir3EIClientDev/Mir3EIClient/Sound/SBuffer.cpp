@@ -82,11 +82,10 @@ HRESULT CSBuffer::Load(CSound *pDS, const char *Filename, int Num)
 	HRESULT rval=DSERR_GENERIC;
 	FILE *fptr;
 
-	strcpy(szFname,"Sound\\");
-	strcat(szFname,Filename);
+	strcpy_s(szFname,"Sound\\");
+	strcat_s(szFname,Filename);
 
-	fptr = fopen( szFname, "rb" );
-	if( fptr )
+	if(fopen_s(&fptr, szFname, "rb") == 0)
 	{
 		if(m_Streamed)
 		{
@@ -692,7 +691,7 @@ HRESULT CSBuffer::UpdateStream( BOOL FillAll )
 			if(FAILED(rval)) return rval;
 
 			char str[255];
-			sprintf( str, "PlayPos:%i\tFillPos:%i\tEndPos:%i\n", pos, m_sCurrent, m_sDone );
+			sprintf_s( str, "PlayPos:%i\tFillPos:%i\tEndPos:%i\n", pos, m_sCurrent, m_sDone );
 			OutputDebugString( str );
 
 			m_sCurrent++;

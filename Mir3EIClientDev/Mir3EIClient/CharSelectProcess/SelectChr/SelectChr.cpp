@@ -314,9 +314,9 @@ VOID CSelectChr::ShowChrInfo(VOID)
 	{
 		m_pxSList->MoveCurrentToTop();
 		m_pxSList->MoveNode(m_nSelectChr);
-		strcpy(ChrName,m_pxSList->GetCurrentData()->ChrName);
-		strcpy(g_szCharName,m_pxSList->GetCurrentData()->ChrName);
-		itoa(m_pxSList->GetCurrentData()->Level,ChrLev,10);
+		strcpy_s(ChrName,m_pxSList->GetCurrentData()->ChrName);
+		strcpy_s(g_szCharName,m_pxSList->GetCurrentData()->ChrName);
+		_itoa_s(m_pxSList->GetCurrentData()->Level,ChrLev,10);
 		g_xMainWnd.PutsHan(NULL,m_PosName.x,m_PosName.y,RGB(255,255,255),RGB(0,0,0),ChrName);
 	}
 }

@@ -363,10 +363,10 @@ VOID CClientSocket::SendPacket(_TDEFAULTMESSAGE* lpDefMsg, char *pszData)
 	if (pszData)
 	{
 		fnEncode6BitBuf((unsigned char *)pszData, m_szEncodeBody, strlen(pszData), sizeof(m_szEncodeBody));
-		sprintf(m_szPacket, "#%d%s%s!", m_nSync, m_szEncodeDefMsg, m_szEncodeBody);
+		sprintf_s(m_szPacket, "#%d%s%s!", m_nSync, m_szEncodeDefMsg, m_szEncodeBody);
 	}
 	else
-		sprintf(m_szPacket, "#%d%s!", m_nSync, m_szEncodeDefMsg);
+		sprintf_s(m_szPacket, "#%d%s!", m_nSync, m_szEncodeDefMsg);
 
 	send(m_sockClient, m_szPacket, strlen(m_szPacket), 0);
 }
@@ -487,7 +487,7 @@ VOID CClientSocket::SendSpellMsg(INT nMagicID, INT nTargetX, INT nTargetY, INT n
 //lParam4 : ...(wSeries)
 	CHAR  szTime[16];
 	DWORD dwTime = timeGetTime();
-	sprintf( szTime, "%d", dwTime );
+	sprintf_s( szTime, "%d", dwTime );
 	fnMakeDefMessage(&DefMsg, CM_SPELL, MAKELONG(nTargetX, nTargetY), LOWORD(nTargetID), nMagicID, HIWORD(nTargetID));
 	SendPacket(&DefMsg, szTime);
 //	SendPacket(&DefMsg, NULL);

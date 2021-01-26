@@ -338,7 +338,7 @@ BOOL CStoreWnd::SetBuyKinds(CHAR* Msg,INT Count)   // Eatch Button Divider '\n
 	}
 
 	ZeroMemory(pszStr,MAX_MSG_LENGTH);
-	strcpy(pszStr,Msg);
+	strcpy_s(pszStr,strlen(Msg)+1,Msg);
 
 	m_nMaxKindLine = Count;
 
@@ -356,21 +356,21 @@ BOOL CStoreWnd::SetBuyKinds(CHAR* Msg,INT Count)   // Eatch Button Divider '\n
 		INT	 nLook; 
 
 		szTemp = tTxtAnalysis.GetValidStr(pszStr,szGName,'/');
-		strcpy(pszStr,szTemp);
+		strcpy_s(pszStr, sizeof(szGName), szTemp);
 		szTemp = tTxtAnalysis.GetValidStr(pszStr,szGSubMenu,'/');
-		strcpy(pszStr,szTemp);
+		strcpy_s(pszStr, sizeof(szGSubMenu), szTemp);
 		nSubMenuCount = atoi(szGSubMenu);
-		szTemp = tTxtAnalysis.GetValidStr(pszStr,szGPrice,'/');
-		strcpy(pszStr,szTemp);
-		szTemp = tTxtAnalysis.GetValidStr(pszStr,szGStock,'/');
-		strcpy(pszStr,szTemp);
-		szTemp = tTxtAnalysis.GetValidStr(pszStr,szGLook,'/');
-		strcpy(pszStr,szTemp);
+		szTemp = tTxtAnalysis.GetValidStr(pszStr, szGPrice, '/');
+		strcpy_s(pszStr, sizeof(szGPrice), szTemp);
+		szTemp = tTxtAnalysis.GetValidStr(pszStr, szGStock, '/');
+		strcpy_s(pszStr, sizeof(szGStock), szTemp);
+		szTemp = tTxtAnalysis.GetValidStr(pszStr, szGLook, '/');
+		strcpy_s(pszStr, sizeof(szGLook), szTemp);
 		nLook = atoi(szGLook);
-		szTemp = tTxtAnalysis.GetValidStr(pszStr,szGFlag,'/');
-		strcpy(pszStr,szTemp);
-		szTemp = tTxtAnalysis.GetValidStr(pszStr,szGNeedLevel,'/');
-		strcpy(pszStr,szTemp);
+		szTemp = tTxtAnalysis.GetValidStr(pszStr, szGFlag, '/');
+		strcpy_s(pszStr, sizeof(szGFlag), szTemp);
+		szTemp = tTxtAnalysis.GetValidStr(pszStr, szGNeedLevel, '/');
+		strcpy_s(pszStr, sizeof(szGNeedLevel), szTemp);
 
 		szTemp = new CHAR[16];
 		szTemp[15]=NULL;
@@ -379,7 +379,7 @@ BOOL CStoreWnd::SetBuyKinds(CHAR* Msg,INT Count)   // Eatch Button Divider '\n
 		SetRect(&rcKinds, 0, 0, 232, 36 );//button rect
 
 		CHAR szParam[35];
-		strcpy(szParam,szGName);	// 임시 Parameter를 아이템이름과 같이 처리함.
+		strcpy_s(szParam,szGName);	// 임시 Parameter를 아이템이름과 같이 처리함.
 
 		if(nSubMenuCount>0)
 		{	
@@ -433,7 +433,7 @@ BOOL CStoreWnd::SetBuyItemLst(CHAR* Msg,INT Count)
 		
 		m_xItems.AddNode(pxClItem);
 
-		sprintf(szTemp1,"%d",pxClItem->nDuraMax);
+		sprintf_s(szTemp1,"%d",pxClItem->nDuraMax);
 
 		RECT	rcItem;
 		INT x = (nLoop % ITEMLIST_LINENUM) * ITEMCELL_WIDTH;
@@ -443,7 +443,7 @@ BOOL CStoreWnd::SetBuyItemLst(CHAR* Msg,INT Count)
 		// Parameter ...
 		CHAR szParam[35];
 		ZeroMemory(szParam,35);
-		sprintf(szParam, "%d", pxClItem->nMakeIndex);	// 임시 Parameter를 아이템이름과 같이 처리함.
+		sprintf_s(szParam, "%d", pxClItem->nMakeIndex);	// 임시 Parameter를 아이템이름과 같이 처리함.
 
 		m_xItemLstBtn.AddButton(szTemp1,szTemp2,rcItem,nLoop,szParam,RGB(180,180,0),RGB(255,0,0), pxClItem->stStdItem.wLooks);	// Add Button to class
 
@@ -516,9 +516,9 @@ BOOL CStoreWnd::SetSellItemLst(CInventoryWnd* pxInvenWnd,CHAR Kind,BYTE nStdMode
 						if(nStdMode==pxItem->stStdItem.bStdMode)
 						{	// 기타는 다시 걸러 주어야 한다.
 							m_xItems.AddNode(pxItem);
-							strcpy(szTemp1,pxItem->stStdItem.szName);
-							itoa(pxItem->nDura,szTemp2,10);
-							strcpy(szParam,pxItem->stStdItem.szName);
+							strcpy_s(szTemp1,pxItem->stStdItem.szName);
+							_itoa_s(pxItem->nDura,szTemp2,10);
+							strcpy_s(szParam,pxItem->stStdItem.szName);
 
 							tSize = g_xMainWnd.GetStrLength(NULL,NULL,szTemp1);
 							tRect.top = 0;
@@ -534,9 +534,9 @@ BOOL CStoreWnd::SetSellItemLst(CInventoryWnd* pxInvenWnd,CHAR Kind,BYTE nStdMode
 					{
 						// 무기나 갑옷은 그냥 넣어도 무관..
 						m_xItems.AddNode(pxItem);
-						strcpy(szTemp1,pxItem->stStdItem.szName);
-						itoa(pxItem->nDura,szTemp2,10);
-						strcpy(szParam,pxItem->stStdItem.szName);
+						strcpy_s(szTemp1,pxItem->stStdItem.szName);
+						_itoa_s(pxItem->nDura,szTemp2,10);
+						strcpy_s(szParam,pxItem->stStdItem.szName);
 
 						tSize = g_xMainWnd.GetStrLength(NULL,NULL,szTemp1);
 						tRect.top = 0;
@@ -605,7 +605,7 @@ BOOL CStoreWnd::OnUpdateQueue(VOID)
 				}
 			case SM_BUYITEM_SUCCESS:
 				{
-					sprintf(szDecodeMsg, "찜냥묘");
+					sprintf_s(szDecodeMsg, "찜냥묘");
 					DWORD dwFont = GetChatColor(_CHAT_COLOR4);
 					DWORD dwBack = GetChatColor(_CHAT_COLOR3);
 					g_xGameProc.m_xInterface.MsgAdd(dwFont, dwBack, szDecodeMsg);
@@ -614,7 +614,7 @@ BOOL CStoreWnd::OnUpdateQueue(VOID)
 				}
 			case SM_BUYITEM_FAIL:
 				{
-					sprintf(szDecodeMsg, "뭔찜呵겨");
+					sprintf_s(szDecodeMsg, "뭔찜呵겨");
 					DWORD dwFont = GetChatColor(_CHAT_COLOR4);
 					DWORD dwBack = GetChatColor(_CHAT_COLOR3);
 					g_xGameProc.m_xInterface.MsgAdd(dwFont, dwBack, szDecodeMsg);

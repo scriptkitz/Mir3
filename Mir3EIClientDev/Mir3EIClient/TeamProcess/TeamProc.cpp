@@ -107,7 +107,7 @@ VOID CTeamProcess::Load(DWORD dwMsgFilter)
 	m_DecMsg.Init();
 
 	m_pMyHero->m_bActive = FALSE;
-	strcpy( m_szServerIP, g_szLoginServerIP );
+	strcpy_s( m_szServerIP, g_szLoginServerIP );
 	m_nServerPort = g_nLoginServerPort;
 
 	m_pSocket->m_pxDefProc = this;
@@ -645,7 +645,7 @@ void CTeamProcess::ProcessLogin(char* pszMsg)
 					*pszIdenty = '\0';
 					pszIdenty++;
 
-					strcpy(m_szServerIP, pszIP);
+					strcpy_s(m_szServerIP, pszIP);
 					m_nServerPort = atoi(pszPort);
 
 					m_nCertifyCode = tdm.nRecog;
@@ -690,7 +690,7 @@ void CTeamProcess::ProcessLogin(char* pszMsg)
 				{
 					*pszPort = '\0';
 					pszPort++;
-					strcpy(m_szServerIP, pszIP);
+					strcpy_s(m_szServerIP, pszIP);
 					m_nServerPort = atoi(pszPort);
 					dwEventFilter = m_pSocket->m_dwEventFilter;
 					m_pSocket->DisconnectToServer();
@@ -975,7 +975,7 @@ void CTeamProcess::OnSocketMessageRecieve(char *pszMsg)
 		
 		//for debug
 		char sztxt[128];
-		sprintf( sztxt, "TeamProc RECV:nRecog=%08x,wIdent=%04x(%d),wParam=%04x,wTag=%04x,wSeries=%04x\n",
+		sprintf_s( sztxt, "TeamProc RECV:nRecog=%08x,wIdent=%04x(%d),wParam=%04x,wTag=%04x,wSeries=%04x\n",
 			tdm.nRecog, tdm.wIdent, tdm.wIdent, tdm.wParam, tdm.wTag, tdm.wSeries );
 		OutputDebugString( sztxt);
 
@@ -1037,7 +1037,7 @@ void CTeamProcess::OnSocketMessageRecieve(char *pszMsg)
 				m_pMyHero->m_stAbility.dwExp = tdm.nRecog;
 				
 				CHAR szExp[MAX_PATH];											
-				sprintf(szExp, "%s : 获得经验值 %d 点, 武器修炼值 %d", m_pMyHero->m_szName, tdm.wParam, tdm.wTag);
+				sprintf_s(szExp, "%s : 获得经验值 %d 点, 武器修炼值 %d", m_pMyHero->m_szName, tdm.wParam, tdm.wTag);
 				
 				DWORD dwFont = GetChatColor(_CHAT_COLOR4);
 				DWORD dwBack = GetChatColor(_CHAT_COLOR3);
@@ -1829,10 +1829,10 @@ void CTeamProcess::OnSocketMessageRecieve(char *pszMsg)
 				{				
 					m_pMyHero->m_dwNameClr = GetUserNameColor(tdm.wParam);
 
-					strcpy(m_pMyHero->m_szName, szDecodeMsg);
+					strcpy_s(m_pMyHero->m_szName, szDecodeMsg);
 
 					if (pszGuildName)
-						strcpy(m_pMyHero->m_szGuildName, pszGuildName);
+						strcpy_s(m_pMyHero->m_szGuildName, pszGuildName);
 				}
 				else
 				{
@@ -1842,10 +1842,10 @@ void CTeamProcess::OnSocketMessageRecieve(char *pszMsg)
 					{
 						pxActor->m_dwNameClr = GetUserNameColor(tdm.wParam);
 
-						strcpy(pxActor->m_szName, szDecodeMsg);
+						strcpy_s(pxActor->m_szName, szDecodeMsg);
 
 						if (pszGuildName)
-							strcpy(pxActor->m_szGuildName, pszGuildName);
+							strcpy_s(pxActor->m_szGuildName, pszGuildName);
 
 					}
 				}
@@ -1864,7 +1864,7 @@ void CTeamProcess::OnSocketMessageRecieve(char *pszMsg)
 				{
 					*pszGuildPos = ' ';
 
-					strcpy(m_pMyHero->m_szGuildName, szDecodeMsg);
+					strcpy_s(m_pMyHero->m_szGuildName, szDecodeMsg);
 				}
 
 				break;
@@ -2231,7 +2231,7 @@ VOID CTeamProcess::OnSvrMsgNewMap(_TDEFAULTMESSAGE	*ptdm, char *pszMapName)
 //	m_xMap.LoadMapData(szMapName); 
 
 	char	szMsg[64];
-	sprintf( szMsg, "%s : 我在这儿 %d,%d \n", m_szCharName, m_pMyHero->m_wPosX, m_pMyHero->m_wPosY);
+	sprintf_s( szMsg, "%s : 我在这儿 %d,%d \n", m_szCharName, m_pMyHero->m_wPosX, m_pMyHero->m_wPosY);
 	OutputDebugString( szMsg );
 	g_xGameProc.m_xInterface.MsgAdd( _CLR_RED, _CLR_BLACK, szMsg);
 
@@ -2261,7 +2261,7 @@ VOID CTeamProcess::OnSvrMsgLogon(_TDEFAULTMESSAGE	*ptdm, char *pszMsg)
 	else
 		m_pMyHero->Create(&m_xImage, _MT_HORSESTAND, bDir, m_pMyHero->m_wPosX, m_pMyHero->m_wPosY, (FEATURE *)&wl.lParam1, &stFeatureEx);
 
-	strcpy(g_xGameProc.m_pMyHero->m_szName, g_szCharName);
+	strcpy_s(g_xGameProc.m_pMyHero->m_szName, g_szCharName);
 	
 	//设置主角地图
 	m_pMyHero->SetMapHandler(&m_xMap);
@@ -2333,8 +2333,8 @@ VOID CTeamProcess::ReadIniFileForTeam()
 	CHAR	szFullPathFileName[MAX_PATH];
 
 	GetCurrentDirectory(MAX_PATH, szFullPathFileName);
-	strcat(szFullPathFileName, "\\");
-	strcat(szFullPathFileName, MIR3_TEAM_INIFILE);
+	strcat_s(szFullPathFileName, "\\");
+	strcat_s(szFullPathFileName, MIR3_TEAM_INIFILE);
 
 	// Get Server user , passwd , heroname
 	GetPrivateProfileString( MIR3_TEAM_SECTION, MIR3_TEAM_USER,		"", m_szUser,	32, szFullPathFileName );
@@ -2364,7 +2364,7 @@ VOID CTeamProcess::OnConnectToServer()
 	}
 
 	char szTemp[64];
-	sprintf( szTemp, "OnConnectToServer() %d", m_nProcState );
+	sprintf_s( szTemp, "OnConnectToServer() %d", m_nProcState );
 	OutputDebugString( szTemp );
 
 }

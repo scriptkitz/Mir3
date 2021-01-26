@@ -46,7 +46,7 @@ CPatch::CPatch()
 	m_HFtp			=	NULL;
 
 	GetCurrentDirectory(MAX_PATH,FullPathFileName);
- 	strcat(FullPathFileName,PATCH_INI_FILE_NAME);
+ 	strcat_s(FullPathFileName,PATCH_INI_FILE_NAME);
 
 	m_Server_Port	=	DEFAULT_PATCH_PORT;
 
@@ -152,9 +152,9 @@ BOOL	CPatch::WillBePatch(VOID)
 
 	// Make Update Directory from FTP
 	m_szPatchDate[8] = '\0';
-	strcpy(szTemp,m_szPatchDate);
-	strcat(szTemp,"\\");
-	strcat(szTemp,PATCH_LIST_FILE_LIST);
+	strcpy_s(szTemp,m_szPatchDate);
+	strcat_s(szTemp,"\\");
+	strcat_s(szTemp,PATCH_LIST_FILE_LIST);
 	m_HFileFtp = FtpOpenFile( m_HFtp,szTemp, GENERIC_READ, FTP_TRANSFER_TYPE_BINARY, 0);
 
 	while(1)						// 화일 받는 부분.
@@ -187,12 +187,12 @@ BOOL	CPatch::WillBePatch(VOID)
 
 	if(!jRegGetKey(_T(DEFAULT_REG_PATH), _T(PATCH_LAST_DATE), (LPBYTE)Version))
 	{
-		strcpy(Version,DEFAULT_LAST_PATCH_DATE);	// Default Last Patch Date
+		strcpy_s(Version,DEFAULT_LAST_PATCH_DATE);	// Default Last Patch Date
 	}
 
 	ZeroMemory(FLHeader.VersionDate,sizeof(FLHeader.VersionDate));
 
-	if((HFile = fopen(PATCH_LIST_FILE_LIST,"r")) == NULL)	return FALSE;		
+	if(0 != fopen_s(&HFile, PATCH_LIST_FILE_LIST,"r"))	return FALSE;
 
 	fread(FLHeader.VersionDate,sizeof(char),sizeof(FLHeader.VersionDate),HFile);
 
@@ -295,12 +295,12 @@ HRESULT CPatch::GetFtpFiles(VOID)	// 여기에서 File List를 분석해서 GetFile을 계�
 				}
 				else
 				{
-					strcpy(szDirStr, m_UpdatePath);
+					strcpy_s(szDirStr, m_UpdatePath);
 				}
 
-				strcpy(szFileName, FileNode->szFileName);
-				strcpy(szTemp, szDirStr);
-				strcat(szTemp, szFileName);
+				strcpy_s(szFileName, FileNode->szFileName);
+				strcpy_s(szTemp, szDirStr);
+				strcat_s(szTemp, szFileName);
 					
 				m_hFile = CreateFile (szTemp, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 				if((dwErrNum=GetLastError()) == ERROR_FILE_EXISTS)
@@ -333,18 +333,18 @@ HRESULT CPatch::GetFtpFiles(VOID)	// 여기에서 File List를 분석해서 GetFile을 계�
 						}
 					}
 				}
-				strcpy(szTemp, m_szPatchDate);
-				strcat(szTemp, "\\");
-				strcat(szTemp, szFileName);
+				strcpy_s(szTemp, m_szPatchDate);
+				strcat_s(szTemp, "\\");
+				strcat_s(szTemp, szFileName);
 				m_HFileFtp = FtpOpenFile(m_HFtp, szTemp, GENERIC_READ, FTP_TRANSFER_TYPE_BINARY, 0);
 			}
 			else
 			{
 				FileNode = GetFileNode(Pos - 1);
 			}
-			strcpy(szTemp, m_szPatchDate);
-			strcat(szTemp, "\\");
-			strcat(szTemp, szFileName);
+			strcpy_s(szTemp, m_szPatchDate);
+			strcat_s(szTemp, "\\");
+			strcat_s(szTemp, szFileName);
 			GetFile(szTemp);		// 화일 계속 받기 ^^;
 		}
 	}
@@ -517,7 +517,7 @@ VOID CPatch::InitPatch(VOID)
 
 			HFile = NULL;
 
-			if((HFile =fopen(PATCH_LIST_FILE_LIST,"r"))==NULL)
+			if(fopen_s(&HFile, PATCH_LIST_FILE_LIST,"r") != 0)
 			{
 				m_bPatched	= FALSE;
 				m_bEndPatch	= TRUE;
@@ -526,9 +526,9 @@ VOID CPatch::InitPatch(VOID)
 			};
 
 			fseek(HFile, 0, SEEK_SET);
-			fscanf(HFile, "%s",FLHeader.VersionDate);
-			fscanf(HFile, "%d",&m_FACount);
-			fscanf(HFile, "%ld",&m_TheAmount);
+			fscanf_s(HFile, "%s",FLHeader.VersionDate, 8);
+			fscanf_s(HFile, "%d",&m_FACount);
+			fscanf_s(HFile, "%ld",&m_TheAmount);
 
 			if(!jRegGetKey(_T(DEFAULT_REG_PATH), _T("setup path"), (LPBYTE)szDirStr))
 			{
@@ -548,8 +548,8 @@ VOID CPatch::InitPatch(VOID)
 			}
 
 			// Update 할 Directory 를 생성 
-			strcat(szDirStr, "UpDate\\");			// Update Directory를 생성
-			strcpy(m_UpdatePath, szDirStr);			// Update Path를 가지고 있을것 
+			strcat_s(szDirStr, "UpDate\\");			// Update Directory를 생성
+			strcpy_s(m_UpdatePath, szDirStr);			// Update Path를 가지고 있을것 
 			CreateDirectory(szDirStr, NULL);
 
 			// Patch 정보를 얻는다.
@@ -561,13 +561,13 @@ VOID CPatch::InitPatch(VOID)
 			for(int i = 0; i< m_FACount ;i ++)
 			{
 				m_ppFilesData[i] = new UnCompressedFileNode;
-				fscanf(HFile,"%s", m_ppFilesData[i]->szFileName);
-				fscanf(HFile,"%d", &m_ppFilesData[i]->lDirectory);
-				fscanf(HFile,"%s", m_ppFilesData[i]->szTargetFileName);
-				fscanf(HFile,"%d", &m_ppFilesData[i]->ActionMode);
-				fscanf(HFile,"%d", &m_ppFilesData[i]->Position);
-				fscanf(HFile,"%d", &m_ppFilesData[i]->lFileSize);
-				fscanf(HFile,"%d", &m_ppFilesData[i]->lCount);
+				fscanf_s(HFile,"%s", m_ppFilesData[i]->szFileName, _countof(m_ppFilesData[i]->szFileName));
+				fscanf_s(HFile,"%d", &m_ppFilesData[i]->lDirectory);
+				fscanf_s(HFile,"%s", m_ppFilesData[i]->szTargetFileName, _countof(m_ppFilesData[i]->szTargetFileName));
+				fscanf_s(HFile,"%d", &m_ppFilesData[i]->ActionMode);
+				fscanf_s(HFile,"%d", &m_ppFilesData[i]->Position);
+				fscanf_s(HFile,"%d", &m_ppFilesData[i]->lFileSize);
+				fscanf_s(HFile,"%d", &m_ppFilesData[i]->lCount);
 			}
 
 			fclose(HFile);
@@ -646,10 +646,10 @@ BOOL CPatch::CheckPatchDate(VOID)
 
 	if(!jRegGetKey(_T(DEFAULT_REG_PATH), _T(PATCH_LAST_DATE), (LPBYTE)LastUpdateDate))
 	{
-		strcpy(LastUpdateDate,DEFAULT_LAST_PATCH_DATE);	// Default Last Patch Date
+		strcpy_s(LastUpdateDate,DEFAULT_LAST_PATCH_DATE);	// Default Last Patch Date
 	}
 
-	if((HFile = fopen(PATCHED_LIST_FILE,"r")) == NULL)	return FALSE;
+	if(fopen_s(&HFile, PATCHED_LIST_FILE,"r")!= 0)	return FALSE;
 	fseek(HFile, 0L, SEEK_SET );
 	while(!feof( HFile ))
 	{
@@ -665,7 +665,7 @@ BOOL CPatch::CheckPatchDate(VOID)
 		{
 			// m_szPatchDate에 해당 날짜가 있음.
 			fclose(HFile);
-			strcpy(m_szPatchDate, ReadDate);
+			strcpy_s(m_szPatchDate, ReadDate);
 			return TRUE;
 			// Patch 받아야 함
 		}

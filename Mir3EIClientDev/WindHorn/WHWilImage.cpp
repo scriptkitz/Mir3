@@ -114,9 +114,9 @@ BOOL CWHWilImageData::NewLoad(CHAR* szWilFile, BOOL bComp)
 	NEWWILFILEHEADER stNewWilFileHeader;
 
 
-	strcpy(szWixFile, szWilFile);
-	strcpy(szWixFile+strlen(szWixFile)-3, "wix");
-	strcpy(m_szWilFileName, szWilFile);
+	strcpy_s(szWixFile, szWilFile);
+	strcpy_s(szWixFile+strlen(szWixFile)-3, 4, "wix");
+	strcpy_s(m_szWilFileName, szWilFile);
 
 	hWixFile= CreateFile(szWixFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if ( hWixFile != INVALID_HANDLE_VALUE )

@@ -178,7 +178,7 @@ VOID CSnow::LoadTextr()
 */	};
 	for ( INT nCnt = 0; nCnt < _MAX_SNOWFRAME; nCnt++ )
 	{
-		strcpy(m_szSnowFile[nCnt], szFileList[nCnt]);
+		strcpy_s(m_szSnowFile[nCnt], szFileList[nCnt]);
 		D3DTextr_CreateTextureFromFile(m_szSnowFile[nCnt]);
 		D3DTextr_Restore(m_szSnowFile[nCnt], g_xMainWnd.Get3DDevice());
 	}
@@ -417,13 +417,13 @@ VOID CRain::LoadTextr()
 	INT nCnt;
 	for ( nCnt = 0; nCnt < _MAX_RAINFRAME; nCnt++ )
 	{
-		strcpy(m_pszRainFile[nCnt], szFileList1[nCnt]);
+		strcpy_s(m_pszRainFile[nCnt], szFileList1[nCnt]);
 		D3DTextr_CreateTextureFromFile(m_pszRainFile[nCnt]);
 		D3DTextr_Restore(m_pszRainFile[nCnt], g_xMainWnd.Get3DDevice());
 	}
 	for ( nCnt = 0; nCnt < _MAX_RAINDROPFRAME; nCnt++ )
 	{
-		strcpy(m_pszRainDropFile[nCnt], szFileList2[nCnt]);
+		strcpy_s(m_pszRainDropFile[nCnt], szFileList2[nCnt]);
 		D3DTextr_CreateTextureFromFile(m_pszRainDropFile[nCnt]);
 		D3DTextr_Restore(m_pszRainDropFile[nCnt], g_xMainWnd.Get3DDevice());
 	}
@@ -697,7 +697,7 @@ VOID CFly::LoadTextr()
 	};
 	for ( INT nCnt = 0; nCnt < _MAX_FLYFRAME; nCnt++ )
 	{
-		strcpy(m_pszFlyFile[nCnt], szFileList[nCnt]);
+		strcpy_s(m_pszFlyFile[nCnt], szFileList[nCnt]);
 		D3DTextr_CreateTextureFromFile(m_pszFlyFile[nCnt]);
 		D3DTextr_Restore(m_pszFlyFile[nCnt], g_xMainWnd.Get3DDevice());
 	}
@@ -928,7 +928,7 @@ VOID CBoom::LoadTextr()
 	};
 	for ( INT nCnt = 0; nCnt < _MAX_BOOMFRAME; nCnt++ )
 	{
-		strcpy(m_pszBoomFile[nCnt], szFileList[nCnt]);
+		strcpy_s(m_pszBoomFile[nCnt], szFileList[nCnt]);
 		D3DTextr_CreateTextureFromFile(m_pszBoomFile[nCnt]);
 		D3DTextr_Restore(m_pszBoomFile[nCnt], g_xMainWnd.Get3DDevice());
 	}
@@ -1205,7 +1205,7 @@ VOID CFlyingTail::LoadTextr()
 	};
 	for ( INT nCnt = 0; nCnt < _MAX_FLYTAILFRAME; nCnt++ )
 	{
-		strcpy(m_pszFlyingTailFile[nCnt], szFileList[nCnt]);
+		strcpy_s(m_pszFlyingTailFile[nCnt], szFileList[nCnt]);
 		D3DTextr_CreateTextureFromFile(m_pszFlyingTailFile[nCnt]);
 		D3DTextr_Restore(m_pszFlyingTailFile[nCnt], g_xMainWnd.Get3DDevice());
 	}
@@ -1456,7 +1456,7 @@ VOID CSmoke::LoadTextr()
 	};
 	for ( INT nCnt = 0; nCnt < _MAX_SMOKEFRAME; nCnt++ )
 	{
-		strcpy(m_pszSmokeFile[nCnt], szFileList[nCnt]);
+		strcpy_s(m_pszSmokeFile[nCnt], szFileList[nCnt]);
 		D3DTextr_CreateTextureFromFile(m_pszSmokeFile[nCnt], 0L, D3DTEXTR_TRANSPARENTBLACK);
 		D3DTextr_Restore(m_pszSmokeFile[nCnt], g_xMainWnd.Get3DDevice());
 	}
@@ -1704,7 +1704,7 @@ VOID CElec::LoadTextr()
 	};
 	for ( INT nCnt = 0; nCnt < _MAX_ELECFRAME; nCnt++ )
 	{
-		strcpy(m_szElecFile[nCnt], szFileList[nCnt]);
+		strcpy_s(m_szElecFile[nCnt], szFileList[nCnt]);
 		D3DTextr_CreateTextureFromFile(m_szElecFile[nCnt]);
 		D3DTextr_Restore(m_szElecFile[nCnt], g_xMainWnd.Get3DDevice());
 	}

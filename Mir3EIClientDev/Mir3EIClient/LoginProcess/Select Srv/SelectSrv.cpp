@@ -58,8 +58,8 @@ VOID CSelectSrv::Create(CWHWilImageData* pxImage,CPDLList<ServerList>* pxSList)
 	{	for(j = i * COUNT_BUTTON_PER_COLUME; (j < m_nSrvCount && j < (COUNT_BUTTON_PER_COLUME * (i + 1))) ; j ++)
 		{	m_ppxSrvBtn[j] = new _SERVERBUTTON;
 
-			strcpy(m_ppxSrvBtn[j]->szName, pxSList->GetCurrentData()->Name);
-			strcpy(m_ppxSrvBtn[j]->szCaption, pxSList->GetCurrentData()->Caption);
+			strcpy_s(m_ppxSrvBtn[j]->szName, pxSList->GetCurrentData()->Name);
+			strcpy_s(m_ppxSrvBtn[j]->szCaption, pxSList->GetCurrentData()->Caption);
 			nLeft = POS_TOP_SERVER_BTN_X + i * 100;
 			nTop  = POS_TOP_SERVER_BTN_Y + (j - i * COUNT_BUTTON_PER_COLUME) * (SERVER_BTN_HEIGHT+SERVER_BTN_GAP);
 			SetRect(&rcTemp, nLeft, nTop, nLeft + SERVER_BTN_WIDTH, nTop + SERVER_BTN_HEIGHT);

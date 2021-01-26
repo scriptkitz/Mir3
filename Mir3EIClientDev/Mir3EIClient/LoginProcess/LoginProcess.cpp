@@ -43,8 +43,8 @@ VOID CLoginProcess::ReadIniFileData(VOID)
 	INT		nLoop;
 
 	GetCurrentDirectory(1024,szFullPathFileName);
-	strcat(szFullPathFileName+strlen(szFullPathFileName),"\\\0");
- 	strcat(szFullPathFileName,MIR2EI_INI_FILE_NAME);
+	strcat_s(szFullPathFileName+strlen(szFullPathFileName), 3, "\\\0");
+ 	strcat_s(szFullPathFileName,MIR2EI_INI_FILE_NAME);
 
 	// Get Server IP & PORT
 	GetPrivateProfileString( MIR2EI_INI_SECTION, LOGIN_SETVER_NAME, LOGIN_GATE_SERVER_IP, m_szServerIP, 16, szFullPathFileName );
@@ -56,9 +56,9 @@ VOID CLoginProcess::ReadIniFileData(VOID)
 	for( nLoop = 0; nLoop < nServerCount; nLoop++ )
 	{
 		PServerList	SList = new ServerList;		
-		sprintf( szTemp, "%s%d%s", "server", nLoop+1, "caption");
+		sprintf_s( szTemp, "%s%d%s", "server", nLoop+1, "caption");
 		GetPrivateProfileString( MIR2EI_SRV_SECTION,(LPCTSTR) szTemp, NULL, SList->Caption , MAX_PATH, szFullPathFileName );		
-		sprintf( szTemp, "%s%d%s", "server", nLoop+1, "name");
+		sprintf_s( szTemp, "%s%d%s", "server", nLoop+1, "name");
 		GetPrivateProfileString( MIR2EI_SRV_SECTION,(LPCTSTR) szTemp, NULL, SList->Name , MAX_PATH, szFullPathFileName );
 		m_SList.AddNode(SList);
 	}
@@ -539,7 +539,7 @@ void CLoginProcess::OnSocketMessageRecieve(char *pszMsg)
 					*pszIdenty = '\0';
 					pszIdenty++;
 
-					strcpy(g_szServerIP, pszIP);
+					strcpy_s(g_szServerIP, pszIP);
 					g_nServerPort = atoi(pszPort);
 
 					m_nAnimationCounter = 0;
@@ -801,7 +801,7 @@ VOID CLoginProcess::RenderPatch(int nLoopTime)
 			char PatchName[1024];
 			ZeroMemory(PatchName,1024);
 			GetCurrentDirectory(1024,PatchName);
-			strcat(PatchName,MIR2_PATCH_FILE_NAME);
+			strcat_s(PatchName,MIR2_PATCH_FILE_NAME);
 			m_Progress = PRG_QUIT;
 			ShellExecute(NULL,"open",PatchName,NULL,NULL,SW_SHOWNORMAL);
 			// 실행을 종료하고 외부 Patch 프로그램을 실행시킨다.
@@ -813,7 +813,7 @@ VOID CLoginProcess::RenderPatch(int nLoopTime)
 
 			g_xLoginSocket.ConnectToServer(g_xMainWnd.GetSafehWnd(), m_szServerIP, m_nServerPort, ID_SOCKCLIENT_EVENT_MSG);
 			m_Progress = PRG_INTRO;
-			strcpy(g_szLoginServerIP, m_szServerIP);
+			strcpy_s(g_szLoginServerIP, m_szServerIP);
 			g_nLoginServerPort = m_nServerPort;
 
 
@@ -882,7 +882,7 @@ BOOL CLoginProcess::CheckSSNO(char* szSSNo)
 	CHAR*	pszLowCode = NULL;
 	CHAR	sztSSNo[15];
 
-	strcpy(sztSSNo,szSSNo);
+	strcpy_s(sztSSNo,szSSNo);
 
 	pszLowCode = strchr(sztSSNo,'-');
 	if(pszLowCode==NULL)
@@ -897,8 +897,8 @@ BOOL CLoginProcess::CheckSSNO(char* szSSNo)
 	if((*pszLowCode - '0') < 0 || (*pszLowCode - '0') > 4 ) 
 		return FALSE;								// 성별 코드 맞지 않음
 
-	strncpy(szDate,sztSSNo,6);
-	strncpy(szYear,sztSSNo,2);
+	strncpy_s(szDate,sztSSNo,6);
+	strncpy_s(szYear,sztSSNo,2);
 	nYear= atoi(szYear);
 	nCheckSum = *( sztSSNo + nLen - 1 ) - '0';
 
@@ -928,9 +928,9 @@ BOOL CLoginProcess::DateCehck( char* szDate )
 	if ( strlen( szDate ) != 8)
 		return FALSE;
 	
-	strncpy( szYear, szDate, 4 );
-	strncpy( szMonth, szDate + 4, 2 );
-	strncpy( szDay, szDate + 6, 2 );
+	strncpy_s( szYear, szDate, 4 );
+	strncpy_s( szMonth, szDate + 4, 2 );
+	strncpy_s( szDay, szDate + 6, 2 );
 
 	nYear	= atoi( szYear );
 	nMonth	= atoi( szMonth );
