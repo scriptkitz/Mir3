@@ -10,7 +10,7 @@ public:
 
 	CNPCObject();
 
-	virtual void	GetCharName(char *pszCharName) { return; }
+	virtual void	GetCharName(char *pszCharName, size_t iszlen) override { return; }
 };
 
 /*
@@ -29,5 +29,5 @@ public:
 	void RunRace();
 
 	virtual WORD	GetThisCharColor() { return _CHAT_COLOR3; }
-	virtual void	GetCharName(char *pszCharName) { strcpy(pszCharName, m_szName); }
+	virtual void	GetCharName(char *pszCharName, size_t iszlen) override { strcpy_s(pszCharName, iszlen, m_szName); }
 };

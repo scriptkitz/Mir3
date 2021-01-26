@@ -10,13 +10,14 @@ CWHAbusive::~CWHAbusive()
 
 BOOL CWHAbusive::LoadAbusiveList()
 {
-	FILE	*stream = fopen("Abusive.txt", "r");
+	FILE* stream = NULL;
+	fopen_s(&stream, "Abusive.txt", "r");
 
 	if (stream)
 	{
 		while(!feof(stream))
 		{
-			fscanf(stream, "%s", m_szAbusiveList[m_nCount]);
+			fscanf_s(stream, "%s", m_szAbusiveList[m_nCount], sizeof(m_szAbusiveList[m_nCount]));
 			m_nCount++;
 		}
 

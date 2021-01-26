@@ -29,6 +29,8 @@ void	CreateConfigProperties();
 
 HINSTANCE		g_hInst = NULL;				// Application instance
 HWND			g_hMainWnd = NULL;			// Main window handle
+HANDLE			g_hWSAEvent = NULL;
+HANDLE			g_hWSAThread = NULL;
 HWND			g_hLogMsgWnd = NULL;
 HWND			g_hToolBar = NULL;
 HWND			g_hStatusBar = NULL;
@@ -47,30 +49,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
     MSG msg;
 
-//	if (CheckAvailableIOCP())
-//	{
-		if (!InitApplication(hInstance))
-			return (FALSE);
+	if (!InitApplication(hInstance))
+		return (FALSE);
 
-		if (!InitInstance(hInstance, nCmdShow))
-			return (FALSE);
+	if (!InitInstance(hInstance, nCmdShow))
+		return (FALSE);
 
-		while (GetMessage(&msg, NULL, 0, 0))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-/*	}
-	else
+	while (GetMessage(&msg, NULL, 0, 0))
 	{
-		TCHAR szMsg[1024];
-
-		LoadString(hInstance, IDS_NOTWINNT, szMsg, sizeof(szMsg));
-		MessageBox(NULL, szMsg, _LOGINGATE_SERVER_TITLE, MB_OK|MB_ICONINFORMATION);
-		
-		return -1;
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
-*/
+
     return (msg.wParam);
 }
 
@@ -116,6 +106,7 @@ BOOL InitInstance(HANDLE hInstance, int nCmdShow)
 	icex.dwICC = ICC_LISTVIEW_CLASSES | ICC_BAR_CLASSES | ICC_INTERNET_CLASSES | ICC_TAB_CLASSES;
 
 	InitCommonControlsEx(&icex);
+	g_hWSAEvent = WSACreateEvent();
 
     g_hMainWnd = CreateWindowEx(0, _DB_SERVER_CLASS, _DB_SERVER_TITLE, 
 							WS_OVERLAPPEDWINDOW|WS_VISIBLE,
@@ -165,7 +156,7 @@ BOOL InitInstance(HANDLE hInstance, int nCmdShow)
 	for (i = 0; i < 3; i++)
 	{
 		lvc.iSubItem = i;
-		LoadString((HINSTANCE)hInstance, IDS_LVS_LABEL1 + i, szText, sizeof(szText));
+		LoadString((HINSTANCE)hInstance, IDS_LVS_LABEL1 + i, szText, sizeof(szText)/sizeof(TCHAR));
 		
 		ListView_InsertColumn(g_hLogMsgWnd, i, &lvc);
 	}
@@ -182,24 +173,7 @@ BOOL InitInstance(HANDLE hInstance, int nCmdShow)
 	BYTE	btInstalled;
 
 	if (!jRegGetKey(_DB_SERVER_REGISTRY, _TEXT("Installed"), (LPBYTE)&btInstalled))
-		DialogBox(g_hInst, MAKEINTRESOURCE(IDD_CONFIGDLG), NULL, (DLGPROC)ConfigDlgFunc);
-
-	TCHAR	wszDatabase[256];
-	char	szDatabase[256];
-
-	jRegGetKey(_DB_SERVER_REGISTRY, _TEXT("Device"), (LPBYTE)wszDatabase);
-	WideCharToMultiByte(CP_ACP, 0, wszDatabase, -1, szDatabase, sizeof(szDatabase), NULL, NULL);
-
-	GetDBManager()->Init( InsertLogMsg, szDatabase, "sa", "prg" );
-
-	// 테이블 읽기
-	CConnection *pConn = GetDBManager()->m_dbMain.CreateConnection( "Mir2_Common", "sa", "prg" );
-	if ( pConn )
-	{
-		if ( !GetTblStartPoint()->Init( pConn ) )
-			InsertLogMsg( _T("failed to read TBL_STARTPOINT table\n") );
-	}
-	GetDBManager()->m_dbMain.DestroyConnection( pConn );
+		DialogBox(g_hInst, MAKEINTRESOURCE(IDD_CONFIGDLG), g_hMainWnd, (DLGPROC)ConfigDlgFunc);
 
 	return TRUE;
 }
@@ -227,13 +201,13 @@ int AddNewLogMsg()
 	lvi.iItem		= nCount;
 	lvi.iSubItem	= 0;
 	
-	_tstrdate(szText);
+	_tstrdate_s(szText);
 
 	lvi.pszText = szText;
 	
 	ListView_InsertItem(g_hLogMsgWnd, &lvi);
 
-	_tstrtime(szText);
+	_tstrtime_s(szText);
 
 	ListView_SetItemText(g_hLogMsgWnd, nCount, 1, szText);
 
@@ -278,10 +252,10 @@ void InsertLogMsgParam(UINT nID, void *pParam, BYTE btFlags)
 	switch (btFlags)
 	{
 		case LOGPARAM_STR:
-			_stprintf(szMsg, szText, (LPTSTR)pParam);
+			_stprintf_s(szMsg, szText, (LPTSTR)pParam);
 			break;
 		case LOGPARAM_INT:
-			_stprintf(szMsg, szText, *(int *)pParam);
+			_stprintf_s(szMsg, szText, *(int *)pParam);
 			break;
 	}
 

@@ -8,7 +8,7 @@
 
 CError::CError( char *pMsg )
 {
-	strcpy( m_szMsg, pMsg );
+	strcpy_s( m_szMsg, pMsg );
 }
 
 

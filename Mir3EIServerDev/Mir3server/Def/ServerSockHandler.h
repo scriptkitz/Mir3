@@ -29,12 +29,10 @@ typedef struct tag_TOVERLAPPEDEX
    INT				nOvFlag;
 } _TOVERLAPPEDEX, * _LPTOVERLAPPEDEX;
 
-BOOL InitServerSocket(SOCKET &s, SOCKADDR_IN* addr, UINT nMsgID, int nPort, long lEvent = 2);
-BOOL ConnectToServer(SOCKET &s, SOCKADDR_IN* addr, UINT nMsgID, LPCTSTR lpServerIP, DWORD dwIP, int nPort, long lEvent);
+BOOL InitServerSocket(SOCKET &s, SOCKADDR_IN* addr, int nPort);
+BOOL ConnectToServer(SOCKET &s, SOCKADDR_IN* addr, LPCTSTR lpServerIP, int nPort, long lEvent,
+	LPTHREAD_START_ROUTINE pCallback, LPVOID lpParam);
 BOOL ClearSocket(SOCKET &s);
-
-BOOL CheckAvailableIOCP();
-INT	 CreateIOCPWorkerThread(HANDLE hCP, LPDWORD lpdwThreadID, LPTHREAD_START_ROUTINE WorkerThreadFunc);
 
 BOOL InitThread(LPTHREAD_START_ROUTINE lpRoutine);
 

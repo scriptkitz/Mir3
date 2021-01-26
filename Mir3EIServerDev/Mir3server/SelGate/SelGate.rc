@@ -146,7 +146,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    IDS_NOTWINNT            "You are not running a NT-Kernel based operating system. Please install Windows NT4/2000/XP/2003/Longhorn."
     IDS_LVS_LABEL1          "Date"
     IDS_LVS_LABEL2          "Time"
     IDS_LVS_LABEL3          "Message"

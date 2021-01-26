@@ -88,7 +88,7 @@ void CFireBurnEvent::Run()
 #ifdef _DEBUG
 						char szMsg[64];
 
-						sprintf(szMsg, "%s Áö¿°¼ú ¸ÂÀ½ - PW:%d HP:%d", pTargetObject->m_szName, m_nDamage, pTargetObject->m_WAbility.HP);
+						sprintf_s(szMsg, "%s »ðÇ½ ÃüÖÐ - PW:%d HP:%d", pTargetObject->m_szName, m_nDamage, pTargetObject->m_WAbility.HP);
 						m_pOwnObject->SysMsg(szMsg, 0);
 #endif
 					}

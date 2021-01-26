@@ -1,7 +1,6 @@
 #include "stdafx.h"
 
-LPARAM OnServerSockMsg(WPARAM wParam, LPARAM lParam);
-LPARAM OnClientSockMsg(WPARAM wParam, LPARAM lParam);
+DWORD WINAPI OnClientSockMsg(LPVOID lpThreadParameter);
 
 BOOL	jRegSetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, DWORD dwFlags, LPBYTE pValue, DWORD nValueSize);
 BOOL	jRegGetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, LPBYTE pValue);
@@ -58,7 +57,7 @@ void OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 		case IDM_STARTSERVICE:
 		{
-			DWORD	dwIP = 0;
+			TCHAR	tsIP[20] = { 0 };
 			int		nPort = 0;
 
 			g_fTerminated = FALSE;
@@ -66,14 +65,14 @@ void OnCommand(WPARAM wParam, LPARAM lParam)
 			if (!jRegGetKey(_GAMEGATE_SERVER_REGISTRY, _TEXT("LocalPort"), (LPBYTE)&nPort))
 				nPort = 7200;
 
-			InitServerSocket(g_ssock, &g_saddr, _IDM_SERVERSOCK_MSG, nPort, 2);
+			InitServerSocket(g_ssock, &g_saddr, nPort);
 
-			jRegGetKey(_GAMEGATE_SERVER_REGISTRY, _TEXT("RemoteIP"), (LPBYTE)&dwIP);
+			jRegGetKey(_GAMEGATE_SERVER_REGISTRY, _TEXT("RemoteIP"), (LPBYTE)&tsIP);
 
 			if (!jRegGetKey(_GAMEGATE_SERVER_REGISTRY, _TEXT("RemotePort"), (LPBYTE)&nPort))
 				nPort = 5000;
 
-			ConnectToServer(g_csock, &g_caddr, _IDM_CLIENTSOCK_MSG, NULL, dwIP, nPort, FD_CONNECT|FD_READ|FD_CLOSE);
+			ConnectToServer(g_csock, &g_caddr, tsIP, nPort, FD_CONNECT|FD_READ|FD_CLOSE, OnClientSockMsg, NULL);
 
 			SwitchMenuItem(TRUE);
 
@@ -115,12 +114,6 @@ LPARAM APIENTRY MainWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (nMsg)
 	{
-#ifdef _SOCKET_ASYNC_IO
-		case _IDM_SERVERSOCK_MSG:
-			return OnServerSockMsg(wParam, lParam);
-#endif
-		case _IDM_CLIENTSOCK_MSG:
-			return OnClientSockMsg(wParam, lParam);
 		case WM_COMMAND:
 			OnCommand(wParam, lParam);
 			break;

@@ -16,7 +16,8 @@
 
 #pragma warning( disable : 4146 )
 
-#include <winsock2.h>
+#include <WS2tcpip.h>
+#include <ws2def.h>
 #include <windows.h>
 #include <tchar.h>
 #include <crtdbg.h>

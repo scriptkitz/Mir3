@@ -1,7 +1,6 @@
 #include "stdafx.h"
 
-LPARAM OnServerSockMsg(WPARAM wParam, LPARAM lParam);
-LPARAM OnClientSockMsg(WPARAM wParam, LPARAM lParam);
+DWORD WINAPI OnClientSockMsg(LPVOID lpParam);
 
 BOOL	jRegSetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, DWORD dwFlags, LPBYTE pValue, DWORD nValueSize);
 BOOL	jRegGetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, LPBYTE pValue);
@@ -81,22 +80,23 @@ void OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 		case IDM_STARTSERVICE:
 		{
-			DWORD	dwIP = 0;
+			TCHAR	tsIP[20] = { 0 };
 			int		nPort = 0;
 
 			g_fTerminated = FALSE;
-		
+			
+			//客户端连接的登录端口
 			if (!jRegGetKey(_LOGINGATE_SERVER_REGISTRY, _TEXT("LocalPort"), (LPBYTE)&nPort))
 				nPort = 7000;
+			//初始化登录网关监听服务
+			InitServerSocket(g_ssock, &g_saddr, nPort);
 
-			InitServerSocket(g_ssock, &g_saddr, _IDM_SERVERSOCK_MSG, nPort, FD_ACCEPT);
-
-			jRegGetKey(_LOGINGATE_SERVER_REGISTRY, _TEXT("RemoteIP"), (LPBYTE)&dwIP);
-
+			//连接登录服务器(LoginSever)
+			jRegGetKey(_LOGINGATE_SERVER_REGISTRY, _TEXT("RemoteIP"), (LPBYTE)&tsIP);
 			if (!jRegGetKey(_LOGINGATE_SERVER_REGISTRY, _TEXT("RemotePort"), (LPBYTE)&nPort))
 				nPort = 5500;
 
-			ConnectToServer(g_csock, &g_caddr, _IDM_CLIENTSOCK_MSG, NULL, dwIP, nPort, FD_CONNECT|FD_READ|FD_CLOSE);
+			ConnectToServer(g_csock, &g_caddr, tsIP, nPort, FD_CONNECT|FD_READ|FD_CLOSE, OnClientSockMsg, NULL);
 
 			HMENU hMainMenu = GetMenu(g_hMainWnd);
 			HMENU hMenu = GetSubMenu(hMainMenu, 0);
@@ -179,8 +179,6 @@ LPARAM APIENTRY MainWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (nMsg)
 	{
-		case _IDM_CLIENTSOCK_MSG:
-			return OnClientSockMsg(wParam, lParam);
 		case WM_COMMAND:
 			OnCommand(wParam, lParam);
 			break;

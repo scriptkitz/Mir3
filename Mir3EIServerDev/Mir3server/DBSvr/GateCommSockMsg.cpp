@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 extern HWND			g_hMainWnd;
+extern HANDLE		g_hWSAEvent;
 extern HWND			g_hStatusBar;
 
 CWHList<CGateInfo*>	g_xGateInfoList;
@@ -24,7 +25,7 @@ void UpdateStatusBarGateSession(BOOL fGrow)
 	SendMessage(g_hStatusBar, SB_SETTEXT, MAKEWORD(4, 0), (LPARAM)szText);
 }
 
-BOOL InitGateCommSocket(SOCKET &s, SOCKADDR_IN* addr, UINT nMsgID, int nPort, long lEvent)
+BOOL InitGateCommSocket(SOCKET &s, SOCKADDR_IN* addr, int nPort, long lEvent)
 {
 	if (s == INVALID_SOCKET)
 	{
@@ -40,7 +41,7 @@ BOOL InitGateCommSocket(SOCKET &s, SOCKADDR_IN* addr, UINT nMsgID, int nPort, lo
 		if ((listen(s, 5)) == SOCKET_ERROR)
 			return FALSE;
 
-		if ((WSAAsyncSelect(s, g_hMainWnd, nMsgID, lEvent)) == SOCKET_ERROR)
+		if ((WSAEventSelect(s, g_hWSAEvent, lEvent)) == SOCKET_ERROR)
 			return FALSE;
 	}
 	else 
@@ -62,7 +63,7 @@ LPARAM OnGateCommSockMsg(WPARAM wParam, LPARAM lParam)
 			{
 				pGateInfo->sock = accept(wParam, (struct sockaddr FAR *)NULL, NULL);
 
-				WSAAsyncSelect(pGateInfo->sock, g_hMainWnd, _IDM_GATECOMMSOCK_MSG, FD_READ|FD_CLOSE);
+				WSAEventSelect(pGateInfo->sock, g_hWSAEvent, FD_READ|FD_CLOSE);
 			
 				if (g_xGateInfoList.AddNewNode(pGateInfo))
 				{

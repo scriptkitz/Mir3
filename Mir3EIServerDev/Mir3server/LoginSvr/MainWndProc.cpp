@@ -9,8 +9,6 @@ BOOL			jRegGetKey(LPCSTR pSubKeyName, LPCSTR pValueName, LPBYTE pValue);
 BOOL CALLBACK	ConfigDlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 BOOL CALLBACK	ServerListProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-LPARAM			OnGateCommSockMsg(WPARAM wParam, LPARAM lParam);
-
 BOOL			InitServerThreadForMsg();
 
 
@@ -66,7 +64,7 @@ void CreateConfigProperties()
 	PROPSHEETPAGE	psp[1];
 	PROPSHEETHEADER	psh;
 
-	LoadString((HINSTANCE)g_hInst, IDS_TAB_LABEL1, szText, sizeof(szText));
+	LoadString(g_hInst, IDS_TAB_LABEL1, szText, sizeof(szText)/sizeof(TCHAR));
 
 	psp[0].dwSize		= sizeof(PROPSHEETPAGE);
 	psp[0].dwFlags		= 0; //PSP_USETITLE;
@@ -110,8 +108,8 @@ UINT WINAPI LoadAccountRecords(LPVOID lpParameter)
 				break;
 
 			pServerInfo->index = atoi( pRec->Get( "FLD_SERVERIDX" ) );
-			strcpy( pServerInfo->name, pRec->Get( "FLD_SERVERNAME" ) );
-			strcpy( pServerInfo->ip,   pRec->Get( "FLD_SERVERIP" ) );
+			strcpy_s( pServerInfo->name, pRec->Get( "FLD_SERVERNAME" ) );
+			strcpy_s( pServerInfo->ip,   pRec->Get( "FLD_SERVERIP" ) );
 			pServerInfo->connCnt = 0;
 
 			g_xGameServerList.AddNewNode( pServerInfo );
@@ -124,14 +122,14 @@ UINT WINAPI LoadAccountRecords(LPVOID lpParameter)
 	{
 		pServerInfo = g_xGameServerList.GetData( pNode );
 		
-		sprintf( szTmp, "%d,%s,", pServerInfo->index, pServerInfo->name );
-		strcat( g_szServerList, szTmp );
+		sprintf_s( szTmp, "%d,%s,", pServerInfo->index, pServerInfo->name );
+		strcat_s( g_szServerList, szTmp );
 	}
 	// ----------------------------------------------------------------------------------------
 
 	InitServerThreadForMsg();
 
-	if (InitServerSocket(g_gcSock, &g_gcAddr, _IDM_GATECOMMSOCK_MSG, 5500, 1))
+	if (InitServerSocket(g_gcSock, &g_gcAddr, 5500))
 		SwitchMenuItem(TRUE);
 
 	return 0L;

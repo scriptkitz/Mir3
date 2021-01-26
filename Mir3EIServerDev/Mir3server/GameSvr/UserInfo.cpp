@@ -126,7 +126,7 @@ void CUserInfo::MakeGenItem(_LPTGENERALITEMRCD lptGenItemRcd)
 		// Make Item on Server
 		_TGENITEMRCD		GenItemRcd;
 
-		sprintf(GenItemRcd.szItem, "G%03d%04d%04d", lptGenItemRcd->nStdIndex, lptGenItemRcd->nDura, lptGenItemRcd->nDuraMax);
+		sprintf_s(GenItemRcd.szItem, "G%03d%04d%04d", lptGenItemRcd->nStdIndex, lptGenItemRcd->nDura, lptGenItemRcd->nDuraMax);
 
 		memcpy(lptGenItemRcd->szMakeIndex, GenItemRcd.szItem, 12);
 

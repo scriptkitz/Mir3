@@ -230,19 +230,19 @@ BOOL CMonsterObject::IsProperTarget(CCharObject* pTargetObject)
 	return fFlag;
 }
 
-void CMonsterObject::GetCharName(char *pszCharName)
+void CMonsterObject::GetCharName(char *pszCharName, size_t iszlen)
 {
-	strcpy(pszCharName, m_szName);
+	strcpy_s(pszCharName, iszlen, m_szName);
 
 	if (m_pMasterObject)
 	{
 		char szMasterName[32];
 
-		m_pMasterObject->GetCharName(szMasterName);
+		m_pMasterObject->GetCharName(szMasterName, sizeof(szMasterName));
 
-		strcat(pszCharName, " (");
-		strcat(pszCharName, szMasterName);
-		strcat(pszCharName, ")");
+		strcat_s(pszCharName, iszlen, " (");
+		strcat_s(pszCharName, iszlen, szMasterName);
+		strcat_s(pszCharName, iszlen, ")");
 	}
 }
 
@@ -474,7 +474,7 @@ void CMonsterObject::MakeGenItem(_LPTGENERALITEMRCD lptGenItemRcd)
 {
 	_TGENITEMRCD		GenItemRcd;
 
-	sprintf(GenItemRcd.szItem, "G%03d%04d%04d", lptGenItemRcd->nStdIndex, lptGenItemRcd->nDura, lptGenItemRcd->nDuraMax);
+	sprintf_s(GenItemRcd.szItem, "G%03d%04d%04d", lptGenItemRcd->nStdIndex, lptGenItemRcd->nDura, lptGenItemRcd->nDuraMax);
 
 	memcpy(lptGenItemRcd->szMakeIndex, GenItemRcd.szItem, 12);
 

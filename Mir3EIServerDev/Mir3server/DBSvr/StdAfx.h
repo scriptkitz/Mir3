@@ -13,8 +13,8 @@
 #define UNICODE
 #define _UNICODE
 
-
-#include <winsock2.h>
+#include <WS2tcpip.h>
+#include <ws2def.h>
 #include <windows.h>
 #include <tchar.h>
 #ifdef _DEBUG

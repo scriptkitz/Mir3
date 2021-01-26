@@ -21,22 +21,26 @@ BOOL CALLBACK ConfigDlgFunc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			SendMessage(GetDlgItem(hWndDlg, IDC_DBSRV_PORT), EM_LIMITTEXT, (WPARAM)5, (LPARAM)0L);
 
 			DWORD	dwIP = 0;
-			TCHAR	szPort[24];
-			TCHAR	szServer[24];
-			TCHAR	szPath[256];
-			TCHAR	szDatabase[256];
+			TCHAR	szIP[20] = { 0 };
+			TCHAR	szPort[24] = { 0 };
+			TCHAR	szServer[24] = { 0 };
+			TCHAR	szPath[256] = { 0 };
+			TCHAR	szDatabase[256] = { 0 };
 
 			int		nPort = 0, nServerNum = 0;
+			int		i1=0, i2=0, i3=0, i4=0;
 
-			jRegGetKey(_GAME_SERVER_REGISTRY, _TEXT("DBServerIP"), (LPBYTE)&dwIP);
+			jRegGetKey(_GAME_SERVER_REGISTRY, _TEXT("DBServerIP"), (LPBYTE)&szIP);
+			_stscanf_s(szIP, _T("%ld.%ld.%ld.%ld"), &i1, &i2, &i3, &i4);
+			dwIP = MAKEIPADDRESS(i1,i2,i3,i4);
 			SendMessage(GetDlgItem(hWndDlg, IDC_DBSVR_IP), IPM_SETADDRESS, (WPARAM)0, (LPARAM)(DWORD)dwIP);
 
 			jRegGetKey(_GAME_SERVER_REGISTRY, _TEXT("DBServerPort"), (LPBYTE)&nPort);
-			_itow(nPort, szPort, 10);
+			_itow_s(nPort, szPort, 10);
 			SetWindowText(GetDlgItem(hWndDlg, IDC_DBSRV_PORT), szPort);
 			
 			jRegGetKey(_GAME_SERVER_REGISTRY, _TEXT("ServerNumber"), (LPBYTE)&nServerNum);
-			_itow(nServerNum, szServer, 10);
+			_itow_s(nServerNum, szServer, 10);
 			SetWindowText(GetDlgItem(hWndDlg, IDC_SRVNUMBER), szServer);
 
 			jRegGetKey(_GAME_SERVER_REGISTRY, _TEXT("MapFileLoc"), (LPBYTE)szPath);
@@ -54,6 +58,7 @@ BOOL CALLBACK ConfigDlgFunc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 				case IDOK:
 				{
 					DWORD	dwIP = 0;
+					TCHAR	szIP[20];
 					TCHAR	szPort[24];
 					TCHAR	szServer[24];
 					TCHAR	szPath[256];
@@ -69,7 +74,10 @@ BOOL CALLBACK ConfigDlgFunc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 					jRegSetKey(_GAME_SERVER_REGISTRY, _TEXT("ServerNumber"), REG_DWORD, (LPBYTE)&nServerNum, sizeof(DWORD));
 
 					SendMessage(GetDlgItem(hWndDlg, IDC_DBSVR_IP), IPM_GETADDRESS, (WPARAM)0, (LPARAM)(LPDWORD)&dwIP);
-					jRegSetKey(_GAME_SERVER_REGISTRY, _TEXT("DBServerIP"), REG_DWORD, (LPBYTE)&dwIP, sizeof(DWORD));
+					_stprintf_s(szIP, _T("%ld.%ld.%ld.%ld"),
+						FIRST_IPADDRESS(dwIP), SECOND_IPADDRESS(dwIP),
+						THIRD_IPADDRESS(dwIP), FOURTH_IPADDRESS(dwIP));
+					jRegSetKey(_GAME_SERVER_REGISTRY, _TEXT("DBServerIP"), REG_SZ, (LPBYTE)szIP, _tcsclen(szIP)*sizeof(TCHAR));
 
 					GetWindowText(GetDlgItem(hWndDlg, IDC_DBSRV_PORT), szPort, sizeof(szPort));
 					nRemotePort = _wtoi(szPort);

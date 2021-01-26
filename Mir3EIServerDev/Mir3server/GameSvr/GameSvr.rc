@@ -1,4 +1,4 @@
-//Microsoft Developer Studio generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
 
@@ -13,46 +13,19 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Korean resources
+// Chinese (Simplified, PRC) resources
 
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_KOR)
-#ifdef _WIN32
-LANGUAGE LANG_KOREAN, SUBLANG_DEFAULT
-#pragma code_page(949)
-#endif //_WIN32
-
-#ifdef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// TEXTINCLUDE
-//
-
-1 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "resource.h\0"
-END
-
-2 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "#include ""afxres.h""\r\n"
-    "\0"
-END
-
-3 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "\r\n"
-    "\0"
-END
-
-#endif    // APSTUDIO_INVOKED
-
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Bitmap
 //
 
-IDB_TOOLBAR             BITMAP  DISCARDABLE     ".\\Res\\toolbar.bmp"
+IDB_TOOLBAR             BITMAP                  ".\\Res\\toolbar.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -61,14 +34,15 @@ IDB_TOOLBAR             BITMAP  DISCARDABLE     ".\\Res\\toolbar.bmp"
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_MIR2                ICON    DISCARDABLE     ".\\Res\\MIR2.ICO"
+IDI_MIR2                ICON                    ".\\Res\\MIR2.ICO"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Menu
 //
 
-IDR_MAINMENU MENU DISCARDABLE 
+IDR_MAINMENU MENU
 BEGIN
     POPUP "&Service"
     BEGIN
@@ -89,16 +63,15 @@ END
 // Dialog
 //
 
-IDD_CONFIGDLG DIALOG DISCARDABLE  0, 0, 343, 285
-STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+IDD_CONFIGDLG DIALOGEX 0, 0, 343, 285
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 CAPTION "Game Server Configuration"
-FONT 9, "奔覆"
+FONT 9, "宋体", 400, 0, 0x86
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,228,264,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,286,264,50,14
     LTEXT           "Game Server Index : ",IDC_STATIC,23,24,70,8
-    CONTROL         "IPAddress1",IDC_DBSVR_IP,"SysIPAddress32",WS_TABSTOP,65,
-                    130,90,11
+    CONTROL         "IPAddress1",IDC_DBSVR_IP,"SysIPAddress32",WS_TABSTOP,65,130,90,11
     EDITTEXT        IDC_DBSRV_PORT,65,144,28,12,ES_AUTOHSCROLL | ES_NUMBER
     LTEXT           "Address :",IDC_STATIC,29,132,35,8
     GROUPBOX        "Database Server Information",IDC_STATIC,15,116,158,48
@@ -109,18 +82,15 @@ BEGIN
     LTEXT           "Start Gold :",IDC_STATIC,99,76,37,8
     EDITTEXT        IDC_STARTLEVEL,69,73,19,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_STARTGOLD,142,74,19,14,ES_AUTOHSCROLL
-    CONTROL         "Test Server",IDC_CHECK_TESTSRV,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,26,93,53,10
+    CONTROL         "Test Server",IDC_CHECK_TESTSRV,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,26,93,53,10
     LTEXT           "Game Server Name :",IDC_STATIC,120,24,70,8
     LTEXT           "Game Server Number :",IDC_STATIC,15,41,76,8
     EDITTEXT        IDC_SRVNUMBER,94,38,17,14,ES_AUTOHSCROLL | ES_NUMBER
-    EDITTEXT        IDC_SRVNAME,193,21,40,14,ES_CENTER | ES_AUTOHSCROLL | 
-                    WS_DISABLED
+    EDITTEXT        IDC_SRVNAME,193,21,40,14,ES_CENTER | ES_AUTOHSCROLL | WS_DISABLED
     GROUPBOX        "File Location Information",IDC_STATIC,178,58,149,40
     LTEXT           "Map :",IDC_STATIC,186,74,20,8
     EDITTEXT        IDC_MAPFILE_LOC,209,72,108,14,ES_AUTOHSCROLL
-    CONTROL         "IPAddress1",IDC_DBMS_IP,"SysIPAddress32",WS_TABSTOP,65,
-                    185,90,11
+    CONTROL         "IPAddress1",IDC_DBMS_IP,"SysIPAddress32",WS_TABSTOP,65,185,90,11
     EDITTEXT        IDC_DBMS_PORT,65,199,28,12,ES_AUTOHSCROLL | ES_NUMBER
     LTEXT           "Address :",IDC_STATIC,29,187,35,8
     GROUPBOX        "DBMS Information",IDC_STATIC,15,171,158,83
@@ -128,8 +98,7 @@ BEGIN
     LTEXT           "ID : ",IDC_STATIC,30,237,14,8
     EDITTEXT        IDC_DBMS_ID,46,234,28,14,ES_AUTOHSCROLL
     LTEXT           "Password :",IDC_STATIC,82,237,38,8
-    EDITTEXT        IDC_DBMS_PASSWORD,123,234,40,14,ES_PASSWORD | 
-                    ES_AUTOHSCROLL
+    EDITTEXT        IDC_DBMS_PASSWORD,123,234,40,14,ES_PASSWORD | ES_AUTOHSCROLL
     LTEXT           "Database :",IDC_STATIC,25,216,36,8
     EDITTEXT        IDC_DBMS_DEVICE,65,214,82,14,ES_AUTOHSCROLL
 END
@@ -141,7 +110,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO DISCARDABLE 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_CONFIGDLG, DIALOG
     BEGIN
@@ -156,129 +125,175 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_CONFIGDLG AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // String Table
 //
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
-    IDS_NOTWINNT            "捞 橇肺弊伐篮 Microsoft Windows 2000 捞惑狼 滚怜俊辑 父 角青 且 荐 乐嚼聪促."
-    IDS_LVS_LABEL1          "朝楼"
-    IDS_LVS_LABEL2          "矫埃"
-    IDS_LVS_LABEL3          "皋技瘤"
-    IDS_STARTSERVICE        "固福狼 傈汲 2 霸烙 辑滚 辑厚胶甫 矫累 沁嚼聪促."
-    IDS_STOPSERVICE         "固福狼 傈汲 2 霸烙 辑滚 辑厚胶甫 吝瘤 沁嚼聪促."
-    IDS_FETCH_MAGICDATA     "扁夯 付过 沥焊 ( %d 俺 ) 甫 佬菌嚼聪促."
-    IDS_DISCONNECT_LOGINSERVER "肺弊牢 辑滚客 立加捞 谗板嚼聪促."
-    IDS_PROGRAM_QUIT        "固福狼 傈汲 2 霸烙 辑滚甫 辆丰 窍矫摆嚼聪鳖 ?"
-    IDS_PROGRAM_TITLE       "固福狼 傈汲2 - 霸烙 辑滚"
-    IDS_LOAD_ADMINCOMMAND   "INFO : 款康磊 疙飞绢 (%d 俺) 甫 佬菌嚼聪促."
-    IDS_CONFLVS_LABEL1      "辑滚疙"
-    IDS_CONFLVS_LABEL2      "鸥捞撇"
-    IDS_CONFLVS_LABEL3      "肺弊牢 霸捞飘 郴何 IP 林家"
-    IDS_CONFLVS_LABEL4      "肺弊牢 霸捞飘 寇何 IP 林家"
+    IDS_LVS_LABEL1          "日期"
+    IDS_LVS_LABEL2          "时间"
+    IDS_LVS_LABEL3          "信息"
+    IDS_STARTSERVICE        "《传奇2》游戏服务器服务已启动。"
+    IDS_STOPSERVICE         "《传奇2》游戏服务器服务已停止。"
+    IDS_FETCH_MAGICDATA     "您已经阅读了基本的魔术信息（％d件）。"
+    IDS_DISCONNECT_LOGINSERVER "与登录服务器的连接已丢失。"
+    IDS_PROGRAM_QUIT        "您是否要关闭《传奇2》游戏服务器？"
+    IDS_PROGRAM_TITLE       "Mir 2-游戏服务器"
+    IDS_LOAD_ADMINCOMMAND   "信息：已读取操作员命令（％d）。"
+    IDS_CONFLVS_LABEL1      "服务器名称"
+    IDS_CONFLVS_LABEL2      "标题"
+    IDS_CONFLVS_LABEL3      "登录网关的内网IP"
+    IDS_CONFLVS_LABEL4      "登录网关的外网IP"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
-    IDS_CONFLVS_LABEL5      "霸烙 霸捞飘 寇何 IP 林家"
-    IDS_TAB_LABEL1          "辑滚 汲沥"
-    IDS_ACCEPT_GATESERVER   "INFO : 霸烙 霸捞飘 辑滚 (%s) 啊 立加 登菌嚼聪促."
-    IDS_OPEN_USER           "努扼捞攫飘 (%s) 啊 立加阑 矫档 沁嚼聪促. "
-    IDS_CLOSE_USER          "努扼捞攫飘 (%s) 啊 立加阑 辆丰 沁嚼聪促."
-    IDS_OPEN_GATE           "%d 锅 霸捞飘啊 立加 登菌嚼聪促."
-    IDS_CLOSE_GATE          "%d 锅 霸捞飘狼 立加捞 辆丰 登菌嚼聪促."
+    IDS_CONFLVS_LABEL5      "游戏网关外网IP"
+    IDS_TAB_LABEL1          "服务器设置"
+    IDS_ACCEPT_GATESERVER   "信息：游戏网关服务器（％s）已连接。"
+    IDS_OPEN_USER           "客户端（％s）尝试连接。"
+    IDS_CLOSE_USER          "客户端（％s）已关闭连接。"
+    IDS_OPEN_GATE           "已连接％d个网关。"
+    IDS_CLOSE_GATE          "已终止％d个网关的连接。"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
-    IDS_CONNECT_DBSERVER    "INFO : 单捞磐海捞胶 辑滚俊 立加 登菌嚼聪促."
+    IDS_CONNECT_DBSERVER    "信息：已连接到数据库服务器。"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
-    IDS_LOADMAPFILE_GOOD    "甘 颇老 (%s) 沥焊甫 佬菌嚼聪促."
-    IDS_LOADMAPFILE_FAIL    "ERROR : 甘 颇老 (%s) 沥焊甫 佬阑 荐 绝嚼聪促."
-    IDS_DISCONNECT_DBSERVER "ERROR : 单捞磐海捞胶 辑滚客 立加捞 谗绢 脸嚼聪促."
-    IDS_APPLY_RECONNECT     "INFO : 单捞磐海捞胶 辑滚俊 立加阑 矫档钦聪促."
-    IDS_CANT_CONNECT        "ERROR : 单捞磐海捞胶 辑滚俊 立加 且 荐 绝嚼聪促."
-    IDS_FETCH_MONSTER       "阁胶磐 沥焊 (%d 俺)甫 佬菌嚼聪促."
-    IDS_FETCH_MONGEN        "阁胶磐 积己 沥焊 (%d 俺)甫 佬菌嚼聪促."
-    IDS_FETCH_STDITEMWEAPON "公扁 酒捞袍 沥焊 (%d 俺)甫 佬菌嚼聪促."
-    IDS_FETCH_STDITEMARMOR  "规绢备 酒捞袍 沥焊 (%d 俺)甫 佬菌嚼聪促."
-    IDS_FETCH_MERCHANT      "惑牢 沥焊 (%d 俺)甫 佬菌嚼聪促."
-    IDS_FETCH_MOVEMAPEVENT  "甘 捞悼 沥焊 (%d 俺)甫 佬菌嚼聪促."
-    IDS_ALLOW_LONGHIT       "绢八贱阑 荤侩钦聪促."
-    IDS_NOTALLOW_LONGHIT    "绢八贱阑 荤侩窍瘤 臼嚼聪促."
-    IDS_ALLOW_WIDEHIT       "馆岿八过阑 荤侩钦聪促."
-    IDS_NOTALLOW_WIDEHIT    "馆岿八过阑 荤侩窍瘤 臼嚼聪促."
+    IDS_LOADMAPFILE_GOOD    "读取地图文件（％s）信息。"
+    IDS_LOADMAPFILE_FAIL    "错误：无法读取映射文件（％s）信息。"
+    IDS_DISCONNECT_DBSERVER "错误：与数据库服务器的连接已丢失。"
+    IDS_APPLY_RECONNECT     "信息：尝试连接到数据库服务器。"
+    IDS_CANT_CONNECT        "错误：无法连接到数据库服务器。10秒后尝试重连..."
+    IDS_FETCH_MONSTER       "已读取怪物信息（％d）。"
+    IDS_FETCH_MONGEN        "已读取怪物创造信息（％d）。"
+    IDS_FETCH_STDITEMWEAPON "武器项目信息（％d）已被读取。"
+    IDS_FETCH_STDITEMARMOR  "已读取装甲项目信息（％d）。"
+    IDS_FETCH_MERCHANT      "您已经阅读了商家信息（％d）。"
+    IDS_FETCH_MOVEMAPEVENT  "您已经阅读了地图移动信息（％d）。"
+    IDS_ALLOW_LONGHIT       "使用剑法。"
+    IDS_NOTALLOW_LONGHIT    "不使用剑术。"
+    IDS_ALLOW_WIDEHIT       "使用半月剑。"
+    IDS_NOTALLOW_WIDEHIT    "不使用半月剑。"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
-    IDS_ALLOW_FIREHIT       "寸脚狼 公扁啊 阂狼 扁款栏肺 崔酒棵耳嚼聪促."
-    IDS_NOTALLOW_FIREHIT    "扁甫 葛栏绰单 角菩窍看嚼聪促."
-    IDS_TIMEOUT_FIREHIT     "阂狼 扁款捞 荤扼脸嚼聪促."
-    IDS_ATTACKMODE_ALL      "[措牢 傍拜 规侥 : 葛滴 傍拜 啊瓷]"
-    IDS_ATTACKMODE_PEACE    "[措牢 傍拜 规侥 : 乞拳 傍拜]"
-    IDS_ATTACKMODE_GROUP    "[措牢 傍拜 规侥 : 弊缝 窜困 傍拜]"
-    IDS_ATTACKMODE_GUILD    "[措牢 傍拜 规侥 : 巩颇 窜困 傍拜]"
-    IDS_ATTACKMODE_PKATTACK "[措牢 傍拜 规侥 : 急厩 措搬 傍拜]"
-    IDS_ATTACKMODE_CHGMODE  "措牢 傍拜 规侥 函版 : CTRL-H"
-    IDS_FETCH_STDITEMETC    "INFO : 扁夯 酒捞袍 沥焊 (%d 俺)甫 佬菌嚼聪促."
-    IDS_FETCH_STDITEMACCESSORY "INFO : 漂荐 酒捞袍 沥焊 (%d 俺)甫 佬菌嚼聪促."
+    IDS_ALLOW_FIREHIT       "您的武器已经起火了。"
+    IDS_NOTALLOW_FIREHIT    "无法收集能量。"
+    IDS_TIMEOUT_FIREHIT     "火的能量消失了。"
+    IDS_ATTACKMODE_ALL      "[攻击方式：所有人]"
+    IDS_ATTACKMODE_PEACE    "[攻击方式：和平]"
+    IDS_ATTACKMODE_GROUP    "[攻击方式：队伍]"
+    IDS_ATTACKMODE_GUILD    "[攻击方式：帮会]"
+    IDS_ATTACKMODE_PKATTACK "[攻击方式：善恶]"
+    IDS_ATTACKMODE_CHGMODE  "攻击方式更改快捷键 : CTRL-H"
+    IDS_FETCH_STDITEMETC    "信息：基本项目信息（％d）已被读取。"
+    IDS_FETCH_STDITEMACCESSORY "信息：读取了特殊项目信息（％d）。"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
-    IDS_JOBNAME_W           "傈荤"
-    IDS_JOBNAME_S           "贱荤"
-    IDS_JOBNAME_T           "档荤"
-    IDS_INSPECTOR_ON        "皑矫磊 葛靛"
-    IDS_INSPECTOR_OFF       "皑矫磊 葛靛 秦力"
-    IDS_NOTENOUGHLEVEL_CRY  "寇摹扁绰 饭骇 8 捞惑俊辑 荤侩且 荐 乐嚼聪促."
-    IDS_CANTFIND_HUMAN      "丛阑 茫阑 荐 绝嚼聪促."
-    IDS_SKIL_LEVELUP        "%s 荐访 饭骇 %d 栏肺 函版"
-    IDS_USERCMD_NOWHISPER1  "蓖咖富芭何"
-    IDS_USERCMD_NOWHISPER2  "庇加富芭何"
-    IDS_USERCMD_YESWHISPER1 "庇加富倾侩"
-    IDS_USERCMD_YESWHISPER2 "蓖咖富倾侩"
-    IDS_USERCMD_NOWHISPER_SOMEBODY "瞒窜"
-    IDS_USERCMD_DONTCRY1    "寇摹扁芭何"
-    IDS_USERCMD_DONTCRY2    "寇摹扁瞒窜"
-    IDS_USERCMD_DONTEXNG    "背券芭何"
+    IDS_JOBNAME_W           "战士"
+    IDS_JOBNAME_S           "法术"
+    IDS_JOBNAME_T           "道士"
+    IDS_INSPECTOR_ON        "观察模式"
+    IDS_INSPECTOR_OFF       "关闭观察模式"
+    IDS_NOTENOUGHLEVEL_CRY  "喊叫可以在8级以上使用。"
+    IDS_CANTFIND_HUMAN      "找不到玩家"
+    IDS_SKIL_LEVELUP        "％s的修炼等级更改为％d"
+    IDS_USERCMD_NOWHISPER1  "拒绝私聊"
+    IDS_USERCMD_NOWHISPER2  "拒绝耳语"
+    IDS_USERCMD_YESWHISPER1 "允许私聊"
+    IDS_USERCMD_YESWHISPER2 "允许耳语"
+    IDS_USERCMD_NOWHISPER_SOMEBODY "断绝某人"
+    IDS_USERCMD_DONTCRY1    "阻止大喊"
+    IDS_USERCMD_DONTCRY2    "禁止大喊"
+    IDS_USERCMD_DONTEXNG    "禁止交易"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
-    IDS_USERCMD_ACPTGUILD   "巩颇啊涝"
-    IDS_USERCMD_ALOWPARTY   "悼竿倾侩"
-    IDS_USERCMD_DOPARTY     "悼竿"
-    IDS_USERCMD_BROKEPARTY  "悼竿颇扁"
-    IDS_USERCMD_OUTGUILD    "巩颇呕硼"
-    IDS_USERCMD_NOGUILDCRY1 "巩颇傈澜瞒窜"
-    IDS_USERCMD_NOGUILDCRY2 "巩颇傈澜芭何"
-    IDS_USERCMD_ATTACKMODE  "傍拜葛靛"
-    IDS_USERCMD_REST        "绒侥"
-    IDS_USERCMD_SABUKDOOR   "荤合己巩"
-    IDS_LOAD_USERCOMMAND    "荤侩磊 疙飞绢 (%d 俺)甫 佬菌嚼聪促."
-    IDS_DEFENCEUP           "规绢仿 惑铰 %d 檬"
-    IDS_MAGDEFENCEUP        "付亲仿 惑铰 %d 檬"
-    IDS_MALE_WEAR           "巢磊 渴涝聪促."
-    IDS_FEMALE_WEAR         "咯磊 渴涝聪促."
+    IDS_USERCMD_ACPTGUILD   "加入门派"
+    IDS_USERCMD_ALOWPARTY   "允许组队"
+    IDS_USERCMD_DOPARTY     "创建队伍"
+    IDS_USERCMD_BROKEPARTY  "队伍解散"
+    IDS_USERCMD_OUTGUILD    "退出门派"
+    IDS_USERCMD_NOGUILDCRY1 "??????"
+    IDS_USERCMD_NOGUILDCRY2 "??????"
+    IDS_USERCMD_ATTACKMODE  "攻击模式"
+    IDS_USERCMD_REST        "休息"
+    IDS_USERCMD_SABUKDOOR   "沙布城门"
+    IDS_LOAD_USERCOMMAND    "已读取用户命令（％d）。"
+    IDS_DEFENCEUP           "防御增加％d秒"
+    IDS_MAGDEFENCEUP        "魔防增加%d秒"
+    IDS_MALE_WEAR           "男性装备"
+    IDS_FEMALE_WEAR         "男性装备"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
-    IDS_NOTENOUGH_VALUE     "馒侩且 荐 绝嚼聪促."
-    IDS_NOTENOUGH_WEIGHT    "呈公 公疤嚼聪促. "
-    IDS_GOLD                "陛傈"
-    IDS_NEVERDIE_ON         "公利葛靛"
-    IDS_NEVERDIE_OFF        "乞裹葛靛"
-    IDS_CAPTURE_ON          "哎公府 矫累"
-    IDS_CAPTURE_OFF         "哎公府 场"
+    IDS_NOTENOUGH_VALUE     "不能穿。"
+    IDS_NOTENOUGH_WEIGHT    "太重了。"
+    IDS_GOLD                "钱"
+    IDS_NEVERDIE_ON         "无敌模式"
+    IDS_NEVERDIE_OFF        "正常模式"
+    IDS_CAPTURE_ON          "开始捕捉"
+    IDS_CAPTURE_OFF         "停止捕捉"
 END
 
-#endif    // Korean resources
+#endif    // Chinese (Simplified, PRC) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Korean (Korea) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_KOR)
+LANGUAGE LANG_KOREAN, SUBLANG_DEFAULT
+#pragma code_page(949)
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // Korean (Korea) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

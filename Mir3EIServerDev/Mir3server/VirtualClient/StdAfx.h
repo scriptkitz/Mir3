@@ -13,7 +13,8 @@
 //#define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
 
 #include <tchar.h>
-#include <winsock2.h>
+#include <WS2tcpip.h>
+#include <ws2def.h>
 #include <windows.h>
 #include <commctrl.h>
 #include <time.h>
@@ -26,7 +27,7 @@
 #pragma comment (lib, "ws2_32.lib")
 #pragma comment (lib, "comctl32.lib")
 
-#define _IDM_SOCKMSG			WM_USER + 1000
+
 
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.

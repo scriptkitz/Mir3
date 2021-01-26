@@ -373,7 +373,7 @@ public:
 	UINT	GetCharStatus();
 
 	virtual WORD	GetThisCharColor() = 0;
-	virtual void	GetCharName(char *pszCharName) = 0;
+	virtual void	GetCharName(char *pszCharName, size_t iszlen) = 0;
 	virtual void	Run();
 	virtual void	SearchViewRange();
 

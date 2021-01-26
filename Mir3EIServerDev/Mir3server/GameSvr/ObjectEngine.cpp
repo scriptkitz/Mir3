@@ -592,12 +592,12 @@ BOOL CCharObject::DropItemDown(_LPTUSERITEMRCD lpTItemRcd, int nRange, BOOL fIsG
 		
 		if (strlen(lpTItemRcd->szPrefixName))
 		{
-			strcpy(xpMapItem->szName, lpTItemRcd->szPrefixName);
-			strcat(xpMapItem->szName, " ");
-			strcat(xpMapItem->szName, g_pStdItemSpecial[lpTItemRcd->nStdIndex].szName);
+			strcpy_s(xpMapItem->szName, lpTItemRcd->szPrefixName);
+			strcat_s(xpMapItem->szName, " ");
+			strcat_s(xpMapItem->szName, g_pStdItemSpecial[lpTItemRcd->nStdIndex].szName);
 		}
 		else
-			strcpy(xpMapItem->szName, g_pStdItemSpecial[lpTItemRcd->nStdIndex].szName);
+			strcpy_s(xpMapItem->szName, g_pStdItemSpecial[lpTItemRcd->nStdIndex].szName);
 	}
 
 	int nX, nY;
@@ -2141,12 +2141,12 @@ BOOL CCharObject::_Attack(WORD wHitMode, CCharObject* pObject)
 
 			if (m_wObjectType & _OBJECT_HUMAN)
 			{
-				sprintf(szMsg, "%s 맞음 - PW:%d HP:%d, 무기내구닳음:%d", pObject->m_szName, nPower, pObject->m_WAbility.HP, nWeaponDamage);
+				sprintf_s(szMsg, "%s 맞음 - PW:%d HP:%d, 무기내구닳음:%d", pObject->m_szName, nPower, pObject->m_WAbility.HP, nWeaponDamage);
 				SysMsg(szMsg, 0);
 			}
 			else if (pObject->m_wObjectType & _OBJECT_HUMAN)
 			{
-				sprintf(szMsg, "%s 맞음 - PW:%d HP:%d", pObject->m_szName, nPower, pObject->m_WAbility.HP);
+				sprintf_s(szMsg, "%s 맞음 - PW:%d HP:%d", pObject->m_szName, nPower, pObject->m_WAbility.HP);
 				pObject->SysMsg(szMsg, 0);
 			}
 			// Debug Code
@@ -2819,7 +2819,7 @@ BOOL CCharObject::SwordLongAttack(int nDamage)
 #ifdef _DEBUG
 					char szMsg[64];
 
-					sprintf(szMsg, "%s 어검 맞음 - PW:%d HP:%d", pTargetObject->m_szName, nDamage, pTargetObject->m_WAbility.HP);
+					sprintf_s(szMsg, "%s 어검 맞음 - PW:%d HP:%d", pTargetObject->m_szName, nDamage, pTargetObject->m_WAbility.HP);
 					SysMsg(szMsg, 0);
 					// Debug Code
 #endif
@@ -2864,7 +2864,7 @@ BOOL CCharObject::SwordWideAttack(int nDamage)
 #ifdef _DEBUG
 					char szMsg[64];
 
-					sprintf(szMsg, "%s 반월 맞음 - PW:%d HP:%d", pTargetObject->m_szName, nDamage, pTargetObject->m_WAbility.HP);
+					sprintf_s(szMsg, "%s 반월 맞음 - PW:%d HP:%d", pTargetObject->m_szName, nDamage, pTargetObject->m_WAbility.HP);
 					SysMsg(szMsg, 0);
 					// Debug Code
 #endif
@@ -3319,7 +3319,7 @@ void CCharObject::GetQueryUserName(CCharObject* pObject, int nX, int nY)
 	char				szEncodeMsg[32];
 	char				szCharName[64];
 	
-	pObject->GetCharName(szCharName);
+	pObject->GetCharName(szCharName, sizeof(szCharName));
 
 	fnMakeDefMessage(&DefMsg, SM_USERNAME, (int)pObject, pObject->GetThisCharColor(), 0, 0);
 

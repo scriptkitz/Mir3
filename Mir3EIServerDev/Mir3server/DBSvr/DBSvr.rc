@@ -1,4 +1,4 @@
-//Microsoft Developer Studio generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
 
@@ -13,46 +13,19 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Korean resources
+// Chinese (Simplified, PRC) resources
 
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_KOR)
-#ifdef _WIN32
-LANGUAGE LANG_KOREAN, SUBLANG_DEFAULT
-#pragma code_page(949)
-#endif //_WIN32
-
-#ifdef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// TEXTINCLUDE
-//
-
-1 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "resource.h\0"
-END
-
-2 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "#include ""afxres.h""\r\n"
-    "\0"
-END
-
-3 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "\r\n"
-    "\0"
-END
-
-#endif    // APSTUDIO_INVOKED
-
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Bitmap
 //
 
-IDB_TOOLBAR             BITMAP  DISCARDABLE     ".\\Res\\toolbar.bmp"
+IDB_TOOLBAR             BITMAP                  ".\\Res\\toolbar.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -61,23 +34,24 @@ IDB_TOOLBAR             BITMAP  DISCARDABLE     ".\\Res\\toolbar.bmp"
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_MIR2                ICON    DISCARDABLE     ".\\Res\\MIR2.ICO"
+IDI_MIR2                ICON                    ".\\Res\\MIR2.ICO"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Menu
 //
 
-IDR_MAINMENU MENU DISCARDABLE 
+IDR_MAINMENU MENU
 BEGIN
-    POPUP "&Service"
+    POPUP "控制(&C)"
     BEGIN
-        MENUITEM "&Start Service",              IDM_STARTSERVICE
-        MENUITEM "S&top Service",               IDM_STOPSERVICE, GRAYED
+        MENUITEM "启动服务(&S)",                    IDM_STARTSERVICE
+        MENUITEM "停止服务(&T)",                    IDM_STOPSERVICE, GRAYED
         MENUITEM SEPARATOR
-        MENUITEM "&Configuration",              IDM_CONFIG
+        MENUITEM "配置(&O)",                      IDM_CONFIG
         MENUITEM SEPARATOR
-        MENUITEM "E&xit",                       IDM_EXIT
+        MENUITEM "退出(&E)",                      IDM_EXIT
     END
 END
 
@@ -87,26 +61,24 @@ END
 // Dialog
 //
 
-IDD_CONFIGDLG DIALOG DISCARDABLE  0, 0, 187, 143
-STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
-CAPTION "Database Server Configuration"
-FONT 9, "奔覆"
+IDD_CONFIGDLG DIALOGEX 0, 0, 219, 169
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "数据库服务器配置"
+FONT 9, "宋体", 400, 0, 0x86
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,71,122,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,130,122,50,14
-    CONTROL         "IPAddress1",IDC_DBMS_IP,"SysIPAddress32",WS_TABSTOP,65,
-                    29,90,11
-    EDITTEXT        IDC_DBMS_PORT,65,43,28,12,ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "Address :",-1,29,31,35,8
-    GROUPBOX        "DBMS Information",-1,15,15,158,83
-    LTEXT           "Instance :",-1,28,45,34,9
-    LTEXT           "ID : ",-1,30,81,14,8
-    EDITTEXT        IDC_DBMS_ID,46,78,28,14,ES_AUTOHSCROLL
-    LTEXT           "Password :",-1,82,81,38,8
-    EDITTEXT        IDC_DBMS_PASSWORD,123,78,40,14,ES_PASSWORD | 
-                    ES_AUTOHSCROLL
-    LTEXT           "Database :",-1,25,60,36,8
-    EDITTEXT        IDC_DBMS_DEVICE,65,58,82,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "确认",IDOK,100,148,50,14
+    PUSHBUTTON      "取消",IDCANCEL,162,148,50,14
+    CONTROL         "IPAddress1",IDC_DBMS_IP,"SysIPAddress32",WS_TABSTOP,74,27,93,14
+    EDITTEXT        IDC_DBMS_PORT,74,44,93,14,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "IP地址:",-1,25,29,45,8
+    GROUPBOX        "数据库管理系统信息",-1,7,7,205,127
+    RTEXT           "实例:",-1,25,46,45,8
+    RTEXT           "账号:",-1,25,80,45,8
+    EDITTEXT        IDC_DBMS_ID,74,78,93,14,ES_AUTOHSCROLL
+    RTEXT           "密码:",-1,25,97,45,8
+    EDITTEXT        IDC_DBMS_PASSWORD,74,95,93,14,ES_PASSWORD | ES_AUTOHSCROLL
+    RTEXT           "数据库名称:",-1,25,63,45,8
+    EDITTEXT        IDC_DBMS_DEVICE,74,61,93,14,ES_AUTOHSCROLL
 END
 
 
@@ -116,14 +88,14 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO DISCARDABLE 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_CONFIGDLG, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 180
+        RIGHTMARGIN, 212
         TOPMARGIN, 7
-        BOTTOMMARGIN, 136
+        BOTTOMMARGIN, 162
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -131,42 +103,88 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_CONFIGDLG AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // String Table
 //
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
-    IDS_NOTWINNT            "捞 橇肺弊伐篮 Microsoft Windows 2000 捞惑狼 滚怜俊辑 父 角青 且 荐 乐嚼聪促."
-    IDS_LVS_LABEL1          "朝楼"
-    IDS_LVS_LABEL2          "矫埃"
-    IDS_LVS_LABEL3          "皋技瘤"
-    IDS_STARTSERVICE        "单捞磐海捞胶 辑滚 辑厚胶甫 矫累 沁嚼聪促."
-    IDS_STOPSERVICE         "单捞磐海捞胶 辑滚 辑厚胶甫 吝瘤 沁嚼聪促."
-    IDS_CONNECT_LOGINSERVER "伎泛飘 霸捞飘 辑滚客 立加 登菌嚼聪促."
-    IDS_DISCONNECT_LOGINSERVER "肺弊牢 辑滚客 立加捞 谗板嚼聪促."
-    IDS_PROGRAM_QUIT        "单捞磐海捞胶 辑滚甫 辆丰 窍矫摆嚼聪鳖 ?"
-    IDS_PROGRAM_TITLE       "固福狼 傈汲2 - 肺弊牢 辑滚"
-    IDS_CANT_CONNECT        "肺弊牢 辑滚俊 立加 且 荐 绝嚼聪促. 10檬 饶 犁 立加阑 矫档 钦聪促."
-    IDS_CONFLVS_LABEL1      "辑滚疙"
-    IDS_CONFLVS_LABEL2      "鸥捞撇"
-    IDS_CONFLVS_LABEL3      "肺弊牢 霸捞飘 郴何 IP 林家"
-    IDS_CONFLVS_LABEL4      "肺弊牢 霸捞飘 寇何 IP 林家"
+    IDS_LVS_LABEL1          "日期"
+    IDS_LVS_LABEL2          "时间"
+    IDS_LVS_LABEL3          "信息"
+    IDS_STARTSERVICE        "数据库服务器服务已经启动。"
+    IDS_STOPSERVICE         "数据库服务器服务已停止。"
+    IDS_CONNECT_LOGINSERVER "已连接到登录服务网关。"
+    IDS_DISCONNECT_LOGINSERVER "与登录服务网关连接已断开。"
+    IDS_PROGRAM_QUIT        "关闭数据库网关？"
+    IDS_PROGRAM_TITLE       "Legend Of Mir2 - 数据库网关"
+    IDS_CANT_CONNECT        "无法连接到登录服务器。10秒后将重新尝试连接。"
+    IDS_CONFLVS_LABEL1      "服务器名"
+    IDS_CONFLVS_LABEL2      "标题"
+    IDS_CONFLVS_LABEL3      "网关的内部IP地址登录"
+    IDS_CONFLVS_LABEL4      "登录网关的外部IP地址"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
-    IDS_CONFLVS_LABEL5      "霸烙 霸捞飘 寇何 IP 林家"
-    IDS_TAB_LABEL1          "辑滚 汲沥"
-    IDS_ACCEPT_GATESERVER   "霸烙 辑滚 (%s) 啊 立加 登菌嚼聪促."
-    IDS_OPEN_USER           "努扼捞攫飘 (%s) 啊 立加阑 矫档 沁嚼聪促. "
-    IDS_CLOSE_USER          "努扼捞攫飘 (%s) 啊 立加阑 辆丰 沁嚼聪促."
-    IDS_CONNECTDB           "固福狼 傈汲 2 单捞磐海捞胶俊 立加 登菌嚼聪促."
-    IDS_LOADACCOUNTRECORDS  "荤侩磊 拌沥 沥焊 饭内靛甫 佬绰 吝涝聪促."
-    IDS_BOUNDACCOUNTRECORDS "%d 俺狼 荤侩磊 拌沥 沥焊 饭内靛甫 佬菌嚼聪促."
-    IDS_COMPLETENEWUSER     "荤侩磊 ID [ %s ] 甫 积己 沁嚼聪促."
+    IDS_CONFLVS_LABEL5      "游戏网关之外的IP地址"
+    IDS_TAB_LABEL1          "服务器设置"
+    IDS_ACCEPT_GATESERVER   "游戏服务器%s连接。"
+    IDS_OPEN_USER           "客户端%s一直试图连接到。"
+    IDS_CLOSE_USER          "客户端%s已终止了连接。"
+    IDS_CONNECTDB           "Legend Of Mir2连接到数据库。"
+    IDS_LOADACCOUNTRECORDS  "加载玩家账号信息。"
+    IDS_BOUNDACCOUNTRECORDS "％d记录我读过一个用户帐户信息。"
+    IDS_COMPLETENEWUSER     "用户ID[％s]已建立。"
 END
 
-#endif    // Korean resources
+#endif    // Chinese (Simplified, PRC) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Chinese (Simplified, PRC) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_KOR)
+LANGUAGE LANG_KOREAN, SUBLANG_DEFAULT
+#pragma code_page(949)
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // Chinese (Simplified, PRC) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

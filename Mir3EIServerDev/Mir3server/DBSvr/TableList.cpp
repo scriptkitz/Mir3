@@ -26,8 +26,10 @@ bool CTblStartPoint::Init( CConnection *conn )
 	if ( !rec )
 		return false;
 	
+	bool done = false;
 	if ( rec->Execute( "SELECT * FROM TBL_STARTPOINT" ) )
 	{
+		done = true;
 		while ( rec->Fetch() )
 		{
 			TABLE *node = new TABLE;
@@ -35,10 +37,10 @@ bool CTblStartPoint::Init( CConnection *conn )
 				break;
 
 			node->index	= atoi( rec->Get( "FLD_INDEX" ) );
-			strcpy( node->mapName, rec->Get( "FLD_MAPNAME" ) );
+			strcpy_s( node->mapName, rec->Get( "FLD_MAPNAME" ) );
 			node->posX	= atoi( rec->Get( "FLD_POSX" ) );
 			node->posY	= atoi( rec->Get( "FLD_POSY" ) );
-			strcpy( node->desc, rec->Get( "FLD_DESCRIPTION" ) );
+			strcpy_s( node->desc, rec->Get( "FLD_DESCRIPTION" ) );
 
 			_trim( node->mapName );
 			_trim( node->desc );
@@ -49,7 +51,7 @@ bool CTblStartPoint::Init( CConnection *conn )
 
 	conn->DestroyRecordset( rec );
 
-	return true;
+	return done;
 }
 
 

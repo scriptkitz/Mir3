@@ -22,6 +22,8 @@ BOOL	CALLBACK ConfigDlgFunc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 HINSTANCE		g_hInst = NULL;				// Application instance
 HWND			g_hMainWnd = NULL;			// Main window handle
+HANDLE			g_hWSAEvent = NULL;
+HANDLE			g_hWSAThread = NULL;
 HWND			g_hLogMsgWnd = NULL;
 HWND			g_hToolBar = NULL;
 HWND			g_hStatusBar = NULL;
@@ -45,30 +47,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
     MSG msg;
 
-//	if (CheckAvailableIOCP())
-//	{
-		if (!InitApplication(hInstance))
-			return (FALSE);
+	if (!InitApplication(hInstance))
+		return (FALSE);
 
-		if (!InitInstance(hInstance, nCmdShow))
-			return (FALSE);
+	if (!InitInstance(hInstance, nCmdShow))
+		return (FALSE);
 
-		while (GetMessage(&msg, NULL, 0, 0))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-/*	}
-	else
+	while (GetMessage(&msg, NULL, 0, 0))
 	{
-		TCHAR szMsg[1024];
-
-		LoadString(hInstance, IDS_NOTWINNT, szMsg, sizeof(szMsg));
-		MessageBox(NULL, szMsg, _LOGINGATE_SERVER_TITLE, MB_OK|MB_ICONINFORMATION);
-		
-		return -1;
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
-*/
+
     return (msg.wParam);
 }
 
@@ -208,13 +198,13 @@ int AddNewLogMsg()
 	lvi.iItem		= nCount;
 	lvi.iSubItem	= 0;
 	
-	_tstrdate(szText);
+	_tstrdate_s(szText);
 
 	lvi.pszText = szText;
 	
 	ListView_InsertItem(g_hLogMsgWnd, &lvi);
 
-	_tstrtime(szText);
+	_tstrtime_s(szText);
 
 	ListView_SetItemText(g_hLogMsgWnd, nCount, 1, szText);
 

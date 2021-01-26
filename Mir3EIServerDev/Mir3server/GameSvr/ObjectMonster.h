@@ -124,7 +124,7 @@ public:
 	virtual void	SearchViewRange();
 	virtual void	Run();
 	virtual WORD	GetThisCharColor();
-	virtual void	GetCharName(char *pszCharName);
+	virtual void	GetCharName(char *pszCharName, size_t iszlen) override;
 };
 
 class CGenneralMonObject : public CMonsterObject

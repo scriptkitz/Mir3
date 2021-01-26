@@ -126,7 +126,7 @@ char * bstr::operator = ( bstr &str )
 char * bstr::operator = ( int num )
 {
 	char temp[12];
-	_itoa( num, temp, 10 );
+	_itoa_s( num, temp, 10 );
 
 	return assign( temp ) ? ptr : NULL;
 }
@@ -151,9 +151,9 @@ bstr & bstr::operator += ( char *str )
 		assign( str );
 		return *this;
 	}
-
-	expand( strlen( str ) );
-	strcat( ptr, str );
+	size_t elen = strlen(str);
+	expand(elen);
+	strcat_s( ptr, size, str );
 
 	return *this;
 }
@@ -163,7 +163,7 @@ bstr & bstr::operator += ( char *str )
 bstr & bstr::operator += ( int num )
 {
 	char temp[12]; // it's enough to store 32bit decimal either signed or unsigned
-	_itoa( num, temp, 10 );
+	_itoa_s( num, temp, 10 );
 	
 	return this->operator += ( temp );
 }
@@ -264,7 +264,7 @@ int _ltrim( char *str )
 			continue;
 		}
 			
-		strcpy( str, &str[cur_len] );
+		strcpy_s( str, str_len+1, &str[cur_len] );
 		break;
 	}
 
@@ -359,7 +359,7 @@ bool _pickstring( char *str, char sep, int index, char *buf, int buf_len )
 			if ( strlen( pos ) >= (unsigned) buf_len )
 				return false;
 
-			strcpy( buf, pos );
+			strcpy_s( buf, buf_len, pos );
 			return true;
 		}
 

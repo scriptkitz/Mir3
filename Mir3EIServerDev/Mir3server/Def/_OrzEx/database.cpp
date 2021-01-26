@@ -15,6 +15,7 @@ CDatabase::CDatabase()
 
 CDatabase::~CDatabase()
 {
+	Uninit();
 }
 
 
@@ -74,6 +75,7 @@ CConnection * CDatabase::CreateConnection( char *pDSN, char *pID, char *pPasswor
 	if ( pConn->Init( m_hEnv, pDSN, pID, pPassword ) == false )
 	{
 		delete pConn;
+		pConn = NULL;
 		return NULL;
 	}
 
@@ -81,11 +83,11 @@ CConnection * CDatabase::CreateConnection( char *pDSN, char *pID, char *pPasswor
 }
 
 
-void CDatabase::DestroyConnection( CConnection *pConn )
+void CDatabase::DestroyConnection( CConnection **pConn )
 {
-	pConn->Uninit();
-
-	delete pConn;
+	(*pConn)->Uninit();
+	delete *pConn;
+	*pConn = NULL;
 }
 
 
@@ -149,6 +151,7 @@ CConnection::CConnection()
 
 CConnection::~CConnection()
 {
+	Uninit();
 }
 
 
@@ -196,11 +199,11 @@ CRecordset * CConnection::CreateRecordset()
 	if ( pRec == NULL )
 		return NULL;
 
-/*	if ( pRec->Init( m_hDBConn ) == false )
+	if ( pRec->Init( m_hDBConn ) == false )
 	{
 		delete pRec;
 		return NULL;
-	}*/
+	}
 
 	return pRec;
 }
@@ -383,7 +386,7 @@ char * CRecordset::Get( char *pColName )
 {
 	for ( int nCount = 0; nCount < m_nCols; nCount++ )
 	{
-		if ( stricmp( m_pColInfo[nCount].szColName, pColName ) == 0 )
+		if ( _stricmp( m_pColInfo[nCount].szColName, pColName ) == 0 )
 			return m_pColData[nCount].pData;
 	}
 
@@ -404,7 +407,7 @@ CRecordset::CColumnInfo * CRecordset::GetColInfo( char *pColName )
 {
 	for ( int nCount = 0; nCount < m_nCols; nCount++ )
 	{
-		if ( stricmp( m_pColInfo[nCount].szColName, pColName ) == 0 )
+		if ( _stricmp( m_pColInfo[nCount].szColName, pColName ) == 0 )
 			return &m_pColInfo[nCount];
 	}
 

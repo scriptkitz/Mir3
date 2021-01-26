@@ -17,7 +17,7 @@ void CPlayerObject::CmdChangeItemPrefix(char *pszParam1, char *pszParam2)
 		{
 			if (strcmp(pszParam1, g_pStdItemSpecial[lpUserItemRcd->nStdIndex].szName) == 0)
 			{
-				strcpy(lpUserItemRcd->szPrefixName, pszParam2);
+				strcpy_s(lpUserItemRcd->szPrefixName, pszParam2);
 				
 				if (UpdateItemToDB(lpUserItemRcd, _ITEM_ACTION_UPDATE))
 					AddProcess(this, RM_ITEMUPDATE, i, 0, 0, 0, lpUserItemRcd->szPrefixName);
@@ -287,7 +287,7 @@ void CPlayerObject::CmdCallMakeSlaveMonster(char *pszParam1, char *pszParam2)
 
 				pMonsterObject->m_pMasterObject = this;
 
-				pMonsterObject->GetCharName(szMonName);
+				pMonsterObject->GetCharName(szMonName, sizeof(szMonName));
 
 				AddRefMsg(RM_USERNAME, 0, 0, 0, 0, szMonName);
 				

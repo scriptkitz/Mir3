@@ -1,4 +1,4 @@
-//Microsoft Developer Studio generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
 
@@ -16,49 +16,19 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Korean resources
+// Chinese (Simplified, PRC) resources
 
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_KOR)
-#ifdef _WIN32
-LANGUAGE LANG_KOREAN, SUBLANG_DEFAULT
-#pragma code_page(949)
-#endif //_WIN32
-
-#ifdef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// TEXTINCLUDE
-//
-
-2 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
-    "#include ""windows.h""\r\n"
-    "#undef APSTUDIO_HIDDEN_SYMBOLS\r\n"
-    "#include ""resource.h""\r\n"
-    "\0"
-END
-
-3 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "\r\n"
-    "\0"
-END
-
-1 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "resource.h\0"
-END
-
-#endif    // APSTUDIO_INVOKED
-
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Bitmap
 //
 
-IDB_TOOLBAR             BITMAP  DISCARDABLE     "res\\toolbar.bmp"
+IDB_TOOLBAR             BITMAP                  "res\\toolbar.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -67,14 +37,15 @@ IDB_TOOLBAR             BITMAP  DISCARDABLE     "res\\toolbar.bmp"
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_MIR2                ICON    DISCARDABLE     "Res\\MIR2.ICO"
+IDI_MIR2                ICON                    "Res\\MIR2.ICO"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Menu
 //
 
-IDR_MAINMENU MENU DISCARDABLE 
+IDR_MAINMENU MENU
 BEGIN
     POPUP "&Service"
     BEGIN
@@ -94,7 +65,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO DISCARDABLE 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_CONFIGDLG, DIALOG
     BEGIN
@@ -112,13 +83,12 @@ END
 // Dialog
 //
 
-IDD_CONFIGDLG DIALOG DISCARDABLE  0, 0, 194, 149
-STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+IDD_CONFIGDLG DIALOG 0, 0, 194, 149
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 CAPTION "Game Gate Server Configuration"
-FONT 9, "±¼¸²"
+FONT 9, "??"
 BEGIN
-    CONTROL         "IPAddress1",IDC_LOGINSVR_IP,"SysIPAddress32",WS_TABSTOP,
-                    57,78,90,11
+    CONTROL         "IPAddress1",IDC_LOGINSVR_IP,"SysIPAddress32",WS_TABSTOP,57,78,90,11
     EDITTEXT        IDC_LOGINSVR_PORT,57,92,28,12,ES_AUTOHSCROLL | ES_NUMBER
     EDITTEXT        IDC_LOCALPORT,104,35,28,14,ES_AUTOHSCROLL | ES_NUMBER
     DEFPUSHBUTTON   "OK",IDOK,66,128,50,14
@@ -128,8 +98,7 @@ BEGIN
     LTEXT           "Port :",IDC_STATIC,35,93,21,9
     LTEXT           "Local Port :",IDC_STATIC,61,38,39,10
     LTEXT           "Game Gate Server Index :",IDC_STATIC,15,19,85,8
-    EDITTEXT        IDC_SERVERINDEX,104,16,15,14,ES_AUTOHSCROLL | ES_NUMBER | 
-                    WS_DISABLED
+    EDITTEXT        IDC_SERVERINDEX,104,16,15,14,ES_AUTOHSCROLL | ES_NUMBER | WS_DISABLED
 END
 
 
@@ -138,9 +107,8 @@ END
 // String Table
 //
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
-    IDS_NOTWINNT            "You are not running a NT-Kernel based operating system. Please install Windows NT4/2000/XP/2003/Longhorn."
     IDS_LVS_LABEL1          "Date"
     IDS_LVS_LABEL2          "Time"
     IDS_LVS_LABEL3          "Text"
@@ -156,7 +124,46 @@ BEGIN
     IDS_LOADFAIL_ABUSIVE    "Cannot load Abusive.txt."
 END
 
-#endif    // Korean resources
+#endif    // Chinese (Simplified, PRC) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Korean (Korea) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_KOR)
+LANGUAGE LANG_KOREAN, SUBLANG_DEFAULT
+#pragma code_page(949)
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+2 TEXTINCLUDE 
+BEGIN
+    "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "#include ""windows.h""\r\n"
+    "#undef APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "#include ""resource.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // Korean (Korea) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

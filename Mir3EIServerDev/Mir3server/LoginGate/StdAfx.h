@@ -14,7 +14,8 @@
 #define UNICODE
 #define _UNICODE
 
-#include <winsock2.h>
+#include <WS2tcpip.h>
+#include <ws2def.h>
 #include <windows.h>
 #include <tchar.h>
 #ifdef _DEBUG
@@ -49,14 +50,14 @@
 #define _LOGINGATE_SERVER_TITLE		_TEXT("Legend of Mir II - Login Gate Server")
 #define _LOGINGATE_SERVER_REGISTRY	_TEXT("Software\\LegendOfMir\\LoginGate")
 
-#define _IDM_SERVERSOCK_MSG			WM_USER + 1000
-#define _IDM_CLIENTSOCK_MSG			_IDM_SERVERSOCK_MSG + 1
+#define _IDM_MY_WM_USER				WM_USER + 1000
+#define _IDM_CLIENTSOCK_MSG			_IDM_MY_WM_USER + 1
 
-#define _IDW_TOOLBAR				_IDM_SERVERSOCK_MSG + 2
-#define _IDW_STATUSBAR				_IDM_SERVERSOCK_MSG + 3
+#define _IDW_TOOLBAR				_IDM_MY_WM_USER + 2
+#define _IDW_STATUSBAR				_IDM_MY_WM_USER + 3
 
-#define _ID_TIMER_KEEPALIVE			_IDM_SERVERSOCK_MSG + 4
-#define _ID_TIMER_CONNECTSERVER		_IDM_SERVERSOCK_MSG + 5
+#define _ID_TIMER_KEEPALIVE			_IDM_MY_WM_USER + 4
+#define _ID_TIMER_CONNECTSERVER		_IDM_MY_WM_USER + 5
 
 extern BOOL g_fTerminated;
 

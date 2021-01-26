@@ -7,11 +7,9 @@ extern SOCKET		g_csock;
 
 extern HWND			g_hStatusBar;
 
-#ifndef _SOCKET_ASYNC_IO
 extern HANDLE					g_hIOCP;
 
 CWHList<CSessionInfo*>			g_xSessionList;
-#endif
 
 extern BOOL			g_fTerminated;
 

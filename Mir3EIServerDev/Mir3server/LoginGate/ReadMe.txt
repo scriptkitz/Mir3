@@ -38,7 +38,7 @@ Last Update Author	: Euy-heon, Jeong.
 	* ClientSockMsg.cpp
 	- BOOL InitServerThreadForComm()
 	- BOOL InitServerThreadForMsg()
-	- LPARAM OnClientSockMsg(WPARAM wParam, LPARAM lParam)
+	- DWORD WINAPI OnClientSockMsg(LPVOID lpParam)
 
 	* ConfigDlgFunc.cpp
 	- BOOL CALLBACK ConfigDlgFunc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -55,9 +55,6 @@ Last Update Author	: Euy-heon, Jeong.
 	* MainWndProc.cpp
 	- void OnCommand(WPARAM wParam, LPARAM lParam)
 	- LPARAM APIENTRY MainWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
-
-	* ServerSockMsg.cpp
-	- LPARAM OnServerSockMsg(WPARAM wParam, LPARAM lParam)
 
 	* ThreadFuncForComm.cpp
 	- DWORD WINAPI ThreadFuncForComm(LPVOID lpParameter)

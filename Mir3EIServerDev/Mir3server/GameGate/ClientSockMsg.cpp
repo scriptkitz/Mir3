@@ -1,10 +1,10 @@
 #include "stdafx.h"
 
+extern HANDLE g_hWSAEvent;
+
 DWORD WINAPI	ThreadFuncForMsg(LPVOID lpParameter);
 BOOL			CheckSocketError(LPARAM lParam);
 VOID WINAPI		OnTimerProc(HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
-
-UINT WINAPI		ClientWorkerThread(LPVOID lpParameter);
 
 extern SOCKET					g_csock;
 
@@ -21,8 +21,6 @@ char							g_szRemainBuff[DATA_BUFSIZE * 2];
 int								g_nRemainBuffLen = 0;
 
 //CWHQueue						g_SendToUserQ;
-
-WSAEVENT						g_ClientIoEvent;
 
 void ProcMakeSocketStr(char *lpMsg)
 {
@@ -204,138 +202,77 @@ BOOL InitServerThreadForMsg()
 	return FALSE;
 }
 
-LPARAM OnClientSockMsg(WPARAM wParam, LPARAM lParam)
+DWORD WINAPI OnClientSockMsg(LPVOID lpParam)
 {
-	switch (WSAGETSELECTEVENT(lParam))
+	while (true)
 	{
-		case FD_CONNECT:
+		DWORD dwIndex = WSAWaitForMultipleEvents(1, &g_hWSAEvent, FALSE, 500, FALSE);
+		if (dwIndex == WSA_WAIT_TIMEOUT) continue;
+		WSANETWORKEVENTS events;
+		if (SOCKET_ERROR != WSAEnumNetworkEvents(g_csock, g_hWSAEvent, &events))
 		{
-			if (CheckSocketError(lParam))
+			if (events.lNetworkEvents & FD_CONNECT)
 			{
-				if (InitServerThreadForMsg())
+				int errcode = events.iErrorCode[FD_CONNECT_BIT];
+				if (errcode)
 				{
-					g_nRemainBuffLen = 0;
+					InsertLogMsg(IDS_CANT_CONNECT);
+					closesocket(g_csock);
+					g_csock = INVALID_SOCKET;
 
-					KillTimer(g_hMainWnd, _ID_TIMER_CONNECTSERVER);
-					
-					SetTimer(g_hMainWnd, _ID_TIMER_KEEPALIVE, 50000, (TIMERPROC)OnTimerProc);
-//					SetTimer(g_hMainWnd, _ID_TIMER_KEEPALIVE, 1000, (TIMERPROC)OnTimerProc);
+					SetTimer(g_hMainWnd, _ID_TIMER_CONNECTSERVER, 10000, (TIMERPROC)OnTimerProc);
+					return 0;
+				}
+				else
+				{
+					if (InitServerThreadForMsg())
+					{
+						g_nRemainBuffLen = 0;
 
-					InsertLogMsg(IDS_CONNECT_LOGINSERVER);
-					SendMessage(g_hStatusBar, SB_SETTEXT, MAKEWORD(1, 0), (LPARAM)_TEXT("Connected"));
+						KillTimer(g_hMainWnd, _ID_TIMER_CONNECTSERVER);
 
-					//
-					UINT			dwThreadIDForMsg = 0;
-					unsigned long	hThreadForMsg = 0;
+						SetTimer(g_hMainWnd, _ID_TIMER_KEEPALIVE, 50000, (TIMERPROC)OnTimerProc);
+						//					SetTimer(g_hMainWnd, _ID_TIMER_KEEPALIVE, 1000, (TIMERPROC)OnTimerProc);
 
-					g_ClientIoEvent = WSACreateEvent();
+						InsertLogMsg(IDS_CONNECT_LOGINSERVER);
+						SendMessage(g_hStatusBar, SB_SETTEXT, MAKEWORD(1, 0), (LPARAM)_TEXT("Connected"));
 
-					//hThreadForMsg = _beginthreadex(NULL, 0, ClientWorkerThread, NULL, 0, &dwThreadIDForMsg);
+						//
+						UINT			dwThreadIDForMsg = 0;
+						unsigned long	hThreadForMsg = 0;
+					}
 				}
 			}
-			else
+			else if (events.lNetworkEvents & FD_READ)
 			{
-				closesocket(g_csock);
-				g_csock = INVALID_SOCKET;
+				int errcode = events.iErrorCode[FD_READ_BIT];
+				if (errcode)
+				{
+					closesocket(g_csock);
+					//break;
+				}
+				char	szPacket[1024];
 
-				SetTimer(g_hMainWnd, _ID_TIMER_CONNECTSERVER, 10000, (TIMERPROC)OnTimerProc);
+				int nRecv = recv(g_csock, szPacket, sizeof(szPacket), 0);
+
+				szPacket[nRecv] = '\0';
+
+				ProcReceiveBuffer(szPacket, nRecv);
 			}
+			else if (events.lNetworkEvents & FD_CLOSE)
+			{
+				//closesocket(g_csock);
+				//g_csock = INVALID_SOCKET;
 
-			break;
-		}
-/*		case FD_CLOSE:
-		{
-			closesocket(g_csock);
-			g_csock = INVALID_SOCKET;
+				//KillTimer(g_hMainWnd, _ID_TIMER_KEEPALIVE);
 
-			KillTimer(g_hMainWnd, _ID_TIMER_KEEPALIVE);
-			
-			SetTimer(g_hMainWnd, _ID_TIMER_CONNECTSERVER, 10000, (TIMERPROC)OnTimerProc);
+				//SetTimer(g_hMainWnd, _ID_TIMER_CONNECTSERVER, 10000, (TIMERPROC)OnTimerProc);
 
-			InsertLogMsg(IDS_DISCONNECT_LOGINSERVER);
-			SendMessage(g_hStatusBar, SB_SETTEXT, MAKEWORD(1, 0), (LPARAM)_TEXT("Not Connected"));
+				//InsertLogMsg(IDS_DISCONNECT_LOGINSERVER);
+				//SendMessage(g_hStatusBar, SB_SETTEXT, MAKEWORD(1, 0), (LPARAM)_TEXT("Not Connected"));
 
-			break;
-		}
-		case FD_READ:
-		{
-			char	szPacket[1024];
-	
-			int nRecv = recv((SOCKET)wParam, szPacket, sizeof(szPacket), 0);
-
-			szPacket[nRecv] = '\0';
-
-			ProcReceiveBuffer(szPacket, nRecv);
-
-			break;
-		}
-*/	}
-
-	return 0L;
-}
-
-UINT WINAPI		ClientWorkerThread(LPVOID lpParameter)
-{
-	_TOVERLAPPEDEX		ClientOverlapped;
-	DWORD				dwIndex;
-	DWORD				dwBytesTransferred;
-	DWORD				dwFlags;
-	DWORD				dwRecvBytes;
-		
-//	char				*pszPos;
-//	int					nSocket;
-
-	ZeroMemory(&ClientOverlapped.Overlapped, sizeof(WSAOVERLAPPED));
-
-	ClientOverlapped.Overlapped.hEvent = g_ClientIoEvent;
-
-	ClientOverlapped.DataBuf.len	= DATA_BUFSIZE;
-	ClientOverlapped.DataBuf.buf	= &ClientOverlapped.Buffer[0];
-
-	dwFlags = 0;
-
-	if (WSARecv(g_csock, &(ClientOverlapped.DataBuf), 1, &dwRecvBytes, &dwFlags, &(ClientOverlapped.Overlapped), NULL) == SOCKET_ERROR)
-	{
-		if (WSAGetLastError() != ERROR_IO_PENDING)
-			return 0;		
-	}
-
-	while (TRUE)
-	{
-		dwIndex = WSAWaitForMultipleEvents(1, &g_ClientIoEvent, FALSE, WSA_INFINITE, FALSE);
-
-		WSAResetEvent(g_ClientIoEvent);
-
-		WSAGetOverlappedResult(g_csock, &ClientOverlapped.Overlapped, &dwBytesTransferred, FALSE, &dwFlags);
-
-		if (dwBytesTransferred == 0)
-			break;
-
-		ClientOverlapped.DataBuf.buf[dwBytesTransferred] = '\0';
-
-/*#ifdef _DEBUG
-		_RPT1(_CRT_WARN, "%d:", dwBytesTransferred);
-
-		for (int i = 0; i < dwBytesTransferred; i++)
-			_RPT1(_CRT_WARN, "%c", ClientOverlapped.DataBuf.buf[i]);
-		_RPT0(_CRT_WARN, "\n");
-#endif*/
-
-		ProcReceiveBuffer(ClientOverlapped.DataBuf.buf, dwBytesTransferred);
-
-		dwFlags = 0;
-
-		ZeroMemory(&(ClientOverlapped.Overlapped), sizeof(OVERLAPPED));
-
-		ClientOverlapped.DataBuf.len = DATA_BUFSIZE;
-		ClientOverlapped.DataBuf.buf = &ClientOverlapped.Buffer[0];
-
-		ClientOverlapped.Overlapped.hEvent = g_ClientIoEvent;
-
-		if (WSARecv(g_csock, &(ClientOverlapped.DataBuf), 1, &dwRecvBytes, &dwFlags, &(ClientOverlapped.Overlapped), NULL) == SOCKET_ERROR)
-		{
-			if (WSAGetLastError() != ERROR_IO_PENDING)
 				break;
+			}
 		}
 	}
 

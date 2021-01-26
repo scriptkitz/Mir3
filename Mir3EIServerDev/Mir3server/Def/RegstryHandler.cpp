@@ -23,10 +23,10 @@ BOOL jRegSetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, DWORD dwFlags,
 {
 	HKEY	hk = NULL;
 	DWORD	dwDisposition = 0;
-
-	if (RegCreateKeyEx(HKEY_LOCAL_MACHINE, pSubKeyName, 0, NULL, 
-					REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, 
-					&hk, &dwDisposition) == ERROR_SUCCESS)
+	LSTATUS status = RegCreateKeyEx(HKEY_CURRENT_USER, pSubKeyName, 0, NULL,
+		REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL,
+		&hk, &dwDisposition);
+	if (status == ERROR_SUCCESS)
 	{
 		if (RegSetValueEx(hk, pValueName, 0, dwFlags, pValue, nValueSize) != ERROR_SUCCESS)
 		{
@@ -38,6 +38,14 @@ BOOL jRegSetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, DWORD dwFlags,
 
 		return TRUE;
 	}
+	else
+	{
+		HLOCAL errs = NULL;
+		LPWSTR str = (LPWSTR)&errs;
+		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+			NULL, status, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), str, 0, NULL);
+		LocalFree(errs);
+	}
 
 	return FALSE;
 }
@@ -47,7 +55,7 @@ BOOL jRegGetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, LPBYTE pValue)
 	HKEY	hk = NULL;
 	DWORD	dwFlags = 0, dwValueSize = 0;
 
-    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, pSubKeyName, 0, KEY_READ, &hk) == ERROR_SUCCESS)
+    if (RegOpenKeyEx(HKEY_CURRENT_USER, pSubKeyName, 0, KEY_READ, &hk) == ERROR_SUCCESS)
 	{
 		if (RegQueryValueEx(hk, pValueName, NULL, &dwFlags, NULL, &dwValueSize) != ERROR_SUCCESS)
 		{
@@ -71,7 +79,7 @@ LONG jRegEnumKey(LPCTSTR pSubKeyName, int nIndex, LPTSTR lpSubKey, int nSubkeyLe
 	FILETIME	ft;
 	LONG		lRet = -1;
 
-    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, pSubKeyName, 0, KEY_READ, &hk) == ERROR_SUCCESS)
+    if (RegOpenKeyEx(HKEY_CURRENT_USER, pSubKeyName, 0, KEY_READ, &hk) == ERROR_SUCCESS)
 	{
 		lRet = RegEnumKeyEx(hk, nIndex, lpSubKey, &dwSubKeyLen, NULL, NULL, NULL, &ft);
 

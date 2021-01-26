@@ -1,11 +1,17 @@
 #include "stdafx.h"
+#include <stdio.h>
+#include <tchar.h>
 
 void InsertLogMsg(LPTSTR lpszMsg);
 
 extern HINSTANCE		g_hInst;
 extern HWND				g_hMainWnd;
+extern HANDLE			g_hWSAEvent;
+extern HANDLE			g_hThread;
 
-BOOL ConnectServer(SOCKET &s, SOCKADDR_IN* addr, UINT nMsgID, LPCTSTR lpServerIP, DWORD dwIP, int nPort, long lEvent)
+DWORD WINAPI OnSockMsg(LPVOID lpParameter);
+
+BOOL ConnectServer(SOCKET &s, SOCKADDR_IN* addr, LPCTSTR lpServerIP, DWORD dwIP, int nPort, long lEvent)
 {
 	if (s != INVALID_SOCKET)
 	{
@@ -18,56 +24,69 @@ BOOL ConnectServer(SOCKET &s, SOCKADDR_IN* addr, UINT nMsgID, LPCTSTR lpServerIP
 	addr->sin_family	= AF_INET;
 	addr->sin_port		= htons(nPort);
 	
-	if (lpServerIP)
-		addr->sin_addr.s_addr	= inet_addr(lpServerIP);
+	if (lpServerIP && strlen(lpServerIP)>0)
+		inet_pton(AF_INET, lpServerIP, &addr->sin_addr.s_addr);
 	else
-	{
-		DWORD dwReverseIP = 0;
+		inet_pton(AF_INET, "127.0.0.1", &addr->sin_addr.s_addr);
 
-		dwReverseIP = (LOBYTE(LOWORD(dwIP)) << 24) | (HIBYTE(LOWORD(dwIP)) << 16) | (LOBYTE(HIWORD(dwIP)) << 8) | (HIBYTE(HIWORD(dwIP)));
-
-		addr->sin_addr.s_addr	= dwReverseIP;
-	}
-
-	if (WSAAsyncSelect(s, g_hMainWnd, nMsgID, lEvent) == SOCKET_ERROR)
+	if (WSAEventSelect(s, g_hWSAEvent, lEvent) == SOCKET_ERROR)
 		return FALSE;
+
 
 	if (connect(s, (const struct sockaddr FAR*)addr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR)
 	{
 		if (WSAGetLastError() == WSAEWOULDBLOCK)
+		{
+			DWORD	dwThreadID = 0;
+			g_hThread = CreateThread(NULL, 0, OnSockMsg, &s, 0, &dwThreadID);
 			return TRUE;
+		}
 	}
 
 	return FALSE;
 }
 
-LRESULT OnSockMsg(WPARAM wParam, LPARAM lParam)
+DWORD WINAPI OnSockMsg(LPVOID lpParameter)
 {
-	switch (WSAGETSELECTEVENT(lParam))
+	SOCKET s = *(SOCKET*)lpParameter;
+	while (true)
 	{
-		case FD_CONNECT:
+		DWORD dwIndex = WSAWaitForMultipleEvents(1, &g_hWSAEvent, FALSE, 500, FALSE);
+		if (dwIndex == WSA_WAIT_TIMEOUT) continue;
+		WSANETWORKEVENTS events;
+		if (SOCKET_ERROR != WSAEnumNetworkEvents(s, g_hWSAEvent, &events))
 		{
-			InsertLogMsg(_T("肺弊牢 霸捞飘 辑滚客 立加 登菌嚼聪促."));
-
-			break;
-		}
-		case FD_CLOSE:
-		{
-			break;
-		}
-		case FD_READ:
-		{
-			char	szMsg[4096];
-
-			int nLen = recv((SOCKET)wParam, szMsg, sizeof(szMsg), 0);
-
-			szMsg[nLen] = '\0';
-
-			InsertLogMsg(szMsg);
-
-			break;
+			if (events.lNetworkEvents & FD_CONNECT)
+			{
+				int errcode = events.iErrorCode[FD_CONNECT_BIT];
+				if (errcode)
+				{
+					TCHAR msg[128];
+					HLOCAL errs = NULL;
+					FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+						NULL, errcode, 0, (LPSTR)&errs, 0, NULL);
+					_stprintf_s(msg, "连接登录服务器失败!(%d-%s)", errcode, (LPSTR)errs);
+					LocalFree(errs);
+					InsertLogMsg(msg);
+				}
+				else
+					InsertLogMsg(_T("连接登录服务器成功。"));
+			}
+			else if (events.lNetworkEvents & FD_READ)
+			{
+				char	szMsg[4096];
+				int nLen = recv(s, szMsg, sizeof(szMsg)-1, 0);
+				szMsg[nLen] = '\0';
+				InsertLogMsg(szMsg);
+			}
+			else if (events.lNetworkEvents & FD_CLOSE)
+			{
+				WSACloseEvent(g_hWSAEvent);
+				g_hWSAEvent = NULL;
+				break;
+			}
 		}
 	}
-
+	g_hThread = NULL;
 	return 0;
 }

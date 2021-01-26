@@ -310,8 +310,7 @@ BOOL CPlayerObject::ProcessForAdminSaid(char *pszMsg)
 				if (m_fIsCapture)
 				{
 					LoadString(g_hInst, IDS_CAPTURE_ON, wszMsg, sizeof(wszMsg)/sizeof(TCHAR));
-
-					m_hCaptureFile = fopen("capture.txt", "w+");
+					fopen_s(&m_hCaptureFile, "capture.txt", "w+");
 				}
 				else
 				{

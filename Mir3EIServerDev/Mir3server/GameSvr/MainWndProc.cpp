@@ -1,7 +1,6 @@
 #include "stdafx.h"
 
-LPARAM OnClientSockMsg(WPARAM wParam, LPARAM lParam);
-LPARAM OnLogSvrSockMsg(WPARAM wParam, LPARAM lParam);
+DWORD WINAPI OnClientSockMsg(LPVOID lpThreadParameter);
 
 BOOL	jRegSetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, DWORD dwFlags, LPBYTE pValue, DWORD nValueSize);
 BOOL	jRegGetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, LPBYTE pValue);
@@ -64,7 +63,7 @@ CMapInfo* InitDataInDatabase()
 	return InitMapInfo(nServerIndex);
 }
 
-UINT WINAPI InitializingServer(LPVOID lpParameter)
+DWORD WINAPI InitializingServer(LPVOID lpParameter)
 {
 	TCHAR		wszPath[128];
 	TCHAR		wszFullPath[256];
@@ -103,16 +102,17 @@ UINT WINAPI InitializingServer(LPVOID lpParameter)
 	if (!jRegGetKey(_GAME_SERVER_REGISTRY, _TEXT("Installed"), (LPBYTE)&btInstalled))
 		DialogBox(g_hInst, MAKEINTRESOURCE(IDD_CONFIGDLG), NULL, (DLGPROC)ConfigDlgFunc);
 
-	DWORD	dwIP = 0;
+	TCHAR	tsIP[20];
 	TCHAR	szPort[24];
 	int		nPort = 0;
 
-	jRegGetKey(_GAME_SERVER_REGISTRY, _TEXT("DBServerIP"), (LPBYTE)&dwIP);
+	jRegGetKey(_GAME_SERVER_REGISTRY, _TEXT("DBServerIP"), (LPBYTE)tsIP);
 	jRegGetKey(_GAME_SERVER_REGISTRY, _TEXT("DBServerPort"), (LPBYTE)&nPort);
-	_itow(nPort, szPort, 10);
+	_itow_s(nPort, szPort, 10);
 
-	ConnectToServer(g_csock, &g_caddr, _IDM_CLIENTSOCK_MSG, NULL, dwIP, nPort, FD_CONNECT|FD_READ|FD_CLOSE);
-//	ConnectToServer(g_clsock, &g_claddr, _IDM_LOGSVRSOCK_MSG, NULL, dwIP, 5500, FD_CONNECT|FD_READ|FD_CLOSE);
+	HANDLE clientThread = NULL;
+	HANDLE loginThread = NULL;
+	ConnectToServer(g_csock, &g_caddr, tsIP, nPort, FD_CONNECT|FD_READ|FD_CLOSE, OnClientSockMsg, NULL);
 
 	return 0L;
 }
@@ -172,10 +172,8 @@ void OnCommand(WPARAM wParam, LPARAM lParam)
 
 			CMapInfo* pMapInfo = InitDataInDatabase();
 
-			UINT			dwThreadIDForMsg = 0;
-			unsigned long	hThreadForMsg = 0;
-
-			hThreadForMsg = _beginthreadex(NULL, 0, InitializingServer, pMapInfo, 0, &dwThreadIDForMsg);
+			DWORD dwThreadIDForMsg = 0;
+			HANDLE hThreadForMsg = CreateThread(NULL, 0, InitializingServer, pMapInfo, 0, &dwThreadIDForMsg);
 
 			SwitchMenuItem(TRUE);
 
@@ -211,14 +209,6 @@ LPARAM APIENTRY MainWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (nMsg)
 	{
-#ifdef _SOCKET_ASYNC_IO
-		case _IDM_SERVERSOCK_MSG:
-			return OnServerSockMsg(wParam, lParam);
-#endif
-		case _IDM_CLIENTSOCK_MSG:
-			return OnClientSockMsg(wParam, lParam);
-		case _IDM_LOGSVRSOCK_MSG:
-			return OnLogSvrSockMsg(wParam, lParam);
 		case WM_COMMAND:
 			OnCommand(wParam, lParam);
 			break;

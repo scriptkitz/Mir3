@@ -28,6 +28,8 @@ void	CreateConfigProperties();
 
 HINSTANCE		g_hInst = NULL;				// Application instance
 HWND			g_hMainWnd = NULL;			// Main window handle
+HANDLE			g_hWSAEvent = NULL;
+HANDLE			g_hWSAThread = NULL;
 HWND			g_hLogMsgWnd = NULL;
 HWND			g_hToolBar = NULL;
 HWND			g_hStatusBar = NULL;
@@ -48,28 +50,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
     MSG msg;
 
-	if (CheckAvailableIOCP())
+	if (!InitApplication(hInstance))
+		return (FALSE);
+
+	if (!InitInstance(hInstance, nCmdShow))
+		return (FALSE);
+
+	while (GetMessage(&msg, NULL, 0, 0))
 	{
-		if (!InitApplication(hInstance))
-			return (FALSE);
-
-		if (!InitInstance(hInstance, nCmdShow))
-			return (FALSE);
-
-		while (GetMessage(&msg, NULL, 0, 0))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-	}
-	else
-	{
-		TCHAR szMsg[1024];
-
-		LoadString(hInstance, IDS_NOTWINNT, szMsg, sizeof(szMsg));
-		MessageBox(NULL, szMsg, _LOGINGATE_SERVER_TITLE, MB_OK|MB_ICONINFORMATION);
-		
-		return -1;
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
 
     return (msg.wParam);
@@ -182,13 +172,13 @@ BOOL InitInstance(HANDLE hInstance, int nCmdShow)
 	if (WSAStartup(MAKEWORD(2, 2), &g_wsd) != 0)
 		return (FALSE);
 
-	GetDBManager()->Init( InsertLogMsg, "Mir2_Account", "sa", "prg" );
+	GetDBManager()->Init( InsertLogMsg, "Mir2_Common", "sa", "prg" );
 
 	//
-	BYTE	btInstalled;
+	//BYTE	btInstalled;
 
-	if (!jRegGetKey(_LOGIN_SERVER_REGISTRY, _TEXT("Installed"), (LPBYTE)&btInstalled))
-		CreateConfigProperties();
+	//if (!jRegGetKey(_LOGIN_SERVER_REGISTRY, _TEXT("Installed"), (LPBYTE)&btInstalled))
+	//	CreateConfigProperties();
 
 	InvalidateRect( g_hMainWnd, NULL, TRUE );
 
@@ -218,13 +208,13 @@ int AddNewLogMsg()
 	lvi.iItem		= nCount;
 	lvi.iSubItem	= 0;
 	
-	_tstrdate(szText);
+	_tstrdate_s(szText);
 
 	lvi.pszText = szText;
 	
 	ListView_InsertItem(g_hLogMsgWnd, &lvi);
 
-	_tstrtime(szText);
+	_tstrtime_s(szText);
 
 	ListView_SetItemText(g_hLogMsgWnd, nCount, 1, szText);
 
@@ -269,11 +259,13 @@ void InsertLogMsgParam(UINT nID, void *pParam, BYTE btFlags)
 	switch (btFlags)
 	{
 		case LOGPARAM_STR:
-			_stprintf(szMsg, szText, (LPTSTR)pParam);
+			_stprintf_s(szMsg, szText, (LPTSTR)pParam);
 			break;
 		case LOGPARAM_INT:
-			_stprintf(szMsg, szText, *(int *)pParam);
+			_stprintf_s(szMsg, szText, *(int *)pParam);
 			break;
+		default:
+			szMsg[0] = 0;
 	}
 
 	if (lstrlen(szMsg) <= 256)

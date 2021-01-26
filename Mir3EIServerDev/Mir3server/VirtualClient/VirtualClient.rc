@@ -1,4 +1,4 @@
-//Microsoft Developer Studio generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
 
@@ -13,55 +13,23 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Korean resources
+// Chinese (Simplified, PRC) resources
 
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_KOR)
-#ifdef _WIN32
-LANGUAGE LANG_KOREAN, SUBLANG_DEFAULT
-#pragma code_page(949)
-#endif //_WIN32
-
-#ifdef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// TEXTINCLUDE
-//
-
-1 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "resource.h\0"
-END
-
-2 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "#include ""afxres.h""\r\n"
-    "\0"
-END
-
-3 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "\r\n"
-    "\0"
-END
-
-#endif    // APSTUDIO_INVOKED
-
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Menu
 //
 
-IDR_MAINMENU MENU DISCARDABLE 
+IDR_MAINMENU MENU
 BEGIN
-    POPUP "¸í·É¾î"
+    POPUP "²Ù×÷"
     BEGIN
-        MENUITEM "CM_&IDPASSWORD",              IDM_CM_IDPASSWORD
-        MENUITEM "CM_&ADDUSER",                 IDM_CM_ADDUSER
-    END
-    POPUP "°¡È¤Å×½ºÆ®"
-    BEGIN
-        MENUITEM "°¡È¤Å×½ºÆ® ½ÃÀÛ(&S)",         IDM_TEST
+        MENUITEM "µÇÂ¼(&L)",                      IDM_CM_IDPASSWORD
+        MENUITEM "×¢²áÕËºÅ(&R)",                    IDM_CM_ADDUSER
     END
 END
 
@@ -71,50 +39,50 @@ END
 // Dialog
 //
 
-IDD_LOGIN DIALOG DISCARDABLE  0, 0, 121, 101
-STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_LOGIN DIALOGEX 0, 0, 121, 101
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Login"
-FONT 9, "±¼¸²"
+FONT 9, "ËÎÌå", 400, 0, 0x86
 BEGIN
-    EDITTEXT        IDC_USERID,64,23,40,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_PASSWORD,64,44,40,14,ES_AUTOHSCROLL
-    DEFPUSHBUTTON   "OK",IDOK,7,80,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,64,80,50,14
-    LTEXT           "ID :",IDC_STATIC,46,26,12,8
-    LTEXT           "Password :",IDC_STATIC,20,46,38,8
+    EDITTEXT        IDC_USERID,44,23,70,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_PASSWORD,44,44,70,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "È·¶¨",IDOK,7,80,50,14
+    PUSHBUTTON      "È¡Ïû",IDCANCEL,64,80,50,14
+    RTEXT           "ÕËºÅ£º",IDC_STATIC,9,26,33,8
+    RTEXT           "ÃÜÂë£º",IDC_STATIC,9,46,33,8
 END
 
-IDD_NEWUSER DIALOG DISCARDABLE  0, 0, 167, 261
-STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_NEWUSER DIALOGEX 0, 0, 167, 261
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Add New User"
-FONT 9, "±¼¸²"
+FONT 9, "ËÎÌå", 400, 0, 0x86
 BEGIN
-    EDITTEXT        IDC_USERID,73,19,40,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_PASSWORD,73,37,40,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_USERNAME,73,53,40,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_SSNO,73,70,65,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_BIRTHDAY,73,87,40,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_QUIZ1,73,105,74,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_ANSWER1,73,121,74,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_QUIZ2,73,137,74,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_ANSWER2,73,153,74,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_PHONE,73,171,58,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_MOBILEPHONE,73,189,58,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_EMAIL,73,206,74,14,ES_AUTOHSCROLL
-    DEFPUSHBUTTON   "OK",IDOK,7,240,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,110,240,50,14
-    LTEXT           "ID :",IDC_STATIC,56,22,12,8
-    LTEXT           "¾ÏÈ£ :",IDC_STATIC,49,39,19,8
-    LTEXT           "»ç¿ëÀÚ ¸í :",IDC_STATIC,33,56,35,8
-    LTEXT           "ÁÖ¹Îµî·Ï¹øÈ£ :",IDC_STATIC,21,73,47,8
-    LTEXT           "Áú¹® 1 :",IDC_STATIC,43,108,25,8
-    LTEXT           "Áú¹® 2 :",IDC_STATIC,43,140,25,8
-    LTEXT           "´ä 1 :",IDC_STATIC,50,124,18,8
-    LTEXT           "´ä 2 :",IDC_STATIC,50,157,18,8
-    LTEXT           "ÀüÈ­ ¹øÈ£ :",IDC_STATIC,33,174,35,8
-    LTEXT           "ÀÌµ¿ÀüÈ­ ¹øÈ£ :",IDC_STATIC,19,191,49,8
-    LTEXT           "ÀÌ¸ÞÀÏ ÁÖ¼Ò :",IDC_STATIC,26,208,42,8
-    LTEXT           "»ýÀÏ :",IDC_STATIC,49,89,19,8
+    EDITTEXT        IDC_USERID,69,19,74,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_PASSWORD,69,37,74,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_USERNAME,69,53,74,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SSNO,69,70,74,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_BIRTHDAY,69,87,74,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_QUIZ1,69,105,74,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_ANSWER1,69,121,74,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_QUIZ2,69,137,74,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_ANSWER2,69,153,74,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_PHONE,69,171,74,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MOBILEPHONE,69,189,74,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EMAIL,69,206,74,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "È·¶¨",IDOK,7,240,50,14
+    PUSHBUTTON      "È¡Ïû",IDCANCEL,110,240,50,14
+    RTEXT           "ÕËºÅ£º",IDC_STATIC,11,22,57,8
+    RTEXT           "ÃÜÂë£º",IDC_STATIC,11,39,57,8
+    RTEXT           "ÓÃ»§Ãû£º",IDC_STATIC,11,56,57,8
+    RTEXT           "Éí·ÝÖ¤ºÅÂë£º",IDC_STATIC,11,73,57,8
+    RTEXT           "ÎÊÌâ1£º",IDC_STATIC,11,108,57,8
+    RTEXT           "ÎÊÌâ2£º",IDC_STATIC,11,140,57,8
+    RTEXT           "´ð°¸1£º",IDC_STATIC,11,124,57,8
+    RTEXT           "´ð°¸2£º",IDC_STATIC,11,157,57,8
+    RTEXT           "µç»°ºÅÂë£º",IDC_STATIC,11,174,57,8
+    RTEXT           "ÊÖ»úºÅÂë£º",IDC_STATIC,11,191,57,8
+    RTEXT           "ÓÊÏäµØÖ·£º",IDC_STATIC,11,208,57,8
+    RTEXT           "ÉúÈÕ£º",IDC_STATIC,11,89,57,8
 END
 
 
@@ -124,7 +92,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO DISCARDABLE 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_LOGIN, DIALOG
     BEGIN
@@ -144,7 +112,59 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
-#endif    // Korean resources
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_NEWUSER AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_LOGIN AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+#endif    // Chinese (Simplified, PRC) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Korean (Korea) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_KOR)
+LANGUAGE LANG_KOREAN, SUBLANG_DEFAULT
+#pragma code_page(949)
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // Korean (Korea) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

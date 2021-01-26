@@ -11,28 +11,36 @@ static CDBManager s_dbManager;
 CDBManager::CDBManager()
 {
 	m_dbMain.SetDiagRec( __cbDBMsg );
-
-	m_dbMain.Init();
 }
 
 
 CDBManager::~CDBManager()
 {
-	if ( m_pConn )
-		m_dbMain.DestroyConnection( m_pConn );
+	UnInit();
+}
+
+
+CConnection* CDBManager::Init( void	(*pfnLog)( LPTSTR ), char *pDSN, char *pID, char *pPassword )
+{
+	m_pfnLog = pfnLog;
+
+	m_dbMain.Init();
+	m_pConn  = m_dbMain.CreateConnection( pDSN, pID, pPassword );
+
+	return m_pConn;
+}
+
+
+void CDBManager::UnInit()
+{
+	m_pfnLog = NULL;
+	if (m_pConn)
+	{
+		m_dbMain.DestroyConnection(&m_pConn);
+	}
 
 	m_dbMain.Uninit();
 }
-
-
-bool CDBManager::Init( void	(*pfnLog)( LPTSTR pMsg ), char *pDSN, char *pID, char *pPassword )
-{
-	m_pfnLog = pfnLog;
-	m_pConn  = m_dbMain.CreateConnection( pDSN, pID, pPassword );
-
-	return m_pConn ? true : false;
-}
-
 
 CRecordset * CDBManager::CreateRecordset()
 {
@@ -91,48 +99,48 @@ void CQueryManager::StartUpdateQuery( char *pTable, char *pCondition )
 {
 	m_listItem.ClearAll();
 
-	strcpy( m_szTable, pTable );
-	strcpy( m_szCondition, pCondition );
+	strcpy_s( m_szTable, pTable );
+	strcpy_s( m_szCondition, pCondition );
 }
 
 
 char * CQueryManager::GetUpdateQuery()
 {
-	sprintf( m_szQuery, "UPDATE %s SET ", m_szTable );
+	sprintf_s( m_szQuery, "UPDATE %s SET ", m_szTable );
 	
 	CListNode< ITEM > *pNode = m_listItem.GetHead();
 	if ( !pNode )
 		return NULL;
 	ITEM *pItem = pNode->GetData();
-	strcat( m_szQuery, pItem->szName );
-	strcat( m_szQuery, "=" );
+	strcat_s( m_szQuery, pItem->szName );
+	strcat_s( m_szQuery, "=" );
 	if ( pItem->bString )
 	{
-		strcat( m_szQuery, "'" );
-		strcat( m_szQuery, pItem->szValue );
-		strcat( m_szQuery, "'" );
+		strcat_s( m_szQuery, "'" );
+		strcat_s( m_szQuery, pItem->szValue );
+		strcat_s( m_szQuery, "'" );
 	}
 	else
-		strcat( m_szQuery, pItem->szValue );
+		strcat_s( m_szQuery, pItem->szValue );
 
 	for ( pNode = pNode->GetNext(); pNode; pNode = pNode->GetNext() )
 	{
 		pItem = pNode->GetData();
-		strcat( m_szQuery, ", " );
-		strcat( m_szQuery, pItem->szName );
-		strcat( m_szQuery, "=" );
+		strcat_s( m_szQuery, ", " );
+		strcat_s( m_szQuery, pItem->szName );
+		strcat_s( m_szQuery, "=" );
 		if ( pItem->bString )
 		{
-			strcat( m_szQuery, "'" );
-			strcat( m_szQuery, pItem->szValue );
-			strcat( m_szQuery, "'" );
+			strcat_s( m_szQuery, "'" );
+			strcat_s( m_szQuery, pItem->szValue );
+			strcat_s( m_szQuery, "'" );
 		}
 		else
-			strcat( m_szQuery, pItem->szValue );
+			strcat_s( m_szQuery, pItem->szValue );
 	}
 
-	strcat( m_szQuery, " WHERE " );
-	strcat( m_szQuery, m_szCondition );
+	strcat_s( m_szQuery, " WHERE " );
+	strcat_s( m_szQuery, m_szCondition );
 
 	return m_szQuery;
 }
@@ -142,59 +150,59 @@ void CQueryManager::StartInsertQuery( char *pTable )
 {
 	m_listItem.ClearAll();
 
-	strcpy( m_szTable, pTable );
+	strcpy_s( m_szTable, pTable );
 }
 
 
 char * CQueryManager::GetInsertQuery()
 {
-	sprintf( m_szQuery, "INSERT %s(", m_szTable );
+	sprintf_s( m_szQuery, "INSERT %s(", m_szTable );
 
 	CListNode< ITEM > *pNode = m_listItem.GetHead();
 	if ( !pNode )
 		return NULL;
 
 	ITEM *pItem = pNode->GetData();
-	strcat( m_szQuery, pItem->szName );
+	strcat_s( m_szQuery, pItem->szName );
 	
 	for ( pNode = pNode->GetNext(); pNode; pNode = pNode->GetNext() )
 	{
 		pItem = pNode->GetData();
-		strcat( m_szQuery, ", " );
-		strcat( m_szQuery, pItem->szName );
+		strcat_s( m_szQuery, ", " );
+		strcat_s( m_szQuery, pItem->szName );
 	}
 
-	strcat( m_szQuery, ") VALUES( " );
+	strcat_s( m_szQuery, ") VALUES( " );
 
 	pNode = m_listItem.GetHead();
 	pItem = pNode->GetData();
 
 	if ( pItem->bString )
 	{
-		strcat( m_szQuery, "'" );
-		strcat( m_szQuery, pItem->szValue );
-		strcat( m_szQuery, "'" );
+		strcat_s( m_szQuery, "'" );
+		strcat_s( m_szQuery, pItem->szValue );
+		strcat_s( m_szQuery, "'" );
 	}
 	else
-		strcat( m_szQuery, pItem->szValue );
+		strcat_s( m_szQuery, pItem->szValue );
 
 	for ( pNode = pNode->GetNext(); pNode; pNode = pNode->GetNext() )
 	{
 		pItem = pNode->GetData();
 
-		strcat( m_szQuery, ", " );
+		strcat_s( m_szQuery, ", " );
 		
 		if ( pItem->bString )
 		{
-			strcat( m_szQuery, "'" );
-			strcat( m_szQuery, pItem->szValue );
-			strcat( m_szQuery, "'" );
+			strcat_s( m_szQuery, "'" );
+			strcat_s( m_szQuery, pItem->szValue );
+			strcat_s( m_szQuery, "'" );
 		}
 		else
-			strcat( m_szQuery, pItem->szValue );
+			strcat_s( m_szQuery, pItem->szValue );
 	}
 
-	strcat( m_szQuery, " )" );
+	strcat_s( m_szQuery, " )" );
 
 	return m_szQuery;
 }
@@ -206,8 +214,8 @@ void CQueryManager::InsertItem( char *pName, char *pValue, int nValueLen, bool b
 	if ( !pItem )
 		return;
 
-	strcpy( pItem->szName, pName );
-	strncpy( pItem->szValue, pValue, nValueLen );
+	strcpy_s( pItem->szName, pName );
+	strncpy_s( pItem->szValue, pValue, nValueLen );
 	pItem->szValue[nValueLen] = '\0';
 	pItem->bString = bString;
 
@@ -221,7 +229,7 @@ void CQueryManager::InsertItem( char *pName, TCHAR *pValue, bool bString )
 	if ( !pItem )
 		return;
 
-	strcpy( pItem->szName, pName );
+	strcpy_s( pItem->szName, pName );
 	WideCharToMultiByte( CP_ACP, 0, pValue, -1, pItem->szValue, sizeof( pItem->szValue ), 0, 0 );
 	pItem->bString = bString;
 
@@ -235,8 +243,8 @@ void CQueryManager::InsertItem( char *pName, char *pValue, bool bString )
 	if ( !pItem )
 		return;
 
-	strcpy( pItem->szName, pName );
-	strcpy( pItem->szValue, pValue );
+	strcpy_s( pItem->szName, pName );
+	strcpy_s( pItem->szValue, pValue );
 	pItem->bString = bString;
 
 	m_listItem.Insert( pItem );
@@ -248,7 +256,7 @@ void CQueryManager::InsertItem( char *pName, BYTE pValue )
 	if ( !pItem )
 		return;
 
-	strcpy( pItem->szName, pName );
+	strcpy_s( pItem->szName, pName );
 
 	pItem->szValue[0] = pValue;
 	pItem->szValue[1] = '\0';
@@ -265,8 +273,8 @@ void CQueryManager::InsertItem( char *pName, int nValue, bool bString )
 	if ( !pItem )
 		return;
 
-	strcpy( pItem->szName, pName );
-	itoa( nValue, pItem->szValue, 10 );
+	strcpy_s( pItem->szName, pName );
+	_itoa_s( nValue, pItem->szValue, 10 );
 	pItem->bString = bString;
 
 	m_listItem.Insert( pItem );

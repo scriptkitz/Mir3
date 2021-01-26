@@ -64,7 +64,7 @@ DWORD WINAPI AcceptThread(LPVOID lpParameter)
 
 				UpdateStatusBarSession(TRUE);
 
-				_stprintf(szGateIP, _T("%d.%d.%d.%d"), Address.sin_addr.s_net, Address.sin_addr.s_host, 
+				_stprintf_s(szGateIP, _T("%d.%d.%d.%d"), Address.sin_addr.s_net, Address.sin_addr.s_host,
 															Address.sin_addr.s_lh, Address.sin_addr.s_impno);
 
 				InsertLogMsgParam(IDS_ACCEPT_GATESERVER, szGateIP, LOGPARAM_STR);

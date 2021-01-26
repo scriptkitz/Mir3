@@ -33,8 +33,8 @@ bool CGlobalUserList::Insert( char *pID, char *pIP )
 	if ( !pUser )
 		return false;
 
-	strcpy( pUser->szID, pID );
-	strcpy( pUser->szIP, pIP );
+	strcpy_s( pUser->szID, pID );
+	strcpy_s( pUser->szIP, pIP );
 
 	Lock();
 	if ( !m_listUser.Insert( pUser ) )

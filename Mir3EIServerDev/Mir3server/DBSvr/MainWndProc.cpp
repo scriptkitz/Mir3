@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "../def/dbmgr.h"
-
-LPARAM OnServerSockMsg(WPARAM wParam, LPARAM lParam);
-LPARAM OnClientSockMsg(WPARAM wParam, LPARAM lParam);
+#include "TableList.h"
 
 BOOL		jRegSetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, DWORD dwFlags, LPBYTE pValue, DWORD nValueSize);
 BOOL		jRegGetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, LPBYTE pValue);
@@ -10,7 +8,7 @@ BOOL		jRegGetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, LPBYTE pValue);
 UINT WINAPI ProcessDBMsg(LPVOID lpParameter);
 UINT WINAPI ProcessGateMsg(LPVOID lpParameter);
 
-BOOL		InitGateCommSocket(SOCKET &s, SOCKADDR_IN* addr, UINT nMsgID, int nPort, long lEvent);
+BOOL		InitGateCommSocket(SOCKET &s, SOCKADDR_IN* addr, int nPort, long lEvent);
 LPARAM		OnGateCommSockMsg(WPARAM wParam, LPARAM lParam);
 
 BOOL CALLBACK ConfigDlgFunc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -32,6 +30,7 @@ SOCKADDR_IN				g_gsaddr;
 
 
 CWHList<GAMESERVERINFO*>	g_xGameServerList;
+
 
 void SwitchMenuItem(BOOL fFlag)
 {
@@ -67,7 +66,7 @@ void LoadCharacterRecords()
 	InsertLogMsg(IDS_LOADACCOUNTRECORDS);
 
 	CRecordset *pRec = GetDBManager()->CreateRecordset();
-	if ( pRec->Execute( "SELECT * FROM TBL_GAMEGATEINFO" ) )
+	if ( pRec->Execute( "SELECT * FROM TBL_SERVERINFO" ) )
 	{
 		GAMESERVERINFO *pServerInfo;
 
@@ -78,8 +77,8 @@ void LoadCharacterRecords()
 				break;
 
 			pServerInfo->index = atoi( pRec->Get( "FLD_SERVERIDX" ) );
-			strcpy( pServerInfo->name, pRec->Get( "FLD_SERVERNAME" ) );
-			strcpy( pServerInfo->ip,   pRec->Get( "FLD_SERVERIP" ) );
+			strcpy_s( pServerInfo->name, pRec->Get( "FLD_SERVERNAME" ) );
+			strcpy_s( pServerInfo->ip,   pRec->Get( "FLD_SERVERIP" ) );
 			pServerInfo->connCnt = 0;
 
 			g_xGameServerList.AddNewNode( pServerInfo );
@@ -96,6 +95,21 @@ void OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 		case IDM_STARTSERVICE:
 		{
+			TCHAR	wszDatabase[256];
+			char	szDatabase[256];
+
+			if (!jRegGetKey(_DB_SERVER_REGISTRY, _TEXT("Device"), (LPBYTE)wszDatabase))
+				return;
+			WideCharToMultiByte(CP_ACP, 0, wszDatabase, -1, szDatabase, sizeof(szDatabase), NULL, NULL);
+
+			//连接数据库
+			CConnection* pConn = GetDBManager()->Init(InsertLogMsg, szDatabase, "sa", "123456");
+			if (pConn)
+			{
+				if (!GetTblStartPoint()->Init(pConn))
+					InsertLogMsg(_T("failed to read TBL_STARTPOINT table\n"));
+			}
+
 			g_fTerminated = FALSE;
 
 			if (!jRegGetKey(_DB_SERVER_REGISTRY, _TEXT("LocalPort"), (LPBYTE)&nPort))
@@ -103,15 +117,14 @@ void OnCommand(WPARAM wParam, LPARAM lParam)
 	
 			LoadCharacterRecords();
 
-			InitServerSocket(g_ssock, &g_saddr, _IDM_GATECOMMSOCK_MSG, 6000, 1);
-			InitGateCommSocket(g_gssock, &g_gsaddr, _IDM_GATECOMMSOCK_MSG, 5100, FD_ACCEPT|FD_READ|FD_CLOSE);
+			InitServerSocket(g_ssock, &g_saddr, 6000);
+			InitGateCommSocket(g_gssock, &g_gsaddr, 5100, FD_ACCEPT|FD_READ|FD_CLOSE);
 
 			UINT			dwThreadIDForMsg = 0;
 			unsigned long	hThreadForMsg = 0;
 				
-//			if (hThreadForMsg = _beginthreadex(NULL, 0, ProcessUserHuman, NULL, 0, &dwThreadIDForMsg))
-				hThreadForMsg = _beginthreadex(NULL, 0, ProcessDBMsg, NULL, 0, &dwThreadIDForMsg);
-				hThreadForMsg = _beginthreadex(NULL, 0, ProcessGateMsg, NULL, 0, &dwThreadIDForMsg);
+			hThreadForMsg = _beginthreadex(NULL, 0, ProcessDBMsg, NULL, 0, &dwThreadIDForMsg);
+			hThreadForMsg = _beginthreadex(NULL, 0, ProcessGateMsg, NULL, 0, &dwThreadIDForMsg);
 
 			SwitchMenuItem(TRUE);
 
@@ -120,15 +133,20 @@ void OnCommand(WPARAM wParam, LPARAM lParam)
 		case IDM_STOPSERVICE:
 		{
 			g_fTerminated = TRUE;
-
+			GetDBManager()->UnInit();
 			SwitchMenuItem(FALSE);
 
 			return;
 		}
 		case IDM_CONFIG:
 		{
-			DialogBox(g_hInst, MAKEINTRESOURCE(IDD_CONFIGDLG), NULL, (DLGPROC)ConfigDlgFunc);
+			DialogBox(g_hInst, MAKEINTRESOURCE(IDD_CONFIGDLG), g_hMainWnd, (DLGPROC)ConfigDlgFunc);
 
+			return;
+		}
+		case IDM_EXIT:
+		{
+			SendMessage(g_hMainWnd, WM_CLOSE, NULL, NULL);
 			return;
 		}
 	}

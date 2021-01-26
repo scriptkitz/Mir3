@@ -10,9 +10,9 @@ BOOL	InitApplication(HANDLE hInstance);
 BOOL	InitInstance(HANDLE hInstance, int nCmdShow);
 LPARAM	APIENTRY MainWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam);
 
-BOOL	ConnectServer(SOCKET &s, SOCKADDR_IN* addr, UINT nMsgID, LPCTSTR lpServerIP, DWORD dwIP, int nPort, long lEvent);
+BOOL	ConnectServer(SOCKET &s, SOCKADDR_IN* addr, LPCTSTR lpServerIP, DWORD dwIP, int nPort, long lEvent);
 
-LRESULT OnSockMsg(WPARAM wParam, LPARAM lParam);
+DWORD WINAPI OnSockMsg(LPVOID lpParameter);
 
 // **************************************************************************************
 //
@@ -22,6 +22,8 @@ LRESULT OnSockMsg(WPARAM wParam, LPARAM lParam);
 
 HINSTANCE		g_hInst = NULL;				// Application instance
 HWND			g_hMainWnd = NULL;			// Main window handle
+WSAEVENT		g_hWSAEvent = NULL;
+HANDLE			g_hThread = NULL;
 HWND			g_hLogMsgWnd = NULL;
 
 static WSADATA	g_wsd;
@@ -38,8 +40,8 @@ int				g_nCode = 0;
 
 int AddNewLogMsg()
 {
-	LV_ITEM		lvi;
-	TCHAR		szText[64];
+	LV_ITEM		lvi = { 0 };
+	TCHAR		szText[64] = { 0 };
 
 	int nCount = ListView_GetItemCount(g_hLogMsgWnd);
 
@@ -53,13 +55,13 @@ int AddNewLogMsg()
 	lvi.iItem		= nCount;
 	lvi.iSubItem	= 0;
 	
-	_tstrdate(szText);
+	_tstrdate_s(szText);
 
 	lvi.pszText = szText;
 	
 	ListView_InsertItem(g_hLogMsgWnd, &lvi);
 
-	_tstrtime(szText);
+	_tstrtime_s(szText);
 
 	ListView_SetItemText(g_hLogMsgWnd, nCount, 1, szText);
 
@@ -73,11 +75,16 @@ void InsertLogMsg(LPTSTR lpszMsg)
 	ListView_SetItemText(g_hLogMsgWnd, nCount, 2, lpszMsg);
 
 #ifdef _DEBUG
-	_RPT1(_CRT_WARN, "%s\n", lpszMsg);
+	_RPT0(_CRT_WARN, lpszMsg);
 #endif
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(
+	_In_ HINSTANCE hInstance,
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPSTR lpCmdLine,
+	_In_ int nShowCmd
+)
 {
     MSG msg;
 
@@ -86,13 +93,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	if (!InitApplication(hInstance))
 		return (FALSE);
 
-	if (!InitInstance(hInstance, nCmdShow))
+	if (!InitInstance(hInstance, nShowCmd))
 		return (FALSE);
 
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
+	}
+
+	if (g_hThread != INVALID_HANDLE_VALUE)
+	{
+		//TerminateThread(g_hThread, 0);
+		WaitForSingleObject(g_hThread, INFINITE);
+		CloseHandle(g_hThread);
+		g_hThread = INVALID_HANDLE_VALUE;
 	}
 
     return (msg.wParam);
@@ -139,7 +154,7 @@ BOOL InitInstance(HANDLE hInstance, int nCmdShow)
 
 	InitCommonControlsEx(&icex);
 
-    g_hMainWnd = CreateWindowEx(0, _T("VirtualClient"), _T("미르의 전설 2 - 가상 클라이언트"), 
+    g_hMainWnd = CreateWindowEx(0, _T("VirtualClient"), _T("Mir2-친콰와빵똥"), 
 							WS_OVERLAPPEDWINDOW|WS_VISIBLE,
 							CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,                 
 							NULL, NULL, (HINSTANCE)hInstance, NULL);
@@ -171,6 +186,7 @@ BOOL InitInstance(HANDLE hInstance, int nCmdShow)
 		
 		ListView_InsertColumn(g_hLogMsgWnd, i, &lvc);
 	}
+	ListView_SetColumnWidth(g_hLogMsgWnd, 2, 600);
 
 	ShowWindow(g_hMainWnd, SW_SHOW);
 	UpdateWindow(g_hMainWnd);
@@ -178,7 +194,9 @@ BOOL InitInstance(HANDLE hInstance, int nCmdShow)
 	if (WSAStartup(MAKEWORD(2, 2), &g_wsd) != 0)
 		return (FALSE);
 
-	ConnectServer(g_sock, &g_addr, _IDM_SOCKMSG, g_szServerIP, 0, 7000, FD_CONNECT|FD_READ|FD_CLOSE);
+	g_hWSAEvent = WSACreateEvent();
+
+	ConnectServer(g_sock, &g_addr, g_szServerIP, 0, 7000, FD_CONNECT|FD_READ|FD_CLOSE);
 
 	return TRUE;
 }
@@ -190,11 +208,9 @@ LPARAM APIENTRY MainWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (nMsg)
 	{
-		case _IDM_SOCKMSG:
-			return OnSockMsg(wParam, lParam);
-/*		case _IDM_CLIENTSOCK_MSG:
-			return OnClientSockMsg(wParam, lParam);
-*/		case WM_COMMAND:
+		//case _IDM_SOCKMSG:
+		//	return OnSockMsg(wParam, lParam);
+		case WM_COMMAND:
 		{
 			switch (LOWORD(wParam))
 			{
@@ -221,7 +237,6 @@ LPARAM APIENTRY MainWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 		case WM_CLOSE:
 		{
 			WSACleanup();
-
 			PostQuitMessage(0);
 
 			return 0L;

@@ -46,7 +46,7 @@ DWORD WINAPI AcceptThread(LPVOID lpParameter)
 		{
 			pNewUserInfo->sock				= Accept;
 
-			CreateIoCompletionPort((HANDLE)pNewUserInfo->sock, g_hIOCP, (DWORD)pNewUserInfo, 0);
+			HANDLE XXX = CreateIoCompletionPort((HANDLE)pNewUserInfo->sock, g_hIOCP, (DWORD)pNewUserInfo, 0);
 
 			if (g_xSessionList.AddNewNode(pNewUserInfo))
 			{

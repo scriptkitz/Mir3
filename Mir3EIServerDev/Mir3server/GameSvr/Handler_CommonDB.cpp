@@ -7,7 +7,7 @@ CMapInfo* InitMapInfo(int nServerIndex)
 	char szQuery[1024];
 
 	CRecordset *pRec = g_pConnCommon->CreateRecordset();
-	sprintf( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_MAPINFO WHERE FLD_SERVERINDEX = %d", nServerIndex );
+	sprintf_s( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_MAPINFO WHERE FLD_SERVERINDEX = %d", nServerIndex );
 
 	if (pRec->Execute( szQuery ))
 	{
@@ -21,7 +21,7 @@ CMapInfo* InitMapInfo(int nServerIndex)
 
 	CMapInfo* pMapInfo = new CMapInfo[g_nNumOfMapInfo];
 
-	sprintf( szQuery, "SELECT * FROM TBL_MAPINFO WHERE FLD_SERVERINDEX = %d", nServerIndex );
+	sprintf_s( szQuery, "SELECT * FROM TBL_MAPINFO WHERE FLD_SERVERINDEX = %d", nServerIndex );
 
 	pRec = g_pConnCommon->CreateRecordset();
 	
@@ -31,9 +31,9 @@ CMapInfo* InitMapInfo(int nServerIndex)
 		{
 			if (pRec->Fetch())
 			{
-				strcpy(pMapInfo[i].szMapFileName, pRec->Get( "FLD_MAPFILENAME" ) );
+				strcpy_s(pMapInfo[i].szMapFileName, pRec->Get( "FLD_MAPFILENAME" ) );
 				ChangeSpaceToNull(pMapInfo[i].szMapFileName);
-				strcpy(pMapInfo[i].szMapName, pRec->Get( "FLD_MAPNAME" ) );
+				strcpy_s(pMapInfo[i].szMapName, pRec->Get( "FLD_MAPNAME" ) );
 				ChangeSpaceToNull(pMapInfo[i].szMapName);
 
 				pMapInfo[i].dwAttribute			= atoi( pRec->Get( "FLD_ATTRIBUTE" ) );
@@ -57,7 +57,7 @@ void InitStdItemEtcInfo()
 	
 	pRec= g_pConnCommon->CreateRecordset();
 
-	sprintf( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_STDITEM_ETC");
+	sprintf_s( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_STDITEM_ETC");
 
 	if (pRec->Execute( szQuery ))
 	{
@@ -71,7 +71,7 @@ void InitStdItemEtcInfo()
 
 	g_pStdItemEtc = new CStdItem[g_nStdItemEtc];
 
-	sprintf( szQuery, "SELECT * FROM TBL_STDITEM_ETC ORDER BY FLD_INDEX");
+	sprintf_s( szQuery, "SELECT * FROM TBL_STDITEM_ETC ORDER BY FLD_INDEX");
 
 	pRec = g_pConnCommon->CreateRecordset();
 	
@@ -81,7 +81,7 @@ void InitStdItemEtcInfo()
 		{
 			if (pRec->Fetch())								 
 			{
-				strcpy(g_pStdItemEtc[i].szName, pRec->Get( "FLD_NAME" ) );
+				strcpy_s(g_pStdItemEtc[i].szName, pRec->Get( "FLD_NAME" ) );
 
 				g_pStdItemEtc[i].wStdMode	= atoi( pRec->Get( "FLD_STDMODE" ) );
 				g_pStdItemEtc[i].wShape		= atoi( pRec->Get( "FLD_SHAPE" ) );
@@ -104,7 +104,7 @@ void InitStdItemSpecial()
 	char szQuery[1024];
 
 	CRecordset *pRec = g_pConnCommon->CreateRecordset();
-	sprintf( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_STDITEM");
+	sprintf_s( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_STDITEM");
 
 	if (pRec->Execute( szQuery ))
 	{
@@ -118,7 +118,7 @@ void InitStdItemSpecial()
 
 	g_pStdItemSpecial = new CStdItemSpecial[g_nStdItemSpecial];
 
-	sprintf( szQuery, "SELECT * FROM TBL_STDITEM ORDER BY FLD_INDEX");
+	sprintf_s( szQuery, "SELECT * FROM TBL_STDITEM ORDER BY FLD_INDEX");
 
 	pRec = g_pConnCommon->CreateRecordset();
 	
@@ -128,7 +128,7 @@ void InitStdItemSpecial()
 		{
 			if (pRec->Fetch())								 
 			{
-				strcpy(g_pStdItemSpecial[i].szName, pRec->Get( "FLD_NAME" ) );
+				strcpy_s(g_pStdItemSpecial[i].szName, pRec->Get( "FLD_NAME" ) );
 
 				g_pStdItemSpecial[i].wStdMode		= (SHORT)atoi( pRec->Get( "FLD_STDMODE" ) );
 				g_pStdItemSpecial[i].btType			= (BYTE)atoi( pRec->Get( "FLD_TYPE" ) );
@@ -177,7 +177,7 @@ void InitMonsterGenInfo()
 	char szQuery[1024];
 
 	CRecordset *pRec = g_pConnCommon->CreateRecordset();
-	sprintf( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_MONGEN");
+	sprintf_s( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_MONGEN");
 
 	if (pRec->Execute( szQuery ))
 	{
@@ -191,7 +191,7 @@ void InitMonsterGenInfo()
 
 	g_pMonGenInfo = new CMonsterGenInfo[g_nNumOfMonGenInfo + 1];
 
-	sprintf( szQuery, "SELECT * FROM TBL_MONGEN ORDER BY FLD_MAPNAME");
+	sprintf_s( szQuery, "SELECT * FROM TBL_MONGEN ORDER BY FLD_MAPNAME");
 
 	pRec = g_pConnCommon->CreateRecordset();
 	
@@ -201,8 +201,8 @@ void InitMonsterGenInfo()
 		{
 			if (pRec->Fetch())								 
 			{
-				strcpy(g_pMonGenInfo[i].szMapName, pRec->Get( "FLD_MAPNAME" ) );
-				strcpy(g_pMonGenInfo[i].szMonName, pRec->Get( "FLD_MONNAME" ) );
+				strcpy_s(g_pMonGenInfo[i].szMapName, pRec->Get( "FLD_MAPNAME" ) );
+				strcpy_s(g_pMonGenInfo[i].szMonName, pRec->Get( "FLD_MONNAME" ) );
 				
 				g_pMonGenInfo[i].dwZenTime		= atoi( pRec->Get( "FLD_GENTIME" ) ) * 60000;
 				g_pMonGenInfo[i].dwStartTime	= 0;
@@ -237,7 +237,7 @@ void InitMonItemInfo()
 	char		szQuery[1024];
 	CRecordset *pRec = g_pConnCommon->CreateRecordset();
 
-	sprintf( szQuery, "SELECT * FROM TBL_MONITEM");
+	sprintf_s( szQuery, "SELECT * FROM TBL_MONITEM");
 
 	if (pRec->Execute( szQuery ))
 	{
@@ -274,7 +274,7 @@ void InitMonRaceInfo()
 	char szQuery[1024];
 
 	CRecordset *pRec = g_pConnCommon->CreateRecordset();
-	sprintf( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_MONSTER");
+	sprintf_s( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_MONSTER");
 
 	if (pRec->Execute( szQuery ))
 	{
@@ -288,7 +288,7 @@ void InitMonRaceInfo()
 
 	g_pMonRaceInfo = new CMonRaceInfo[g_nNumOfMonRaceInfo];
 
-	sprintf( szQuery, "SELECT * FROM TBL_MONSTER ORDER BY FLD_INDEX");
+	sprintf_s( szQuery, "SELECT * FROM TBL_MONSTER ORDER BY FLD_INDEX");
 
 	pRec = g_pConnCommon->CreateRecordset();
 	
@@ -300,7 +300,7 @@ void InitMonRaceInfo()
 			{
 				g_pMonRaceInfo[i].nIndex	= i;
 
-				strcpy(g_pMonRaceInfo[i].szMonName, pRec->Get( "FLD_NAME" ) );
+				strcpy_s(g_pMonRaceInfo[i].szMonName, pRec->Get( "FLD_NAME" ) );
 				ChangeSpaceToNull(g_pMonRaceInfo[i].szMonName);
 
 				g_pMonRaceInfo[i].nMonRace		= atoi( pRec->Get( "FLD_RACE" ) );
@@ -351,7 +351,7 @@ void InitMerchantInfo()
 	char szQuery[1024];
 
 	CRecordset *pRec = g_pConnCommon->CreateRecordset();
-	sprintf( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_MERCHANT");
+	sprintf_s( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_MERCHANT");
 
 	if (pRec->Execute( szQuery ))
 	{
@@ -365,7 +365,7 @@ void InitMerchantInfo()
 
 	g_pMerchantInfo = new CMerchantInfo[g_nNumOfMurchantInfo];
 
-	sprintf( szQuery, "SELECT * FROM TBL_MERCHANT ORDER BY FLD_ID");
+	sprintf_s( szQuery, "SELECT * FROM TBL_MERCHANT ORDER BY FLD_ID");
 
 	pRec = g_pConnCommon->CreateRecordset();
 	
@@ -375,9 +375,9 @@ void InitMerchantInfo()
 		{
 			if (pRec->Fetch())								 
 			{
-				strcpy(g_pMerchantInfo[i].szNPCName, pRec->Get( "FLD_NPCNAME" ) );
+				strcpy_s(g_pMerchantInfo[i].szNPCName, pRec->Get( "FLD_NPCNAME" ) );
 				ChangeSpaceToNull(g_pMerchantInfo[i].szNPCName);
-				strcpy(g_pMerchantInfo[i].szMapName, pRec->Get( "FLD_MAPNAME" ) );
+				strcpy_s(g_pMerchantInfo[i].szMapName, pRec->Get( "FLD_MAPNAME" ) );
 				ChangeSpaceToNull(g_pMerchantInfo[i].szMapName);
 
 				g_pMerchantInfo[i].nPosX = atoi( pRec->Get( "FLD_POSX" ) );
@@ -399,7 +399,7 @@ void InitMagicInfo()
 	char szQuery[1024];
 
 	CRecordset *pRec = g_pConnCommon->CreateRecordset();
-	sprintf( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_MAGIC");
+	sprintf_s( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_MAGIC");
 
 	if (pRec->Execute( szQuery ))
 	{
@@ -413,7 +413,7 @@ void InitMagicInfo()
 
 	g_pMagicInfo = new CMagicInfo[g_nNumOfMagicInfo];
 
-	sprintf( szQuery, "SELECT * FROM TBL_MAGIC ORDER BY FLD_INDEX");
+	sprintf_s( szQuery, "SELECT * FROM TBL_MAGIC ORDER BY FLD_INDEX");
 
 	pRec = g_pConnCommon->CreateRecordset();
 	
@@ -425,7 +425,7 @@ void InitMagicInfo()
 			{
 				g_pMagicInfo[i].nIndex			= atoi( pRec->Get( "FLD_INDEX" ) );
 				
-				strcpy(g_pMagicInfo[i].szName, pRec->Get( "FLD_NAME" ) );
+				strcpy_s(g_pMagicInfo[i].szName, pRec->Get( "FLD_NAME" ) );
 				ChangeSpaceToNull(g_pMagicInfo[i].szName);
 
 				g_pMagicInfo[i].sEffectType		= atoi( pRec->Get( "FLD_EFFECTTYPE" ) );
@@ -458,7 +458,7 @@ void InitMoveMapEventInfo()
 	char szQuery[1024];
 
 	CRecordset *pRec = g_pConnCommon->CreateRecordset();
-	sprintf( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_MOVEMAPEVENT");
+	sprintf_s( szQuery, "SELECT COUNT(*) AS FLD_COUNT FROM TBL_MOVEMAPEVENT");
 
 	if (pRec->Execute( szQuery ))
 	{
@@ -472,7 +472,7 @@ void InitMoveMapEventInfo()
 
 	g_pMoveMapEventInfo = new CMoveMapEventInfo[g_nNumOfMoveMapEventInfo];
 
-	sprintf( szQuery, "SELECT * FROM TBL_MOVEMAPEVENT ORDER BY FLD_INDEX");
+	sprintf_s( szQuery, "SELECT * FROM TBL_MOVEMAPEVENT ORDER BY FLD_INDEX");
 
 	pRec = g_pConnCommon->CreateRecordset();
 	
@@ -482,8 +482,8 @@ void InitMoveMapEventInfo()
 		{
 			if (pRec->Fetch())								 
 			{
-				strcpy(g_pMoveMapEventInfo[i].szSMapFileName, pRec->Get( "FLD_SMAPFILENAME" ) );
-				strcpy(g_pMoveMapEventInfo[i].szDMapFileName, pRec->Get( "FLD_DMAPFILENAME" ) );
+				strcpy_s(g_pMoveMapEventInfo[i].szSMapFileName, pRec->Get( "FLD_SMAPFILENAME" ) );
+				strcpy_s(g_pMoveMapEventInfo[i].szDMapFileName, pRec->Get( "FLD_DMAPFILENAME" ) );
 
 				g_pMoveMapEventInfo[i].nSX = atoi( pRec->Get( "FLD_SX" ) );
 				g_pMoveMapEventInfo[i].nSY = atoi( pRec->Get( "FLD_SY" ) );

@@ -1,7 +1,6 @@
 #include "stdafx.h"
 
-LPARAM OnServerSockMsg(WPARAM wParam, LPARAM lParam);
-LPARAM OnClientSockMsg(WPARAM wParam, LPARAM lParam);
+DWORD WINAPI OnClientSockMsg(LPVOID lpParam);
 
 BOOL	jRegSetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, DWORD dwFlags, LPBYTE pValue, DWORD nValueSize);
 BOOL	jRegGetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, LPBYTE pValue);
@@ -19,10 +18,8 @@ extern HWND						g_hStatusBar;
 
 extern HANDLE					g_hMsgThread;
 
-#ifndef _SOCKET_ASYNC_IO
 extern HANDLE					g_hIOCP;
 extern HANDLE					g_hAcceptThread;
-#endif
 
 SOCKET			g_ssock = INVALID_SOCKET;
 SOCKADDR_IN		g_saddr;
@@ -82,7 +79,7 @@ void OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 		case IDM_STARTSERVICE:
 		{
-			DWORD	dwIP = 0;
+			TCHAR	tsIP[20] = { 0 };
 			int		nPort = 0;
 
 			g_fTerminated = FALSE;
@@ -90,14 +87,13 @@ void OnCommand(WPARAM wParam, LPARAM lParam)
 			if (!jRegGetKey(_SELGATE_SERVER_REGISTRY, _TEXT("LocalPort"), (LPBYTE)&nPort))
 				nPort = 7100;
 
-			InitServerSocket(g_ssock, &g_saddr, _IDM_SERVERSOCK_MSG, nPort, 2);
+			InitServerSocket(g_ssock, &g_saddr, nPort);
 
-			jRegGetKey(_SELGATE_SERVER_REGISTRY, _TEXT("RemoteIP"), (LPBYTE)&dwIP);
+			jRegGetKey(_SELGATE_SERVER_REGISTRY, _TEXT("RemoteIP"), (LPBYTE)&tsIP);
 
 			if (!jRegGetKey(_SELGATE_SERVER_REGISTRY, _TEXT("RemotePort"), (LPBYTE)&nPort))
 				nPort = 5100;
-
-			ConnectToServer(g_csock, &g_caddr, _IDM_CLIENTSOCK_MSG, NULL, dwIP, nPort, FD_CONNECT|FD_READ|FD_CLOSE);
+			ConnectToServer(g_csock, &g_caddr, tsIP, nPort, FD_CONNECT|FD_READ|FD_CLOSE, OnClientSockMsg, NULL);
 
 			HMENU hMainMenu = GetMenu(g_hMainWnd);
 			HMENU hMenu = GetSubMenu(hMainMenu, 0);
@@ -180,12 +176,6 @@ LPARAM APIENTRY MainWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (nMsg)
 	{
-#ifdef _SOCKET_ASYNC_IO
-		case _IDM_SERVERSOCK_MSG:
-			return OnServerSockMsg(wParam, lParam);
-#endif
-		case _IDM_CLIENTSOCK_MSG:
-			return OnClientSockMsg(wParam, lParam);
 		case WM_COMMAND:
 			OnCommand(wParam, lParam);
 			break;

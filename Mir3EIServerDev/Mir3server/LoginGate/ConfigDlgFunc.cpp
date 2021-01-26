@@ -26,16 +26,20 @@ BOOL CALLBACK ConfigDlgFunc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			DWORD	dwIP = 0;
 			TCHAR	szPort[24];
 			int		nPort = 0;
+			TCHAR	szIP[20] = { 0 };
+			int		i1 = 0, i2 = 0, i3 = 0, i4 = 0;
 
-			jRegGetKey(_LOGINGATE_SERVER_REGISTRY, _TEXT("RemoteIP"), (LPBYTE)&dwIP);
+			jRegGetKey(_LOGINGATE_SERVER_REGISTRY, _TEXT("RemoteIP"), (LPBYTE)&szIP);
+			_stscanf_s(szIP, _T("%ld.%ld.%ld.%ld"), &i1, &i2, &i3, &i4);
+			dwIP = MAKEIPADDRESS(i1, i2, i3, i4);
 			SendMessage(GetDlgItem(hWndDlg, IDC_LOGINSVR_IP), IPM_SETADDRESS, (WPARAM)0, (LPARAM)(DWORD)dwIP);
 
 			jRegGetKey(_LOGINGATE_SERVER_REGISTRY, _TEXT("RemotePort"), (LPBYTE)&nPort);
-			_itow(nPort, szPort, 10);
+			_itow_s(nPort, szPort, 10);
 			SetWindowText(GetDlgItem(hWndDlg, IDC_LOGINSVR_PORT), szPort);
 			
 			jRegGetKey(_LOGINGATE_SERVER_REGISTRY, _TEXT("LocalPort"), (LPBYTE)&nPort);
-			_itow(nPort, szPort, 10);
+			_itow_s(nPort, szPort, 10);
 			SetWindowText(GetDlgItem(hWndDlg, IDC_LOCALPORT), szPort);
 
 			break;
@@ -47,6 +51,7 @@ BOOL CALLBACK ConfigDlgFunc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 				case IDOK:
 				{
 					DWORD	dwIP = 0;
+					TCHAR	szIP[20];
 					TCHAR	szPort[24];
 					int		nRemotePort = 0, nLocalPort = 0;
 					BYTE	btInstalled = 1;
@@ -54,8 +59,10 @@ BOOL CALLBACK ConfigDlgFunc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 					jRegSetKey(_LOGINGATE_SERVER_REGISTRY, _TEXT("Installed"), REG_BINARY, (LPBYTE)&btInstalled, sizeof(BYTE));
 
 					SendMessage(GetDlgItem(hWndDlg, IDC_LOGINSVR_IP), IPM_GETADDRESS, (WPARAM)0, (LPARAM)(LPDWORD)&dwIP);
-					
-					jRegSetKey(_LOGINGATE_SERVER_REGISTRY, _TEXT("RemoteIP"), REG_DWORD, (LPBYTE)&dwIP, sizeof(DWORD));
+					_stprintf_s(szIP, _T("%ld.%ld.%ld.%ld"),
+						FIRST_IPADDRESS(dwIP), SECOND_IPADDRESS(dwIP),
+						THIRD_IPADDRESS(dwIP), FOURTH_IPADDRESS(dwIP));
+					jRegSetKey(_LOGINGATE_SERVER_REGISTRY, _TEXT("RemoteIP"), REG_SZ, (LPBYTE)&szIP, _tcsclen(szIP) * sizeof(TCHAR));
 
 					GetWindowText(GetDlgItem(hWndDlg, IDC_LOGINSVR_PORT), szPort, sizeof(szPort));
 					nRemotePort = _wtoi(szPort);

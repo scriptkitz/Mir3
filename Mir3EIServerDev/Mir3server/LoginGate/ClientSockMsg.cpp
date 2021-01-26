@@ -1,5 +1,7 @@
 #include "stdafx.h"
 
+extern HANDLE g_hWSAEvent;
+
 DWORD WINAPI	ThreadFuncForMsg(LPVOID lpParameter);
 
 BOOL			CheckSocketError(LPARAM lParam);
@@ -22,69 +24,72 @@ CWHQueue						g_xMsgQueue;
 static char	WorkBuff[8192];
 static int	nWorkBuffLen;
 
-LPARAM OnClientSockMsg(WPARAM wParam, LPARAM lParam)
+DWORD WINAPI OnClientSockMsg(LPVOID lpParam)
 {
-	switch (WSAGETSELECTEVENT(lParam))
+
+	while (true)
 	{
-		case FD_CONNECT:
+		DWORD dwIndex = WSAWaitForMultipleEvents(1, &g_hWSAEvent, FALSE, 500, FALSE);
+		if (dwIndex == WSA_WAIT_TIMEOUT) continue;
+		WSANETWORKEVENTS events;
+		if (SOCKET_ERROR != WSAEnumNetworkEvents(g_csock, g_hWSAEvent, &events))
 		{
-			DWORD dwThreadIDForMsg = 0;
-
-			if (CheckSocketError(lParam))
+			if (events.lNetworkEvents & FD_CONNECT)
 			{
-				dwThreadIDForMsg = 0;
-
-				if (InitThread(ThreadFuncForMsg))
+				int errcode = events.iErrorCode[FD_CONNECT_BIT];
+				if (errcode)
 				{
-					KillTimer(g_hMainWnd, _ID_TIMER_CONNECTSERVER);
-				
-					SetTimer(g_hMainWnd, _ID_TIMER_KEEPALIVE, 5000, (TIMERPROC)OnTimerProc);
+					InsertLogMsg(IDS_CANT_CONNECT);
+					closesocket(g_csock);
+					g_csock = INVALID_SOCKET;
 
-					InsertLogMsg(IDS_CONNECT_LOGINSERVER);
-					SendMessage(g_hStatusBar, SB_SETTEXT, MAKEWORD(1, 0), (LPARAM)_TEXT("Connected"));
+					SetTimer(g_hMainWnd, _ID_TIMER_CONNECTSERVER, 10000, (TIMERPROC)OnTimerProc);
+					return 0;
+				}
+				else
+				{
+					if (InitThread(ThreadFuncForMsg))
+					{
+						KillTimer(g_hMainWnd, _ID_TIMER_CONNECTSERVER);
+
+						SetTimer(g_hMainWnd, _ID_TIMER_KEEPALIVE, 5000, (TIMERPROC)OnTimerProc);
+
+						InsertLogMsg(IDS_CONNECT_LOGINSERVER);
+						SendMessage(g_hStatusBar, SB_SETTEXT, MAKEWORD(1, 0), (LPARAM)_TEXT("Connected"));
+					}
 				}
 			}
-			else
+			else if (events.lNetworkEvents & FD_READ)
+			{
+				int		nSocket = 0;
+				char* pszFirst = NULL, * pszEnd = NULL;
+
+				UINT nRecv = 0;
+
+				ioctlsocket(g_csock, FIONREAD, (u_long*)&nRecv);
+
+				if (nRecv)
+				{
+					char* pszPacket = new char[nRecv + 1];
+
+					nRecv = recv(g_csock, pszPacket, nRecv, 0);
+
+					pszPacket[nRecv] = '\0';
+
+					if (!(g_xMsgQueue.PushQ((BYTE*)pszPacket)))
+						InsertLogMsg(_TEXT("[INFO] Not enough queue(g_xMsgQueue) buffer."));
+				}
+
+				break;
+			}
+			else if (events.lNetworkEvents & FD_CLOSE)
 			{
 				closesocket(g_csock);
 				g_csock = INVALID_SOCKET;
 
-				SetTimer(g_hMainWnd, _ID_TIMER_CONNECTSERVER, 10000, (TIMERPROC)OnTimerProc);
+				OnCommand(IDM_STOPSERVICE, 0);
+				break;
 			}
-
-			break;
-		}
-		case FD_CLOSE:
-		{
-			closesocket(g_csock);
-			g_csock = INVALID_SOCKET;
-
-			OnCommand(IDM_STOPSERVICE, 0);
-
-			break;
-		}
-		case FD_READ:
-		{
-			int		nSocket = 0;
-			char	*pszFirst = NULL, *pszEnd = NULL;
-
-			UINT nRecv = 0;
-
-			ioctlsocket((SOCKET)wParam, FIONREAD, (u_long *)&nRecv);
-
-			if (nRecv)
-			{
-				char *pszPacket = new char[nRecv + 1];
-
-				nRecv = recv((SOCKET)wParam, pszPacket, nRecv, 0);
-
-				pszPacket[nRecv] = '\0';
-
-				if (!(g_xMsgQueue.PushQ((BYTE *)pszPacket)))
-					InsertLogMsg(_TEXT("[INFO] Not enough queue(g_xMsgQueue) buffer."));
-			}
-
-			break;
 		}
 	}
 

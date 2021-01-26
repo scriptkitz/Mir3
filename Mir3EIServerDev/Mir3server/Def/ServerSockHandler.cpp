@@ -1,8 +1,9 @@
 #include "stdafx.h"
 
 extern HWND		g_hMainWnd;
+extern HANDLE	g_hWSAEvent;
+extern HANDLE	g_hWSAThread;
 
-#ifndef _SOCKET_ASYNC_IO
 HANDLE			g_hIOCP = NULL;
 
 //unsigned long	g_lAcceptThread = 0;
@@ -14,7 +15,6 @@ DWORD WINAPI	ServerWorkerThread(LPVOID lpParameter);
 
 INT				CreateIOCPWorkerThread(int nThread);
 BOOL			InitServerThreadForMsg();
-#endif
 
 typedef unsigned (__stdcall *ThreadStartRoutine) (
     LPVOID lpThreadParameter
@@ -24,8 +24,6 @@ BOOL InitThread(LPTHREAD_START_ROUTINE lpRoutine)
 {
 	DWORD	dwThreadIDForMsg = 0;
 
-	//HANDLE hThreadForMsg = 
-		//(HANDLE) _beginthreadex( NULL, 0, (ThreadStartRoutine) lpRoutine, NULL, 0, (UINT *) &dwThreadIDForMsg );
 	HANDLE hThreadForMsg	= CreateThread(NULL, 0, lpRoutine,	NULL, 0, &dwThreadIDForMsg);
 
 	if (hThreadForMsg)
@@ -44,15 +42,11 @@ BOOL InitThread(LPTHREAD_START_ROUTINE lpRoutine)
 //
 // **************************************************************************************
 
-BOOL InitServerSocket(SOCKET &s, SOCKADDR_IN* addr, UINT nMsgID, int nPort, long lEvent)
+BOOL InitServerSocket(SOCKET &s, SOCKADDR_IN* addr, int nPort)
 {
 	if (s == INVALID_SOCKET)
 	{
-#ifdef _SOCKET_ASYNC_IO
-		s = socket(AF_INET, SOCK_STREAM, 0);
-#else
-		s = WSASocketA(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-#endif
+		s = WSASocketW(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
 
 		addr->sin_family		= AF_INET;
 		addr->sin_port			= htons(nPort);
@@ -64,22 +58,10 @@ BOOL InitServerSocket(SOCKET &s, SOCKADDR_IN* addr, UINT nMsgID, int nPort, long
 		if ((listen(s, 5)) == SOCKET_ERROR)
 			return FALSE;
 
-#ifdef _SOCKET_ASYNC_IO
-		if ((WSAAsyncSelect(s, g_hMainWnd, nMsgID, lEvent)) == SOCKET_ERROR)
-			return FALSE;
-#else
-#ifdef _SOCKET_OVERLAPPED_IO
-		if ((WSAAsyncSelect(s, g_hMainWnd, nMsgID, lEvent)) == SOCKET_ERROR)
-			return FALSE;
-#else
-//		CreateIOCPWorkerThread((int)lEvent);				  
-		CreateIOCPWorkerThread((int)1);	
-//		InitServerThreadForMsg();
+		CreateIOCPWorkerThread(1);
 
 		if (!InitThread(AcceptThread))
 			return FALSE;
-#endif
-#endif
 	}
 	else 
 		return FALSE;
@@ -119,41 +101,40 @@ BOOL ClearSocket(SOCKET &s)
 //
 // **************************************************************************************
 
-BOOL ConnectToServer(SOCKET &s, SOCKADDR_IN* addr, UINT nMsgID, LPCTSTR lpServerIP, DWORD dwIP, int nPort, long lEvent)
+BOOL ConnectToServer(SOCKET& s, SOCKADDR_IN* addr, LPCTSTR lpServerIP, int nPort, long lEvent,
+	LPTHREAD_START_ROUTINE pCallback, LPVOID lpParam)
 {
 	if (s != INVALID_SOCKET)
 	{
 		closesocket(s);
 		s = INVALID_SOCKET;
 	}
-
+	if (g_hWSAEvent == NULL)
+	{
+		g_hWSAEvent = WSACreateEvent();
+	}
 	s = socket(AF_INET, SOCK_STREAM, 0);
 
 	addr->sin_family	= AF_INET;
 	addr->sin_port		= htons(nPort);
 	
-	if (lpServerIP)
-	{
-		char szIP[24];
+#ifdef UNICODE
+	InetPtonW(AF_INET, lpServerIP, &addr->sin_addr.s_addr);
+#else
+	inet_pton(AF_INET, lpServerIP, &addr->sin_addr.s_addr);
+#endif
 
-		WideCharToMultiByte(CP_ACP, 0, lpServerIP, -1, szIP, sizeof(szIP), NULL, NULL);
-		addr->sin_addr.s_addr	= inet_addr(szIP);
-	}
-	else
-	{
-		DWORD dwReverseIP = 0;
-
-		dwReverseIP = (LOBYTE(LOWORD(dwIP)) << 24) | (HIBYTE(LOWORD(dwIP)) << 16) | (LOBYTE(HIWORD(dwIP)) << 8) | (HIBYTE(HIWORD(dwIP)));
-		addr->sin_addr.s_addr	= dwReverseIP;
-	}
-
-	if (WSAAsyncSelect(s, g_hMainWnd, nMsgID, lEvent) == SOCKET_ERROR)
+	if (WSAEventSelect(s, g_hWSAEvent, lEvent) == SOCKET_ERROR)
 		return FALSE;
 
 	if (connect(s, (const struct sockaddr FAR*)addr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR)
 	{
 		if (WSAGetLastError() == WSAEWOULDBLOCK)
+		{
+			DWORD dwThreadID;
+			g_hWSAThread = CreateThread(NULL, 0, pCallback, lpParam, 0, &dwThreadID);
 			return TRUE;
+		}
 	}
 
 	return FALSE;
@@ -232,19 +213,6 @@ BOOL CheckSocketError(LPARAM lParam)
 //
 // **************************************************************************************
 
-#ifndef _SOCKET_ASYNC_IO
-BOOL CheckAvailableIOCP()
-{
-//	OSVERSIONINFO VersionInfo;
-
-//	GetVersionEx(&VersionInfo);
-
-//	if (VersionInfo.dwPlatformId == VER_PLATFORM_WIN32_NT && VersionInfo.dwMajorVersion >= 5)
-		return TRUE;
-
-//	return FALSE;
-}
-
 // **************************************************************************************
 //
 //			
@@ -270,8 +238,6 @@ INT CreateIOCPWorkerThread(int nThread)
 
 			if ((ThreadHandle = CreateThread(NULL, 0, ServerWorkerThread, g_hIOCP, 0, &dwThreadID)) == NULL)
 				return -1;
-			//if ((ThreadHandle = (HANDLE) _beginthreadex(NULL, 0, (ThreadStartRoutine) ServerWorkerThread, g_hIOCP, 0, (UINT *) &dwThreadID)) == NULL )
-			//	return -1;
 
 			CloseHandle(ThreadHandle);
 		}
@@ -281,4 +247,3 @@ INT CreateIOCPWorkerThread(int nThread)
 
 	return -1;
 }
-#endif

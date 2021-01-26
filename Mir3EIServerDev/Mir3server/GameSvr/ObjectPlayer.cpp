@@ -136,9 +136,9 @@ BOOL CPlayerObject::IsProperTarget(CCharObject* pTargetObject)
 	return fFlag;
 }
 
-void CPlayerObject::GetCharName(char *pszCharName)
+void CPlayerObject::GetCharName(char *pszCharName, size_t iszlen)
 { 
-	strcpy(pszCharName, m_szName); 
+	strcpy_s(pszCharName, iszlen, m_szName);
 }
 
 BOOL CPlayerObject::ReadBook(char *pszMakeIndex)
@@ -304,7 +304,7 @@ void CPlayerObject::SendAddItem(_LPTUSERITEMRCD lpTItemRcd)
 		g_pStdItemSpecial[lpTItemRcd->nStdIndex].GetUpgradeStdItem(&tClientItemRcd, lpTItemRcd);
 
 		if (strlen(lpTItemRcd->szPrefixName))
-			strcpy(tClientItemRcd.tStdItem.szPrefixName, lpTItemRcd->szPrefixName);
+			strcpy_s(tClientItemRcd.tStdItem.szPrefixName, lpTItemRcd->szPrefixName);
 		else
 			ZeroMemory(tClientItemRcd.tStdItem.szPrefixName, sizeof(tClientItemRcd.tStdItem.szPrefixName));
 	}
@@ -477,9 +477,9 @@ int CPlayerObject::UpdateItemToDB(_LPTUSERITEMRCD lpMakeItemRcd, int nAction)
 		
 		nPos	= fnEncode6BitBufA((unsigned char *)lpMakeItemRcd, szEncodeMsg2, sizeof(_LPTMAKEITEMRCD), sizeof(szEncodeMsg2));
 		
-		strcpy(&szEncodeMsg2[nPos], m_pUserInfo->m_szUserID);
-		strcat(szEncodeMsg2, "/");
-		strcat(szEncodeMsg2, m_pUserInfo->m_szCharName);
+		strcpy_s(&szEncodeMsg2[nPos], sizeof(szEncodeMsg2)-nPos, m_pUserInfo->m_szUserID);
+		strcat_s(szEncodeMsg2, "/");
+		strcat_s(szEncodeMsg2, m_pUserInfo->m_szCharName);
 
 		SendRDBSocket(2, szEncodeMsg1, szEncodeMsg2, strlen(szEncodeMsg2));
 
@@ -505,7 +505,7 @@ int CPlayerObject::UpdateItemToDB(_LPTUSERITEMRCD lpMakeItemRcd, int nAction)
 		}
 		case _ITEM_ACTION_THROW:
 		{
-			sprintf(szQuery, "UPDATE TBL_CHARACTER_ITEM SET FLD_LOGINID='%s', FLD_CHARNAME='%s', "
+			sprintf_s(szQuery, "UPDATE TBL_CHARACTER_ITEM SET FLD_LOGINID='%s', FLD_CHARNAME='%s', "
 								"FLD_DURA=%d, FLD_DURAMAX=%d, FLD_VALUE1=%d, FLD_VALUE2=%d, FLD_VALUE3=%d, FLD_VALUE4=%d, FLD_VALUE5=%d, "
 								"FLD_VALUE6=%d, FLD_VALUE7=%d, FLD_VALUE8=%d, FLD_VALUE9=%d, FLD_VALUE10=%d, FLD_VALUE11=%d, FLD_VALUE12=%d, FLD_VALUE13=%d, "
 								"FLD_VALUE14=%d, FLD_LASTOWNER='%s', FLD_LASTACTION=%d "
@@ -520,7 +520,7 @@ int CPlayerObject::UpdateItemToDB(_LPTUSERITEMRCD lpMakeItemRcd, int nAction)
 		}
 		case _ITEM_ACTION_PICKUP:
 		{
-			sprintf(szQuery, "UPDATE TBL_CHARACTER_ITEM SET FLD_LOGINID='%s', FLD_CHARNAME='%s', "
+			sprintf_s(szQuery, "UPDATE TBL_CHARACTER_ITEM SET FLD_LOGINID='%s', FLD_CHARNAME='%s', "
 								"FLD_DURA=%d, FLD_DURAMAX=%d, FLD_VALUE1=%d, FLD_VALUE2=%d, FLD_VALUE3=%d, FLD_VALUE4=%d, FLD_VALUE5=%d, "
 								"FLD_VALUE6=%d, FLD_VALUE7=%d, FLD_VALUE8=%d, FLD_VALUE9=%d, FLD_VALUE10=%d, FLD_VALUE11=%d, FLD_VALUE12=%d, FLD_VALUE13=%d, "
 								"FLD_VALUE14=%d, FLD_LASTOWNER='%s', FLD_LASTACTION=%d "
@@ -535,7 +535,7 @@ int CPlayerObject::UpdateItemToDB(_LPTUSERITEMRCD lpMakeItemRcd, int nAction)
 		}
 		case _ITEM_ACTION_UPDATE:
 		{
-			sprintf(szQuery, "UPDATE TBL_CHARACTER_ITEM SET "
+			sprintf_s(szQuery, "UPDATE TBL_CHARACTER_ITEM SET "
 								"FLD_DURA=%d, FLD_DURAMAX=%d, FLD_VALUE1=%d, FLD_VALUE2=%d, FLD_VALUE3=%d, FLD_VALUE4=%d, FLD_VALUE5=%d, "
 								"FLD_VALUE6=%d, FLD_VALUE7=%d, FLD_VALUE8=%d, FLD_VALUE9=%d, FLD_VALUE10=%d, FLD_VALUE11=%d, FLD_VALUE12=%d, FLD_VALUE13=%d, "
 								"FLD_VALUE14=%d, FLD_LASTOWNER='%s', FLD_LASTACTION=%d, FLD_PREFIXNAME='%s' "
@@ -557,7 +557,7 @@ int CPlayerObject::UpdateItemToDB(_LPTUSERITEMRCD lpMakeItemRcd, int nAction)
 
 	if ( !pRec->Execute( szQuery ) || pRec->GetRowCount() <= 0 )
 	{
-		InsertLogMsg(_T("UpdateItemToDB : °»½Å ¿À·ù"));
+		InsertLogMsg(_T("UpdateItemToDB : ¸üÐÂ´íÎó"));
 		g_pConnGame->DestroyRecordset( pRec );
 
 		return 0;
@@ -1026,7 +1026,7 @@ void CPlayerObject::SendBagItems()
 				tClientItemRcd.nDuraMax		= lptUserItemRcd->nDuraMax;
 
 				if (strlen(lptUserItemRcd->szPrefixName))
-					strcpy(tClientItemRcd.tStdItem.szPrefixName, lptUserItemRcd->szPrefixName);
+					strcpy_s(tClientItemRcd.tStdItem.szPrefixName, lptUserItemRcd->szPrefixName);
 				else
 					ZeroMemory(tClientItemRcd.tStdItem.szPrefixName, sizeof(tClientItemRcd.tStdItem.szPrefixName));
 
@@ -1764,7 +1764,7 @@ BOOL CPlayerObject::DoSpell(_LPTHUMANMAGICRCD	lptMagicRcd, int TargetX, int Targ
 #ifdef _DEBUG
 				char szMsg[64];
 
-				sprintf(szMsg, "%s È¸º¹½ÃÅ´ - PW:%d HP:%d", pTargetObject->m_szName, nPwr, pTargetObject->m_WAbility.HP);
+				sprintf_s(szMsg, "%s »Ö¸´ - PW:%d HP:%d", pTargetObject->m_szName, nPwr, pTargetObject->m_WAbility.HP);
 				SysMsg(szMsg, 0);
 #endif
 			}
@@ -2225,7 +2225,7 @@ void CPlayerObject::Operate()
 								// Debug Code
 								char szMsg[64];
 
-								sprintf(szMsg, "%s ¸¶¹ý ¸ÂÀ½ - PW:%d", pTargetObject->m_szName, nMagPower);
+								sprintf_s(szMsg, "%s Ä§·¨¹¥»÷ - PW:%d", pTargetObject->m_szName, nMagPower);
 								SysMsg(szMsg, 0);
 								// Debug Code
 

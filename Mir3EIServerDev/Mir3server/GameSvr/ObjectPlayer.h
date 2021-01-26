@@ -85,7 +85,7 @@ public:
 
 	virtual void	Run();
 	virtual WORD	GetThisCharColor();
-	virtual void	GetCharName(char *pszCharName);
+	virtual void	GetCharName(char *pszCharName, size_t iszlen) override;
 
 	// For Administrator
 	BOOL		m_fIsCapture;

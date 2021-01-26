@@ -115,9 +115,9 @@ void GetDate(char *pszBuf)
 	struct tm ttm;
 	
 	time(&t);
-	memcpy(&ttm, localtime(&t), sizeof(struct tm));
+	localtime_s(&ttm, &t);
 	
-	sprintf(pszBuf, "%02d%02d%02d", ttm.tm_year - 100, ttm.tm_mon + 1, ttm.tm_mday);
+	sprintf_s(pszBuf, 10, "%02d%02d%02d", ttm.tm_year - 100, ttm.tm_mon + 1, ttm.tm_mday);
 }
 
 int GetTime()
@@ -126,9 +126,7 @@ int GetTime()
 	struct tm ttm;
 	
 	time(&t);
-	memcpy(&ttm, localtime(&t), sizeof(struct tm));
-	
-//	wsprintf(pszBuf, _TEXT("%02d%02d%02d"), ttm.tm_year - 100, ttm.tm_mon + 1, ttm.tm_mday);
+	localtime_s(&ttm, &t);
 
 	return ttm.tm_hour;
 }

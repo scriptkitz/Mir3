@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30907.101
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AdminCmd", "Mir3server\AdminCmd\AdminCmd.vcxproj", "{65AD9DE3-A614-1F1D-70AE-ABAFA92418CB}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DBSvr", "Mir3server\DBSvr\DBSvr.vcxproj", "{9BB65DE9-89C5-674E-D5CB-3F05D64630C3}"
@@ -18,6 +20,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SelGate", "Mir3server\SelGate\SelGate.vcxproj", "{57513721-4093-026A-C31B-F1BD94CE1405}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VirtualClient", "Mir3server\VirtualClient\VirtualClient.vcxproj", "{64A8FD8B-88E0-87C1-A50F-E50FCA64BFB5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{2193942C-F597-4E6B-B17B-6EBB553F0E83}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -64,5 +68,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {76C21694-06D3-4113-9474-87AFE8FCABB6}
 	EndGlobalSection
 EndGlobal

@@ -126,7 +126,7 @@ void CGateInfo::QueryCharacter(SOCKET s, char *pszPacket)
 	{
 		*pszDevide++ = '\0';
 
-		sprintf( szQuery, "SELECT * FROM TBL_CHARACTER WHERE FLD_LOGINID='%s'", pszDevide );
+		sprintf_s( szQuery, "SELECT * FROM TBL_CHARACTER WHERE FLD_LOGINID='%s'", pszDevide );
 
 		CRecordset *pRec = GetDBManager()->CreateRecordset();
 		
@@ -136,7 +136,7 @@ void CGateInfo::QueryCharacter(SOCKET s, char *pszPacket)
 			{
 				tQueryChr[nCnt].btClass	 = atoi( pRec->Get( "FLD_JOB" ) );
 				tQueryChr[nCnt].btGender = atoi( pRec->Get( "FLD_GENDER" ) );
-				strcpy( tQueryChr[nCnt].szName, pRec->Get( "FLD_CHARNAME" ) );
+				strcpy_s( tQueryChr[nCnt].szName, pRec->Get( "FLD_CHARNAME" ) );
 				ChangeSpaceToNull( tQueryChr[nCnt].szName );
 
 				nCnt++;
@@ -180,25 +180,25 @@ void CGateInfo::DeleteExistCharacter(SOCKET s, _LPTCREATECHR lpTCreateChr)
 	char				szQuery[256];
 	CRecordset			*pRec;
 
-	sprintf( szQuery, "DELETE FROM TBL_CHARACTER WHERE FLD_LOGINID='%s' AND FLD_CHARNAME='%s'", lpTCreateChr->szID, lpTCreateChr->szName );
+	sprintf_s( szQuery, "DELETE FROM TBL_CHARACTER WHERE FLD_LOGINID='%s' AND FLD_CHARNAME='%s'", lpTCreateChr->szID, lpTCreateChr->szName );
 
 	pRec = GetDBManager()->CreateRecordset();
 	pRec->Execute( szQuery );
 	GetDBManager()->DestroyRecordset( pRec );
 
-	sprintf( szQuery, "DELETE FROM TBL_CHARACTER_GENITEM WHERE FLD_LOGINID='%s' AND FLD_CHARNAME='%s'", lpTCreateChr->szID, lpTCreateChr->szName );
+	sprintf_s( szQuery, "DELETE FROM TBL_CHARACTER_GENITEM WHERE FLD_LOGINID='%s' AND FLD_CHARNAME='%s'", lpTCreateChr->szID, lpTCreateChr->szName );
 
 	pRec = GetDBManager()->CreateRecordset();
 	pRec->Execute( szQuery );
 	GetDBManager()->DestroyRecordset( pRec );
 
-	sprintf( szQuery, "DELETE FROM TBL_CHARACTER_ITEM WHERE FLD_LOGINID='%s' AND FLD_CHARNAME='%s'", lpTCreateChr->szID, lpTCreateChr->szName );
+	sprintf_s( szQuery, "DELETE FROM TBL_CHARACTER_ITEM WHERE FLD_LOGINID='%s' AND FLD_CHARNAME='%s'", lpTCreateChr->szID, lpTCreateChr->szName );
 
 	pRec = GetDBManager()->CreateRecordset();
 	pRec->Execute( szQuery );
 	GetDBManager()->DestroyRecordset( pRec );
 
-	sprintf( szQuery, "DELETE FROM TBL_CHARACTER_MAGIC WHERE FLD_LOGINID='%s' AND FLD_CHARNAME='%s'", lpTCreateChr->szID, lpTCreateChr->szName );
+	sprintf_s( szQuery, "DELETE FROM TBL_CHARACTER_MAGIC WHERE FLD_LOGINID='%s' AND FLD_CHARNAME='%s'", lpTCreateChr->szID, lpTCreateChr->szName );
 
 	pRec = GetDBManager()->CreateRecordset();
 	pRec->Execute( szQuery );
@@ -219,7 +219,7 @@ void CGateInfo::MakeNewCharacter(SOCKET s, _LPTCREATECHR lpTCreateChr)
 	int					nPos;
 	char				szQuery[2048];
 
-	sprintf( szQuery, "SELECT FLD_CHARNAME FROM TBL_CHARACTER WHERE FLD_CHARNAME='%s'", lpTCreateChr->szName );
+	sprintf_s( szQuery, "SELECT FLD_CHARNAME FROM TBL_CHARACTER WHERE FLD_CHARNAME='%s'", lpTCreateChr->szName );
 
 	CRecordset *pRec = GetDBManager()->CreateRecordset();
 
@@ -240,7 +240,7 @@ void CGateInfo::MakeNewCharacter(SOCKET s, _LPTCREATECHR lpTCreateChr)
 	
 	GetDBManager()->DestroyRecordset( pRec );
 
-	sprintf( szQuery, "SELECT COUNT(FLD_CHARNAME) AS FLD_COUNT FROM TBL_CHARACTER WHERE FLD_CHARNAME='%s'", lpTCreateChr->szName );
+	sprintf_s( szQuery, "SELECT COUNT(FLD_CHARNAME) AS FLD_COUNT FROM TBL_CHARACTER WHERE FLD_CHARNAME='%s'", lpTCreateChr->szName );
 
 	pRec = GetDBManager()->CreateRecordset();
 
@@ -267,7 +267,7 @@ void CGateInfo::MakeNewCharacter(SOCKET s, _LPTCREATECHR lpTCreateChr)
 
 		// TBL_CHARACTER 테이블 추가
 
-		sprintf(szQuery, "INSERT TBL_CHARACTER ("
+		sprintf_s(szQuery, "INSERT TBL_CHARACTER ("
 						"FLD_LOGINID, FLD_CHARNAME, FLD_JOB, FLD_GENDER, FLD_LEVEL, FLD_DIRECTION, "
 						"FLD_ATTACKMODE, FLD_CX, FLD_CY, FLD_MAPNAME, FLD_GOLD, FLD_HAIR, "
 						"FLD_DRESS_ID, FLD_WEAPON_ID, FLD_LEFTHAND_ID, FLD_RIGHTHAND_ID, FLD_HELMET_ID, "
@@ -282,7 +282,7 @@ void CGateInfo::MakeNewCharacter(SOCKET s, _LPTCREATECHR lpTCreateChr)
 						table->posX, table->posY, table->mapName);
 		pRec->Execute( szQuery );
 
-		sprintf(szQuery, "INSERT TBL_CHARACTER_GENITEM (FLD_LOGINID, FLD_CHARNAME, FLD_ITEMINDEX) VALUES ('%s', '%s', 'G00080008000')",
+		sprintf_s(szQuery, "INSERT TBL_CHARACTER_GENITEM (FLD_LOGINID, FLD_CHARNAME, FLD_ITEMINDEX) VALUES ('%s', '%s', 'G00080008000')",
 							lpTCreateChr->szID, lpTCreateChr->szName);
 		pRec->Execute( szQuery );
 		
@@ -293,8 +293,8 @@ void CGateInfo::MakeNewCharacter(SOCKET s, _LPTCREATECHR lpTCreateChr)
 		memset( &human, 0, sizeof( human ) );
 		memset( &makeItem, 0, sizeof( makeItem ) );
 
-		strcpy( human.szUserID, lpTCreateChr->szID );
-		strcpy( human.szCharName, lpTCreateChr->szName );
+		strcpy_s( human.szUserID, lpTCreateChr->szID );
+		strcpy_s( human.szCharName, lpTCreateChr->szName );
 
 		// 평복 추가 (0: 남, 1: 여)
 		makeItem.szStdType	= 'B';
@@ -356,7 +356,7 @@ void CGateInfo::GetSelectCharacter(SOCKET s, char *pszPacket)
 	pBestServer->connCnt++;
 //	LeaveCriticalSection( &g_xGameServerList.m_cs );
 
-	strcpy( szServerIP, pBestServer->ip );
+	strcpy_s( szServerIP, pBestServer->ip );
 	// ORZ: from here
 
 	int nPos = fnDecode6BitBufA(pszPacket, szDecodeMsg, sizeof(szDecodeMsg));

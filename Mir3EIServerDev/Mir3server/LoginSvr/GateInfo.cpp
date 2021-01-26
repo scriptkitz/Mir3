@@ -148,7 +148,7 @@ void CGateInfo::MakeNewUser(char *pszPacket)
 		if ((memlen(pszID) - 1) || (memlen(pszName) - 1) || (memlen(pszPassword) - 1))
 		{
 			char szQuery[1024];
-			sprintf( szQuery, 
+			sprintf_s( szQuery, 
 				"INSERT TBL_ACCOUNT( FLD_LOGINID, FLD_PASSWORD, FLD_USERNAME, FLD_CERTIFICATION ) "
 				"VALUES( '%s', '%s', '%s', 0 )",
 				pszID, pszPassword, pszName );
@@ -197,7 +197,7 @@ void CGateInfo::ReceiveServerMsg(char *pszPacket)
 		nCertification = AnsiStrToVal(pszPos);
 
 		char szQuery[256];
-		sprintf( szQuery, 
+		sprintf_s( szQuery,
 			"UPDATE TBL_ACCOUNT SET FLD_CERTIFICATION=%d WHERE FLD_LOGINID='%s'", 
 			nCertification, pszPacket );
 
@@ -369,7 +369,8 @@ void CGateInfo::ProcSelectServer(SOCKET s, WORD wServerIndex)
 bool CGateInfo::ParseUserEntry( char *buf, _AUSERENTRYINFO *userInfo )
 {
 	char seps[] = "\001";
-	char *token = strtok( buf, seps );
+	char* next_token = NULL;
+	char* token = strtok_s(buf, seps, &next_token);
 	int  step   = 0;
 	
 	__try
@@ -378,24 +379,24 @@ bool CGateInfo::ParseUserEntry( char *buf, _AUSERENTRYINFO *userInfo )
 		{
 			switch ( step++ )
 			{
-				case 0: strcpy( userInfo->szLoginID, token );
-				case 1: strcpy( userInfo->szPassword, token ); 
-				case 2: strcpy( userInfo->szUserName, token );
-				case 3: strcpy( userInfo->szSSNo, token );
-				case 4: strcpy( userInfo->szBirthDay, token ); 
-				case 5: strcpy( userInfo->szZipCode, token );
-				case 6: strcpy( userInfo->szAddress1, token ); 
-				case 7: strcpy( userInfo->szAddress2, token );
-				case 8: strcpy( userInfo->szPhone, token ); 
-				case 9: strcpy( userInfo->szMobilePhone, token ); 
-				case 10: strcpy( userInfo->szEmail, token ); 
-				case 11: strcpy( userInfo->szQuiz, token ); 
-				case 12: strcpy( userInfo->szAnswer, token ); 
-				case 13: strcpy( userInfo->szQuiz2, token ); 
-				case 14: strcpy( userInfo->szAnswer2, token ); 
+				case 0: strcpy_s( userInfo->szLoginID, token );
+				case 1: strcpy_s( userInfo->szPassword, token ); 
+				case 2: strcpy_s( userInfo->szUserName, token );
+				case 3: strcpy_s( userInfo->szSSNo, token );
+				case 4: strcpy_s( userInfo->szBirthDay, token ); 
+				case 5: strcpy_s( userInfo->szZipCode, token );
+				case 6: strcpy_s( userInfo->szAddress1, token ); 
+				case 7: strcpy_s( userInfo->szAddress2, token );
+				case 8: strcpy_s( userInfo->szPhone, token ); 
+				case 9: strcpy_s( userInfo->szMobilePhone, token ); 
+				case 10: strcpy_s( userInfo->szEmail, token ); 
+				case 11: strcpy_s( userInfo->szQuiz, token ); 
+				case 12: strcpy_s( userInfo->szAnswer, token ); 
+				case 13: strcpy_s( userInfo->szQuiz2, token ); 
+				case 14: strcpy_s( userInfo->szAnswer2, token ); 
 			}	
 			
-			token = strtok( NULL, seps );
+			token = strtok_s( NULL, seps, &next_token );
 		}
 	}
 	__except ( EXCEPTION_EXECUTE_HANDLER )
@@ -431,7 +432,7 @@ void CGateInfo::ProcAddUser(SOCKET s, char *pszData)
 	else
 	{	
 		char szQuery[1024];
-		sprintf( szQuery, 
+		sprintf_s( szQuery,
 			"SELECT * FROM TBL_ACCOUNT WHERE FLD_LOGINID='%s'",
 			UserEntryInfo.szLoginID );
 
@@ -448,7 +449,7 @@ void CGateInfo::ProcAddUser(SOCKET s, char *pszData)
 
 			pRec = GetDBManager()->CreateRecordset();
 
-			sprintf( szQuery, 
+			sprintf_s( szQuery,
 				"INSERT TBL_ACCOUNT(FLD_LOGINID, FLD_PASSWORD, FLD_USERNAME, FLD_CERTIFICATION) "
 				"VALUES( '%s', '%s', '%s', 0 )",
 				UserEntryInfo.szLoginID, 
@@ -457,7 +458,7 @@ void CGateInfo::ProcAddUser(SOCKET s, char *pszData)
 
 			pRec->Execute( szQuery );
 
-			sprintf( szQuery,
+			sprintf_s( szQuery,
 				"INSERT TBL_ACCOUNTADD(FLD_LOGINID, FLD_SSNO, FLD_BIRTHDAY, FLD_ADDRESS1, FLD_ADDRESS2, "
 				                      "FLD_PHONE, FLD_MOBILEPHONE, FLD_EMAIL, FLD_QUIZ1, FLD_ANSWER1, FLD_QUIZ2, FLD_ANSWER2) "
 				"VALUES( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )",
@@ -529,7 +530,7 @@ void CGateInfo::ProcLogin(SOCKET s, char *pszData)
 				*pszPassword = '\0';
 				pszPassword++;
 
-				sprintf( szQuery, "SELECT * FROM TBL_ACCOUNT WHERE FLD_LOGINID='%s'", pszID );
+				sprintf_s( szQuery, "SELECT * FROM TBL_ACCOUNT WHERE FLD_LOGINID='%s'", pszID );
 
 				CRecordset *pRec = GetDBManager()->CreateRecordset();
 

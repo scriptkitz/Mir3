@@ -24,8 +24,8 @@ public:
 	CDBManager();
 	~CDBManager();
 
-	bool Init( void	(*pfnLog)( LPTSTR pMsg ), char *pDSN, char *pID, char *pPassword );
-
+	CConnection* Init( void	(*pfnLog)( LPTSTR pMsg ), char *pDSN, char *pID, char *pPassword );
+	void UnInit();
 	CRecordset * CreateRecordset();
 	void DestroyRecordset( CRecordset *pRec );
 

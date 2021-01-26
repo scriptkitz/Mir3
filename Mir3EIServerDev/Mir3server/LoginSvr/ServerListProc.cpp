@@ -17,10 +17,10 @@ void InitListView(HWND hWndDlg)
 	UINT			nGateCount = 0;
 
 	TCHAR			szKey[128];
-	TCHAR			szSubKey[128];
-	TCHAR			szGateList[128];
+	//TCHAR			szSubKey[128];
+	//TCHAR			szGateList[128];
 	TCHAR			szTitle[64];
-	DWORD			dwPrivateIP = 0, dwPublicIP = 0;
+	TCHAR			csPrivateIP[20] = { 0 }, csPublicIP[20] = { 0 };
 	UINT			nNumberOfGate = 0;
 
 	lvi.mask		= LVIF_TEXT;
@@ -35,29 +35,24 @@ void InitListView(HWND hWndDlg)
 		ListView_InsertItem(GetDlgItem(hWndDlg, IDC_SERVERINFO_LIST), &lvi);
 
 		lstrcpy(szKey, _LOGIN_SERVERLIST_REGISTRY);
-		lstrcat(szKey, _T("\\Servers\\"));
+		lstrcat(szKey, _T("\\"));
 		lstrcat(szKey, szText);
 
 		jRegGetKey(szKey, _T("Title"), (LPBYTE)szTitle);
 
 		ListView_SetItemText(GetDlgItem(hWndDlg, IDC_SERVERINFO_LIST), nCount, 1, szTitle);
 
-		jRegGetKey(szKey, _T("PrivateIP"), (LPBYTE)dwPrivateIP);
-		wsprintf(szText, _TEXT("%d.%d.%d.%d"), FIRST_IPADDRESS(dwPrivateIP), SECOND_IPADDRESS(dwPrivateIP), 
-											THIRD_IPADDRESS(dwPrivateIP), FOURTH_IPADDRESS(dwPrivateIP)); 
-		ListView_SetItemText(GetDlgItem(hWndDlg, IDC_SERVERINFO_LIST), nCount, 2, szText);
+		jRegGetKey(szKey, _T("PrivateIP"), (LPBYTE)csPrivateIP);
+		ListView_SetItemText(GetDlgItem(hWndDlg, IDC_SERVERINFO_LIST), nCount, 2, csPrivateIP);
 
-		jRegGetKey(szKey, _T("PublicIP"), (LPBYTE)dwPublicIP);
-		wsprintf(szText, _TEXT("%d.%d.%d.%d"), FIRST_IPADDRESS(dwPublicIP), SECOND_IPADDRESS(dwPublicIP), 
-											THIRD_IPADDRESS(dwPublicIP), FOURTH_IPADDRESS(dwPublicIP)); 
-		ListView_SetItemText(GetDlgItem(hWndDlg, IDC_SERVERINFO_LIST), nCount, 2, szText);
+		jRegGetKey(szKey, _T("PublicIP"), (LPBYTE)csPublicIP);
+		ListView_SetItemText(GetDlgItem(hWndDlg, IDC_SERVERINFO_LIST), nCount, 2, csPublicIP);
 
 		nCount++;
 	}
 
-		jRegGetKey(szKey, _T("NumberOfGate"),/* REG_DWORD,*/ (LPBYTE)&nGateCount);
-
-		jRegSetKey(szKey, szSubKey, REG_SZ, (LPBYTE)szGateList, _tcslen(szGateList));
+	//jRegGetKey(szKey, _T("NumberOfGate"),/* REG_DWORD,*/ (LPBYTE)&nGateCount);
+	//jRegSetKey(szKey, szSubKey, REG_SZ, (LPBYTE)szGateList, _tcslen(szGateList));
 
 }
 
@@ -87,12 +82,9 @@ BOOL CALLBACK ServerListProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
 				ListView_InsertColumn(GetDlgItem(hWndDlg, IDC_SERVERINFO_LIST), i, &lvc);
 			}
 
-//			ListView_DeleteAllItems(GetDlgItem(hWndDlg, IDC_SERVERINFO_LIST));
-
-			BYTE	btInstalled;
-
-			if (jRegGetKey(_LOGIN_SERVER_REGISTRY, _T("Installed"), (LPBYTE)&btInstalled))
-				InitListView(hWndDlg);
+			//BYTE	btInstalled;
+			//if (jRegGetKey(_LOGIN_SERVER_REGISTRY, _T("Installed"), (LPBYTE)&btInstalled))
+			InitListView(hWndDlg);
 			
 			return TRUE;
 		}

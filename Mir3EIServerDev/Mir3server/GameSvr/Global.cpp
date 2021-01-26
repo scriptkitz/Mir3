@@ -8,6 +8,8 @@
 
 HINSTANCE		g_hInst			= NULL;			// Application instance
 HWND			g_hMainWnd		= NULL;			// Main window handle
+HANDLE			g_hWSAEvent		= NULL;
+HANDLE			g_hWSAThread	= NULL;	
 HWND			g_hLogMsgWnd	= NULL;
 HWND			g_hToolBar		= NULL;
 
@@ -24,8 +26,8 @@ TBBUTTON tbButtons[] =
 };
 
 CDatabase						g_MirDB;
-CConnection						*g_pConnCommon;
-CConnection						*g_pConnGame;
+CConnection						*g_pConnCommon = NULL;
+CConnection						*g_pConnGame = NULL;
 
 CWHList<char *>					g_xAdminCommandList;
 CWHList<char *>					g_xUserCommandList;

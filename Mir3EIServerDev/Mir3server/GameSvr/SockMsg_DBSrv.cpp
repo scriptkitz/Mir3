@@ -1,5 +1,8 @@
 #include "stdafx.h"
 
+extern HANDLE g_hWSAEvent;
+extern HANDLE g_hWSAThread;
+
 VOID WINAPI OnTimerProc(HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
 
 UINT WINAPI ProcessLogin(LPVOID lpParameter);
@@ -273,75 +276,77 @@ void ProcReceiveBuffer(char *pszPacket, int nRecv)
 		g_nRemainBuffLen = 0;
 }
 
-VOID WINAPI OnProcessUserHuman(HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
-
-LPARAM OnClientSockMsg(WPARAM wParam, LPARAM lParam)
+DWORD WINAPI OnClientSockMsg(LPVOID lpThreadParameter)
 {
-	switch (WSAGETSELECTEVENT(lParam))
+	while (true)
 	{
-		case FD_CONNECT:
+		DWORD dwIndex = WSAWaitForMultipleEvents(1, &g_hWSAEvent, FALSE, 500, FALSE);
+		if (dwIndex == WSA_WAIT_TIMEOUT) continue;
+		WSANETWORKEVENTS events;
+		if (SOCKET_ERROR != WSAEnumNetworkEvents(g_csock, g_hWSAEvent, &events))
 		{
-			if (CheckSocketError(lParam))
+			if (events.lNetworkEvents & FD_CONNECT)
 			{
-				InsertLogMsg(IDS_CONNECT_DBSERVER);
-
-				KillTimer(g_hMainWnd, _ID_TIMER_CONNECTSERVER);
-
-				UINT			dwThreadIDForMsg = 0;
-				unsigned long	hThreadForMsg = 0;
-
-//				SetTimer(g_hMainWnd, _ID_TIMER_PROCESSUSERHUMAN, 1, (TIMERPROC)OnProcessUserHuman);
-				if (hThreadForMsg = _beginthreadex(NULL, 0, ProcessLogin, NULL, 0, &dwThreadIDForMsg))
+				int errcode = events.iErrorCode[FD_CONNECT_BIT];
+				if (errcode)
 				{
-//					SetThreadPriority((HANDLE)hThreadForMsg, THREAD_PRIORITY_HIGHEST);
-					hThreadForMsg = _beginthreadex(NULL, 0, ProcessUserHuman, NULL, 0, &dwThreadIDForMsg);
-					hThreadForMsg = _beginthreadex(NULL, 0, ProcessMonster, NULL, 0, &dwThreadIDForMsg);
-					hThreadForMsg = _beginthreadex(NULL, 0, ProcessNPC, NULL, 0, &dwThreadIDForMsg);
+					InsertLogMsg(IDS_CANT_CONNECT);
+					closesocket(g_csock);
+					g_csock = INVALID_SOCKET;
+					SetTimer(g_hMainWnd, _ID_TIMER_CONNECTSERVER, 10000, (TIMERPROC)OnTimerProc);
+					return 0;
 				}
+				else
+				{
+					InsertLogMsg(IDS_CONNECT_DBSERVER);
 
-				int nPort;
+					KillTimer(g_hMainWnd, _ID_TIMER_CONNECTSERVER);
+					UINT			dwThreadIDForMsg = 0;
+					unsigned long	hThreadForMsg = 0;
+					if (hThreadForMsg = _beginthreadex(NULL, 0, ProcessLogin, NULL, 0, &dwThreadIDForMsg))
+					{
+						hThreadForMsg = _beginthreadex(NULL, 0, ProcessUserHuman, NULL, 0, &dwThreadIDForMsg);
+						hThreadForMsg = _beginthreadex(NULL, 0, ProcessMonster, NULL, 0, &dwThreadIDForMsg);
+						hThreadForMsg = _beginthreadex(NULL, 0, ProcessNPC, NULL, 0, &dwThreadIDForMsg);
+					}
 
-				if (!jRegGetKey(_GAME_SERVER_REGISTRY, _TEXT("LocalPort"), (LPBYTE)&nPort))
-					nPort = 5000;
+					int nPort;
 
-				InitServerSocket(g_ssock, &g_saddr, _IDM_SERVERSOCK_MSG, nPort, 1);
+					if (!jRegGetKey(_GAME_SERVER_REGISTRY, _TEXT("LocalPort"), (LPBYTE)&nPort))
+						nPort = 5000;
 
-				InsertLogMsg(IDS_STARTSERVICE);
-				SendMessage(g_hStatusBar, SB_SETTEXT, MAKEWORD(0, 0), (LPARAM)_T("Ready"));
+					InitServerSocket(g_ssock, &g_saddr, nPort);
+
+					InsertLogMsg(IDS_STARTSERVICE);
+					SendMessage(g_hStatusBar, SB_SETTEXT, MAKEWORD(0, 0), (LPARAM)_T("Ready"));
+				}
 			}
-			else
+			else if (events.lNetworkEvents & FD_READ)
+			{
+				int errcode = events.iErrorCode[FD_READ_BIT];
+				if (errcode)
+				{
+					closesocket(g_csock);
+					continue;
+				}
+				char	szPacket[8096];
+
+				int nRecv = recv(g_csock, szPacket, sizeof(szPacket), 0);
+#ifdef _DEBUG
+				_RPT1(_CRT_WARN, "ClientSockMsg[FD_READ]:%d\n", nRecv);
+#endif
+				szPacket[nRecv] = '\0';
+
+				ProcReceiveBuffer(szPacket, nRecv);
+			}
+			else if (events.lNetworkEvents & FD_CLOSE)
 			{
 				closesocket(g_csock);
 				g_csock = INVALID_SOCKET;
 
-				SetTimer(g_hMainWnd, _ID_TIMER_CONNECTSERVER, 10000, (TIMERPROC)OnTimerProc);
+				InsertLogMsg(IDS_DISCONNECT_DBSERVER);
+				break;
 			}
-
-			break;
-		}
-		case FD_CLOSE:
-		{
-			closesocket(g_csock);
-			g_csock = INVALID_SOCKET;
-
-			InsertLogMsg(IDS_DISCONNECT_DBSERVER);
-
-			break;
-		}
-		case FD_READ:
-		{
-			char	szPacket[8096];
-	
-			int nRecv = recv((SOCKET)wParam, szPacket, sizeof(szPacket), 0);
-
-#ifdef _DEBUG
-			_RPT1(_CRT_WARN, "ClientSockMsg[FD_READ]:%d\n", nRecv);
-#endif
-			szPacket[nRecv] = '\0';
-
-			ProcReceiveBuffer(szPacket, nRecv);
-
-			break;
 		}
 	}
 

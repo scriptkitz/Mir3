@@ -17,7 +17,7 @@ int CItem::GetUpgrade(int nCount, int nRandom)
 
 void CStdItem::GetStandardItem(_LPTCLIENTITEMRCD lpClientItemRcd)
 {
-	strcpy(lpClientItemRcd->tStdItem.szName, szName);
+	strcpy_s(lpClientItemRcd->tStdItem.szName, szName);
 
 	lpClientItemRcd->tStdItem.btStdMode		= (BYTE)wStdMode;
 	lpClientItemRcd->tStdItem.btShape		= (BYTE)wShape;

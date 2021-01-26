@@ -55,30 +55,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
     MSG msg;
 
-//	if (CheckAvailableIOCP())
-//	{
-		if (!InitApplication(hInstance))
-			return (FALSE);
+	if (!InitApplication(hInstance))
+		return (FALSE);
 
-		if (!InitInstance(hInstance, nCmdShow))
-			return (FALSE);
+	if (!InitInstance(hInstance, nCmdShow))
+		return (FALSE);
 
-		while (GetMessage(&msg, NULL, 0, 0))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-/*	}
-	else
+	while (GetMessage(&msg, NULL, 0, 0))
 	{
-		TCHAR szMsg[1024];
-
-		LoadString(hInstance, IDS_NOTWINNT, szMsg, sizeof(szMsg));
-		MessageBox(NULL, szMsg, _LOGINGATE_SERVER_TITLE, MB_OK|MB_ICONINFORMATION);
-		
-		return -1;
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
-*/
+
+	if (g_pConnCommon)
+	{
+		g_MirDB.DestroyConnection(&g_pConnCommon);
+	}
+	if (g_pConnGame)
+	{
+		g_MirDB.DestroyConnection(&g_pConnGame);
+	}
+	
     return (msg.wParam);
 }
 
@@ -203,8 +200,8 @@ BOOL InitInstance(HANDLE hInstance, int nCmdShow)
 	g_MirDB.SetDiagRec( __cbDBMsg );
 	g_MirDB.Init();
 
-	g_pConnCommon	= g_MirDB.CreateConnection( "Mir2_Common", "sa", "prg" );
-	g_pConnGame		= g_MirDB.CreateConnection( szDatabase, "sa", "prg" );
+	g_pConnCommon	= g_MirDB.CreateConnection( "Mir2_Common", "sa", "123456" );
+	g_pConnGame		= g_MirDB.CreateConnection( szDatabase, "sa", "123456" );
 
 	return TRUE;
 }
@@ -232,13 +229,13 @@ int AddNewLogMsg()
 	lvi.iItem		= nCount;
 	lvi.iSubItem	= 0;
 	
-	_tstrdate(szText);
+	_tstrdate_s(szText);
 
 	lvi.pszText = szText;
 	
 	ListView_InsertItem(g_hLogMsgWnd, &lvi);
 
-	_tstrtime(szText);
+	_tstrtime_s(szText);
 
 	ListView_SetItemText(g_hLogMsgWnd, nCount, 1, szText);
 
@@ -277,11 +274,13 @@ void InsertLogMsgParam(UINT nID, void *pParam, BYTE btFlags)
 	switch (btFlags)
 	{
 		case LOGPARAM_STR:
-			_stprintf(szMsg, szText, (LPTSTR)pParam);
+			_stprintf_s(szMsg, szText, (LPTSTR)pParam);
 			break;
 		case LOGPARAM_INT:
-			_stprintf(szMsg, szText, *(int *)pParam);
+			_stprintf_s(szMsg, szText, *(int *)pParam);
 			break;
+		default:
+			szMsg[0] = 0;
 	}
 
 	if (lstrlen(szMsg) <= 256)

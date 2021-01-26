@@ -8,6 +8,7 @@ extern HWND				g_hStatusBar;
 extern SOCKET			g_csock;
 extern SOCKADDR_IN		g_caddr;
 
+DWORD WINAPI OnClientSockMsg(LPVOID lpThreadParameter);
 BOOL	jRegGetKey(LPCTSTR pSubKeyName, LPCTSTR pValueName, LPBYTE pValue);
 
 VOID WINAPI OnTimerProc(HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
@@ -28,17 +29,17 @@ VOID WINAPI OnTimerProc(HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 		{
 			if (g_csock == INVALID_SOCKET)
 			{
-				DWORD	dwIP = 0;
+				TCHAR	tsIP[20] = { 0 };
 				int		nPort = 0;
 
 				InsertLogMsg(IDS_APPLY_RECONNECT);
 
-				jRegGetKey(_GAMEGATE_SERVER_REGISTRY, _TEXT("RemoteIP"), (LPBYTE)&dwIP);
+				jRegGetKey(_GAMEGATE_SERVER_REGISTRY, _TEXT("RemoteIP"), (LPBYTE)&tsIP);
 
 				if (!jRegGetKey(_GAMEGATE_SERVER_REGISTRY, _TEXT("RemotePort"), (LPBYTE)&nPort))
 					nPort = 5000;
-
-				ConnectToServer(g_csock, &g_caddr, _IDM_CLIENTSOCK_MSG, NULL, dwIP, nPort, FD_CONNECT|FD_READ|FD_CLOSE);
+				//_IDM_CLIENTSOCK_MSG
+				ConnectToServer(g_csock, &g_caddr, tsIP, nPort, FD_CONNECT|FD_READ|FD_CLOSE, OnClientSockMsg, NULL);
 			}
 
 			break;

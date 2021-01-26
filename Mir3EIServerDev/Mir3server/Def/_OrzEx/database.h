@@ -41,7 +41,7 @@ public:
 	void EnumDSN( void (*pfnEnum)( char *pSrcName, char *pSrcDesc ) );
 
 	CConnection * CreateConnection( char *pDSN, char *pID, char *pPassword );
-	void DestroyConnection( CConnection *pConn );
+	void DestroyConnection( CConnection **pConn );
 
 public:
 	static void SetDiagRec( void (*pfnRecord)( char *pState, int nErrCode, char *pDesc ) );
@@ -56,7 +56,7 @@ public:
 class CConnection
 {
 protected:
-	SQLHDBC		m_hDBConn;
+	SQLHANDLE		m_hDBConn;
 
 private:
 	CConnection();

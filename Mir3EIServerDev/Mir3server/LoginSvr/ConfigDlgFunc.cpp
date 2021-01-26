@@ -45,7 +45,7 @@ BOOL CALLBACK ConfigDlgFunc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			tie.pszText	= szText;
 
 			LoadString((HINSTANCE)g_hInst, IDS_TAB_LABEL1, szText, sizeof(szText));
-			ListView_InsertItem(GetDlgItem(hWndDlg, IDC_SERVERINFO_LIST), 0, &tie);
+			ListView_InsertItem(GetDlgItem(hWndDlg, IDC_SERVERINFO_LIST), &tie);
 
 			break;
 		}
