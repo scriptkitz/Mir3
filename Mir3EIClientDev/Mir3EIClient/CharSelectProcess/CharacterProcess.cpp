@@ -171,7 +171,7 @@ LRESULT CCharacterProcess::OnMouseMove(WPARAM wParam, LPARAM lParam)
 		if(fOnButton)
 		{
 			HCURSOR	hCursor;
-			hCursor = LoadCursor(g_xMainWnd.GetSafehInstance(),MAKEINTRESOURCE(IDC_ARROW));
+			hCursor = LoadCursor(g_xMainWnd.GetSafehInstance(), IDC_ARROW);
 			SetCursor(hCursor);
 			DestroyCursor(hCursor); 
 		}
@@ -362,7 +362,32 @@ char* CCharacterProcess::OnMessageReceive(CHAR* pszMessage)
 {
 	char	*pszFirst = pszMessage;
 	char	*pszEnd;
-	
+	unsigned char sb[1024];
+	if (*pszFirst != '#')
+	{
+		char* KEYS = "SoftSmile";
+		unsigned char lastchar = 0;
+		for (size_t i = 0; i < strlen(pszMessage) / 2; i++)
+		{
+			unsigned int b = 0;
+			sscanf_s(pszMessage + i * 2, "%02X", &b);
+			if (i == 0)
+			{
+				lastchar = b;
+				continue;
+			}
+			unsigned char k = KEYS[(i - 1) % strlen(KEYS)];
+			short t = k ^ b;
+			if (t < lastchar) t += 0xFF;
+			t -= lastchar;
+			t = t & 0xFF;
+			sb[i - 1] = t;
+			sb[i] = 0;
+			lastchar = b;
+		}
+		pszFirst = (char*)sb;
+	}
+
 	while (pszEnd = strchr(pszFirst, '!'))
 	{
 		*pszEnd = '\0';

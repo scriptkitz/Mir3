@@ -17,7 +17,7 @@ public:
 
 	VOID* m_pxDXGWnd;
 
-	HRESULT	Clear(DWORD dwColor);
+	HRESULT	Clear(D2D1::ColorF color);
 
 	virtual VOID	OnConnectToServer() = 0;
 	virtual char*	OnMessageReceive(CHAR* pszPacketMsg) = 0;

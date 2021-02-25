@@ -22,11 +22,16 @@
 #pragma warning (disable : 4244)
 #pragma warning (disable : 4018)
 
-#include "windows.h"
+#include <ws2tcpip.h>
+#include <windows.h>
 
 #include <string>
 #include <control.h>
 #include <vfw.h>
+
+#include <mfmediaengine.h>
+#include <mfapi.h>
+#include <mfidl.h>
 
 #include "Resource.h"
 #include "..\WindHorn\WHEngine.h"
@@ -111,10 +116,16 @@
 
 #pragma comment(lib, "WS2_32.lib")
 #pragma comment(lib,"Vfw32.lib")			// AVI
-//#pragma comment(lib, "strmbasd.lib")		// DirectShow
 #pragma comment(lib, "strmiids.lib")		// DirectShow
 #pragma comment(lib, "quartz.lib")			// DirectShow
-#pragma comment(lib, "../bin/WindHorn.lib")
+#pragma comment(lib, "mfplat.lib")
+
+#ifdef _DEBUG
+#pragma comment(lib, "../bin/Debug/WindHorn.lib")
+#else
+#pragma comment(lib, "../bin/Release/WindHorn.lib")
+#endif // DEBUG
+
 
 #include "Extern.h"
 

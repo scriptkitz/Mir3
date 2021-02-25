@@ -103,7 +103,6 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>.\Debug/Mir2Ex.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>
       </AssemblerListingLocation>
       <BrowseInformation>true</BrowseInformation>

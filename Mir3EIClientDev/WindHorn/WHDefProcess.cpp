@@ -13,20 +13,11 @@ CWHDefProcess::~CWHDefProcess()
 }
 
 
-HRESULT CWHDefProcess::Clear(DWORD dwColor)
+HRESULT CWHDefProcess::Clear(D2D1::ColorF color)
 {
-    DDBLTFX ddbltfx;
-
-    if (NULL == ((CWHDXGraphicWindow*)m_pxDXGWnd)->GetBackBuffer())
-	{
-        return E_POINTER;
-	}
-
-    ZeroMemory(&ddbltfx, sizeof(ddbltfx));
-    ddbltfx.dwSize      = sizeof(ddbltfx);
-    ddbltfx.dwFillColor = dwColor;
-
-    return (((CWHDXGraphicWindow*)m_pxDXGWnd)->GetBackBuffer())->Blt(NULL, NULL, NULL, DDBLT_COLORFILL, &ddbltfx);
+	
+	//reinterpret_cast<CWHDXGraphicWindow*>(m_pxDXGWnd)->m_pD2D1DeviceContext->Clear(color);
+    return S_OK;
 }
 
 

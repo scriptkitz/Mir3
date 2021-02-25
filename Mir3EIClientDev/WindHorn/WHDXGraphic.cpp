@@ -1,61 +1,22 @@
-/******************************************************************************************************************
-                                                                                                                   
-	¸ðµâ¸í:																											
-																													
-	ÀÛ¼ºÀÚ:																											
-	ÀÛ¼ºÀÏ:																											
-																													
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤ ³»¿ë																						
-                                                                                                                   
-*******************************************************************************************************************/
-
-
 #include "stdafx.h"
 #include "WHEngine.h"
 
+#define _DX_DIP 64.0f
 
-/******************************************************************************************************************
-
-	CWHDXGraphicWindow Functions
-
-*******************************************************************************************************************/
-
+#define COLOR_B16TOB32(w, s) (DWORD)(((s*((w & 0xF800) >> 8) << 0x10)/100) | (s*(((w & 0x07E0) >> 3) << 0x8)/100) | (s*((w & 0x001F) << 3)/100) | (255 << 24))
 
 static BYTE						g_bNumDevices = 0;
 static DXG_ENUM_DEVICEINFO		g_stDXGEnumDeviceInfo[_MAX_DEVICES];
 
-static INT						DXGModesSortCallback(const VOID* arg1, const VOID* arg2);
-static BOOL		WINAPI			DXGDriverEnumCallbackEx(GUID* pGUID, LPSTR szDesc, LPSTR szName, LPVOID pContext, HMONITOR hm);
-static HRESULT	WINAPI			DXGEnumDisplayModeCallback(DDSURFACEDESC2* pddsd, VOID* pParentInfo);
-static HRESULT	WINAPI			DXG3DDeviceEnumCallback(TCHAR* szDesc, TCHAR* szName, D3DDEVICEDESC7* pDesc, VOID* pParentInfo);
-static HRESULT	WINAPI			DXGEnumZBufferFormatsCallback(DDPIXELFORMAT* pddpf, VOID* pContext);
-
-
 
 CWHDXGraphicWindow* CWHDXGraphicWindow::m_pxDXGWnd = NULL;
+D2D1_BITMAP_PROPERTIES CWHDXGraphicWindow::s_BitmapProps;
 
 CWHDXGraphicWindow* GetDXGWindowPtr()
 {
 	return CWHDXGraphicWindow::m_pxDXGWnd;
 }
 
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::CWHDXGraphicWindow()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : WORD wWidth
-	         WORD wHeight
-	         WORD wBpp
-	Ãâ·Â   : 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 CWHDXGraphicWindow::CWHDXGraphicWindow(WORD wWidth, WORD wHeight, WORD wBpp)
 {
 	m_pDD				= NULL;
@@ -65,8 +26,10 @@ CWHDXGraphicWindow::CWHDXGraphicWindow(WORD wWidth, WORD wHeight, WORD wBpp)
 	m_pddsZBuffer		= NULL;
     m_pddsFrontBuffer	= NULL;
     m_pddsBackBuffer	= NULL;
-//	¿¡µðÆ®À©µµ¿ì Ãâ·ÂÀ» À§ÇØ¼­ Å¬¸®ÆÛ¸¦ ¼¼ÆÃÇÑ´Ù.
+//	?????? ??? ??? ???? ????.
 	m_lpcClipper		= NULL;
+
+	m_pD2D1Factory1 = NULL;
 
 	m_stDisplayInfo.wWidth	= wWidth;
 	m_stDisplayInfo.wHeight	= wHeight;
@@ -88,9 +51,12 @@ CWHDXGraphicWindow::CWHDXGraphicWindow(WORD wWidth, WORD wHeight, WORD wBpp)
 	m_dwVideoFree		= 0;
 
 	m_pxDefProcess = NULL;
+
+
+	s_BitmapProps.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	s_BitmapProps.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
+	s_BitmapProps.dpiX = s_BitmapProps.dpiY = _DX_DIP;
 }
-
-
 VOID CWHDXGraphicWindow::UsedAndFreeMemoryCheck()
 {
 	DDSCAPS2     ddsCaps2; 
@@ -105,21 +71,6 @@ VOID CWHDXGraphicWindow::UsedAndFreeMemoryCheck()
 	ddsCaps2.dwCaps = DDSCAPS_VIDEOMEMORY;
 	m_pDD->GetAvailableVidMem(&ddsCaps2, &m_dwVideoTotal, &m_dwVideoFree); 
 } 
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::~CWHDXGraphicWindow()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	Ãâ·Â   : 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 CWHDXGraphicWindow::~CWHDXGraphicWindow()
 {
 	FreeDXGEnumModeResources();
@@ -128,25 +79,6 @@ CWHDXGraphicWindow::~CWHDXGraphicWindow()
 	m_pxDefProcess = NULL;
 	m_pxDXGWnd = NULL;
 }
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::Create()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : LPTSTR lpCaption
-	         CHAR *pszMenuName
-	         BYTE bScreenModeFlag
-	         BYTE bDeviceModeFlag
-	Ãâ·Â   : BOOL 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 BOOL CWHDXGraphicWindow::Create(HINSTANCE hInst, LPTSTR lpCaption, CHAR *pszMenuName, CHAR* pszIconName, BYTE bScreenModeFlag, BYTE bDeviceModeFlag)
 {
 	DWORD	dwStyle;
@@ -175,44 +107,21 @@ BOOL CWHDXGraphicWindow::Create(HINSTANCE hInst, LPTSTR lpCaption, CHAR *pszMenu
 		SetWindowLong(m_hWnd, GWL_STYLE, dwStyle);
 	}
 
-	HRESULT	hr;
-	if ( hr = SUCCEEDED(DirectDrawEnumerateEx(DXGDriverEnumCallbackEx, NULL,
-											  DDENUM_ATTACHEDSECONDARYDEVICES | DDENUM_DETACHEDSECONDARYDEVICES | DDENUM_NONDISPLAYDEVICES)) )
+	if (SUCCEEDED(CreateDXG()))
 	{
-		if ( hr = SUCCEEDED(CreateDXG()) )
-		{
-			m_bIsWindowReady = TRUE;
-			CreateDefFont();
-			return TRUE;
-		}
-		else
-		{
-			MessageBox(m_hWnd, TEXT("[CWHDXGraphicWindow::Create]") TEXT("DirectGraphic create failed."), "MirDXG", MB_ICONERROR | MB_OK);
-			return FALSE;
-		}
+		m_bIsWindowReady = TRUE;
+		CreateDefFont();
+		return TRUE;
 	}
+	else
+	{
+		MessageBox(m_hWnd, TEXT("[CWHDXGraphicWindow::Create]") TEXT("DirectGraphic create failed."), "MirDXG", MB_ICONERROR | MB_OK);
+		return FALSE;
+	}
+
 
 	return FALSE;
 }
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::MainWndProcDXG()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : HWND hWnd
-	         UINT uMsg
-	         WPARAM wParam
-	         LPARAM lParam
-	Ãâ·Â   : LRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 LRESULT CWHDXGraphicWindow::MainWndProcDXG(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	switch (uMsg)
@@ -241,8 +150,6 @@ LRESULT CWHDXGraphicWindow::MainWndProcDXG(HWND hWnd, UINT uMsg, WPARAM wParam, 
 
     return CWHWindow::MainWndProc(hWnd, uMsg, wParam, lParam);
 }
-
-
 LRESULT CWHDXGraphicWindow::OnGetMinMaxInfo(WPARAM wParam, LPARAM lParam)
 {
 	if ( m_hWnd )
@@ -269,100 +176,59 @@ LRESULT CWHDXGraphicWindow::OnGetMinMaxInfo(WPARAM wParam, LPARAM lParam)
 
     return 0L;
 }
-
-
 LRESULT CWHDXGraphicWindow::OnSetCursor()
 {
     SetCursor(LoadCursor(NULL, IDC_ARROW));
     return 0L;
 }
-
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::OnSize()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : WPARAM wParam
-	         LPARAM lParam
-	Ãâ·Â   : LRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 LRESULT CWHDXGraphicWindow::OnSize(WPARAM wParam, LPARAM lParam)
 {
     if ( SIZE_MAXHIDE == wParam || SIZE_MINIMIZED == wParam )
         m_bIsWindowActive = FALSE;
     else
         m_bIsWindowActive = TRUE;
-
 	UpdateBoundsWnd();
+	if (m_pDXGISwapChain4)
+	{
+		HRESULT hr = S_OK;
+		_ReleaseSurface();
+		int w = m_rcWindow.right - m_rcWindow.left;
+		int h = m_rcWindow.bottom - m_rcWindow.top;
+		//BufferCount 0±íÊ¾±£Áô½»»»Á´´æÔÚµÄ»º³åÇøÊýÁ¿
+		//Width 0±íÊ¾Ê¹ÓÃÄ¿±ê´°¿ÚµÄ¿Í»§Çø¿í¶È
+		//Height 0±íÊ¾Ê¹ÓÃÄ¿±ê´°¿ÚµÄ¿Í»§Çø¸ß¶È
+		//NewFormat DXGI_FORMAT_UNKNOWN±íÊ¾±£Áô½»»»Á´´æÔÚµÄ¸ñÊ½
+		hr = m_pDXGISwapChain4->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_GDI_COMPATIBLE| DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
+		if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
+		{
+#ifdef _DEBUG
+			char buff[64] = {};
+			sprintf_s(buff, "Device Lost on ResizeBuffers: Reason code 0x%08X\n",
+				(hr == DXGI_ERROR_DEVICE_REMOVED) ? m_pD3D11Device->GetDeviceRemovedReason() : hr);
+			OutputDebugStringA(buff);
+#endif // _DEBUG
+			//Èç¹ûÉè±¸ÒÑÉ¾³ý,ÐèÒª´´½¨ÐÂµÄÉè±¸ºÍ½»»»Á´¡£
+			HandleDeviceLost();
+			//ÏÖÔÚÒ»ÇÐ¶¼ÒÑÉèÖÃ¡£²»Òª¼ÌÐøÖ´ÐÐ´Ë·½·¨£¬HandleDeviceLost½«ÖØÐÂÊäÈë´Ë·½·¨²¢ÕýÈ·ÉèÖÃÐÂÉè±¸¡£
+
+		}
+		if (SUCCEEDED(hr))
+		{
+			_CreateSurface();
+		}
+	}
+
  	return 0L;
 }
-
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::OnMove()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : WPARAM wParam
-	         LPARAM lParam
-	Ãâ·Â   : LRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 LRESULT CWHDXGraphicWindow::OnMove(WPARAM wParam, LPARAM lParam)
 {
 	UpdateBoundsWnd();
 	return 0L;
 }
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::OnDestroy()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	Ãâ·Â   : BOOL 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 LRESULT CWHDXGraphicWindow::OnDestroy()
 {
 	return CWHWindow::OnDestroy();
 }
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::OnSysKeyDown()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : WPARAM wParam
-	         LPARAM lParam
-	Ãâ·Â   : LRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 LRESULT CWHDXGraphicWindow::OnSysKeyDown(WPARAM wParam, LPARAM lParam)
 {
 	if ( wParam == VK_RETURN )
@@ -396,81 +262,13 @@ LRESULT CWHDXGraphicWindow::OnSysKeyDown(WPARAM wParam, LPARAM lParam)
 
 	return 0L;
 }
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::FindDriverAndDevice()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	Ãâ·Â   : DWORD 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
-BYTE CWHDXGraphicWindow::FindDriverAndDevice()
-{
-	BYTE bNum = 0;
-	CHAR bCnt;
-	 
-	if ( m_bDeviceModeFlag & _DXG_DEVICEMODE_PRIMARY )
-	{
-		for ( bCnt = 0; bCnt < g_bNumDevices; bCnt++ )
-		{
-			if ( !g_stDXGEnumDeviceInfo[bCnt].pDriverGUID )
-			{
-				if ( g_stDXGEnumDeviceInfo[bCnt].f3DHardware )			return bCnt;
-				else													bNum = bCnt;
-			}
-		}
-	}
-	else
-	{
-		for ( bCnt = g_bNumDevices-1; bCnt >= 0; bCnt-- )
-		{
-			// ºñµð¿À Ä«µå°¡ 2°³ÀÌ»ó
-			if( g_bNumDevices > 2 )
-			{
-				if ( g_stDXGEnumDeviceInfo[0].dwNumModes != g_stDXGEnumDeviceInfo[bCnt].dwNumModes )
-				{
-					if ( g_stDXGEnumDeviceInfo[bCnt].f3DHardware )		return bCnt;
-					else											
-					{
-						bNum = bCnt;
-						break;
-					}
-				}
-			}
-			else
-			{
-				if ( g_stDXGEnumDeviceInfo[bCnt].f3DHardware )			return bCnt;
-				else													bNum = bCnt;
-			}
-		}
-	}
-
-	return bNum;
-}
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::DestroyDXGObjects()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	Ãâ·Â   : HRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 HRESULT CWHDXGraphicWindow::DestroyDXGObjects()
 {
+	//D2D1
+	{
+		SAFE_RELEASE(m_pD2D1Factory1);
+	}
+
 	HRESULT	hr;
 	LONG	lDDRefCnt  = 0L;
     LONG	lD3DRefCnt = 0L;
@@ -496,7 +294,7 @@ HRESULT CWHDXGraphicWindow::DestroyDXGObjects()
     SAFE_RELEASE(m_pddsBackBuffer);
     SAFE_RELEASE(m_pddsFrontBuffer);
     SAFE_RELEASE(m_pddsZBuffer);
-//	¿¡µðÆ®À©µµ¿ì Ãâ·ÂÀ» À§ÇØ¼­ Å¬¸®ÆÛ¸¦ ¼¼ÆÃÇÑ´Ù.
+//	?????? ??? ??? ???? ????.
 	SAFE_RELEASE(m_lpcClipper);
     SAFE_RELEASE(m_pD3D);
 
@@ -517,21 +315,30 @@ HRESULT CWHDXGraphicWindow::DestroyDXGObjects()
 	return S_OK;
 //    return ( lDDRefCnt==0 && lD3DRefCnt==0 ) ? S_OK : E_FAIL;
 }
+HRESULT CWHDXGraphicWindow::_ReleaseSurface()
+{
+	SAFE_RELEASE(m_pDXGISurface);
+	SAFE_RELEASE(m_pD2D1Bitmap1);
+	return S_OK;
+}
+HRESULT CWHDXGraphicWindow::_CreateSurface()
+{
+	HRESULT hr;
+	if ((hr=m_pDXGISwapChain4->GetBuffer(0, IID_PPV_ARGS(&m_pDXGISurface)))==S_OK)
+	{
+		D2D1_BITMAP_PROPERTIES1 prop1;
+		prop1.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+		prop1.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
+		prop1.dpiX = prop1.dpiY = _DX_DIP;
+		prop1.bitmapOptions = D2D1_BITMAP_OPTIONS_GDI_COMPATIBLE | D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW;
+		prop1.colorContext = nullptr;
+		hr = m_pD2D1DeviceContext->CreateBitmapFromDxgiSurface(m_pDXGISurface, &prop1, &m_pD2D1Bitmap1);
 
+		m_pD2D1DeviceContext->SetTarget(m_pD2D1Bitmap1);
+	}
 
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::FreeDXGEnumModeResources()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	Ãâ·Â   : VOID 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
+	return hr;
+}
 VOID CWHDXGraphicWindow::FreeDXGEnumModeResources()
 {	
     for ( BYTE bCnt = 0; bCnt < g_bNumDevices; bCnt++ )
@@ -539,103 +346,91 @@ VOID CWHDXGraphicWindow::FreeDXGEnumModeResources()
         SAFE_DELETE( g_stDXGEnumDeviceInfo[bCnt].pddsdModes );
     }
 }
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::CreateDXG()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	Ãâ·Â   : HRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
+HRESULT CWHDXGraphicWindow::HandleDeviceLost()
+{
+	return S_OK;
+}
 HRESULT CWHDXGraphicWindow::CreateDXG() 
 {
-    HRESULT hr;
-
-	BYTE bSelecedDevice = FindDriverAndDevice();
-
-	if ( SUCCEEDED(hr = DirectDrawCreateEx(g_stDXGEnumDeviceInfo[bSelecedDevice].pDriverGUID, (VOID**)&m_pDD, IID_IDirectDraw7, NULL)) ) 
+	HRESULT hr = S_OK;
 	{
-		if ( m_bScreenModeFlag & _DXG_SCREENMODE_WINDOW )
-		{
-			if ( FAILED(hr = m_pDD->SetCooperativeLevel(m_hWnd, DDSCL_NORMAL)) )
-				return E_FAIL;
-//			if ( FAILED(hr = m_pDD->SetDisplayMode(m_stDisplayInfo.wWidth, m_stDisplayInfo.wHeight, m_stDisplayInfo.wBPP, 0, 0)) )
-//				return E_FAIL;		
-		}
-		else
-		{
-			if ( FAILED(hr = m_pDD->SetCooperativeLevel(m_hWnd, DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN | DDSCL_ALLOWREBOOT)) )
-				return E_FAIL;
+		hr = D3D11CreateDevice(nullptr,
+#ifdef _DEBUG
+			D3D_DRIVER_TYPE_REFERENCE, nullptr,
+			D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_DEBUG | D3D11_CREATE_DEVICE_SINGLETHREADED,
+#else
+			D3D_DRIVER_TYPE_HARDWARE, nullptr,
+			D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_SINGLETHREADED,
+#endif // DEBUG
+			nullptr, 0, D3D11_SDK_VERSION, &m_pD3D11Device, &m_FeatureLevel, &m_pD3D11DeviceContext);
+		if (!SUCCEEDED(hr)) return hr;
 
-			if ( FAILED(hr = m_pDD->SetDisplayMode(m_stDisplayInfo.wWidth, m_stDisplayInfo.wHeight, m_stDisplayInfo.wBPP, 0, 0)) )
-				return E_FAIL;		
-		}
 
-		if ( FAILED(hr == CreatePrimarySurface()) )
-		{
-			MessageBox(m_hWnd, TEXT("[CWHDXGraphicWindow::CreateDXG]") TEXT("Primary surface create failed."), TEXT("MirDXG"), MB_ICONERROR | MB_OK);
-			return E_FAIL;
-		}
-
+		IDXGIDevice2* _dxgiDv2=nullptr;
+		hr = m_pD3D11Device->QueryInterface(IID_PPV_ARGS(&_dxgiDv2));
+		if (!SUCCEEDED(hr)) return hr;
+		//È·±£DXGIÒ»´Î²»»áÅÅ¶Ó³¬¹ýÒ»Ö¡
+		hr = _dxgiDv2->SetMaximumFrameLatency(1);
+		if (!SUCCEEDED(hr)) return hr;
 		UpdateBoundsWnd();
 
-		if ( m_bDeviceModeFlag & _DXG_DEVICEMODE_D3D )
-		{
-			if ( FAILED( hr = m_pDD->QueryInterface(IID_IDirect3D7, (VOID**)&m_pD3D)) )		
-				return E_FAIL;
+		IDXGIAdapter* _adapter;
+		_dxgiDv2->GetAdapter(&_adapter);
+		_adapter->GetParent(IID_PPV_ARGS(&m_pDXGIFactory4));
+		//SAFE_RELEASE(_adapter);
 
-			if ( FAILED(hr = m_pD3D->CreateDevice(*g_stDXGEnumDeviceInfo[bSelecedDevice].pDeviceGUID, m_pddsBackBuffer, &m_pd3dDevice)) )
-				return E_FAIL;
+		int w = m_rcWindow.right - m_rcWindow.left;
+		int h = m_rcWindow.bottom - m_rcWindow.top;
+		//´´½¨½»»»Á´
+		DXGI_SWAP_CHAIN_DESC1 swapChainDesc;
+		swapChainDesc.Width = 0;
+		swapChainDesc.Height = 0;
+		swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+		swapChainDesc.Stereo = FALSE;
+		swapChainDesc.SampleDesc.Count = 1;
+		swapChainDesc.SampleDesc.Quality = 0;
+		swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		swapChainDesc.BufferCount = FRAME_COUNT;
+		swapChainDesc.Scaling = DXGI_SCALING_NONE; // DXGI_SCALING_STRETCH;
+		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+		swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+		swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_GDI_COMPATIBLE | DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
-			D3DVIEWPORT7 d3dVP = { 0, 0, m_stDisplayInfo.wWidth, m_stDisplayInfo.wHeight, 0.0f, 1.0f };
+		//DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsDesc;
+		//fsDesc.RefreshRate.Numerator = 0;
+		//fsDesc.RefreshRate.Denominator = 0;
+		//fsDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+		//fsDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+		//fsDesc.Windowed = TRUE;
+		IDXGISwapChain1* dxgiSwapChain;
+		hr = m_pDXGIFactory4->CreateSwapChainForHwnd(m_pD3D11Device, m_hWnd, &swapChainDesc, nullptr, nullptr, &dxgiSwapChain);
+		if (!SUCCEEDED(hr)) return hr;
 
-			if ( FAILED( hr = m_pd3dDevice->SetViewport(&d3dVP)) )							return hr;
+		dxgiSwapChain->QueryInterface(IID_PPV_ARGS(&m_pDXGISwapChain4));
+		//SAFE_RELEASE(dxgiSwapChain);
 
-			if ( m_bDeviceModeFlag & _DXG_DEVICEMODE_ZBUFFER )
-			{
-				if ( FAILED(hr = CreateZBuffer(g_stDXGEnumDeviceInfo[bSelecedDevice].pDeviceGUID)) )
-				{
-					MessageBox(m_hWnd, TEXT("[CWHDXGraphicWindow::CreateDXG]") TEXT("ZBuffer create failed."), TEXT("MirDXG"), MB_ICONERROR | MB_OK);
-					return E_FAIL;
-				}
-			}
-		}
+		//½ûÓÃÈ«ÆÁÄ£Ê½ALT-ENTERÇÐ»»
+		m_pDXGIFactory4->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER);
 
-		m_stBitsMaskInfo = GetRGBMaskInfoIN16Bits(m_pddsBackBuffer);
-		Init3DDeviceObjects();
+		m_pDXGISwapChain4->GetCurrentBackBufferIndex();
 
-		return S_OK;
+		hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &m_pD2D1Factory1);
+		if (!SUCCEEDED(hr)) return hr;
+
+		hr = m_pD2D1Factory1->CreateDevice(_dxgiDv2, &m_pD2D1Device);
+		if (!SUCCEEDED(hr)) return hr;
+		hr = m_pD2D1Device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &m_pD2D1DeviceContext);
+		if (!SUCCEEDED(hr)) return hr;
+
+		//SAFE_RELEASE(_dxgiDv2);
+
+		_CreateSurface();
+
+		return hr;
 	}
-
 	return hr;
 }
 
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CDXGraphic::ResetDXG()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : WORD wWidth
-	         WORD wHeight
-	         WORD wBPP
-	         BYTE bScreenModeFlag
-	         BYTE bDeviceModeFlag
-	Ãâ·Â   : HRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 HRESULT CWHDXGraphicWindow::ResetDXG(WORD wWidth, WORD wHeight, WORD wBPP, BYTE bScreenModeFlag, BYTE bDeviceModeFlag)
 {
     HRESULT hr;
@@ -682,125 +477,6 @@ HRESULT CWHDXGraphicWindow::ResetDXG(WORD wWidth, WORD wHeight, WORD wBPP, BYTE 
 
 	return S_OK;
 }
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::CreatePrimarySurface()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	Ãâ·Â   : HRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
-HRESULT CWHDXGraphicWindow::CreatePrimarySurface()
-{		
-    DDSURFACEDESC2	ddsd;
-    HRESULT			hr;
-
-	ZeroMemory(&ddsd, sizeof(ddsd));
-	ddsd.dwSize = sizeof(ddsd);
-	
-	if ( m_bScreenModeFlag & _DXG_SCREENMODE_WINDOW )
-	{
-		RECT				rcWork;
-		RECT				rcTemp;
-
-	    GetWindowRect(m_hWnd, &rcTemp);
-		
-		// Å¬¶óÀÌ¾ðÆ®¿µ¿ªÀÇ Å©±â¸¦ Àâ´ÂºÎºÐÀº À©µµ¿ìÀÇ »ý¼º°ú °ü·ÃÀÌ ÀÖ´Ù.
-		// È­¸éÇØ»óµµ Áï, Å¬¶óÀÌ¾ðÆ® »ç°¢Çü ¿µ¿ªÀÇ Å©±â¸¦ ¾ò¾î¿Â´Ù.
-		SetRect(&rcTemp, 0, 0, m_stDisplayInfo.wWidth, m_stDisplayInfo.wHeight);
-
-		// Å¬¶óÀÌ¾ðÆ® »ç°¢Çü ¿µ¿ªÅ©±â¿¡¼­ À©µµ¿ì ÀüÃ¼¿µ¿ªÀÇ Å©±â·Î º¯È¯ÇÑ´Ù.
-		AdjustWindowRectEx(&rcTemp, GetWindowStyle(m_hWnd), GetMenu(m_hWnd) != NULL, GetWindowExStyle(m_hWnd));
-
-		// À©µµ¿ì ÀüÃ¼¿µ¿ªÅ©±â·Î À©µµ¿ì¸¦ ¼¼ÆÃÇÑ´Ù. ´Ü ½ÃÀÛÁÂÇ¥´Â ¹«½ÃµÈ´Ù.
-		SetWindowPos(m_hWnd, NULL, 0, 0, rcTemp.right-rcTemp.left, rcTemp.bottom-rcTemp.top,
-					 SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-
-		// HWND_NOTOPMOST¸¦ ¼¼ÆÃÇÏ±â À§ÇØ¼­ÀÌ´Ù.
-		SetWindowPos(m_hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
-
-		// ¹ÙÅÁÈ­¸é¿µ¿ªÀÇ Å©±â¸¦ ¾ò¾î¿Â´Ù..
-		SystemParametersInfo(SPI_GETWORKAREA, 0, &rcWork, 0);
-		GetWindowRect(m_hWnd, &rcTemp);
-		if ( rcTemp.left < rcWork.left )		rcTemp.left = rcWork.left;
-		if ( rcTemp.top  < rcWork.top )			rcTemp.top  = rcWork.top;
-
-		// À©µµ¿ìÀÇ ½ÃÀÛÁÂÇ¥¸¦ ¼¼ÆÃÇÑ´Ù.
-		SetWindowPos(m_hWnd, NULL, rcTemp.left, rcTemp.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-    
-		ddsd.dwFlags        = DDSD_CAPS;
-		ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
-
-		if ( FAILED(hr = m_pDD->CreateSurface(&ddsd, &m_pddsFrontBuffer, NULL)) )			return E_FAIL;
-
-		ddsd.dwFlags        = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
-		ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
-
-		if ( m_bDeviceModeFlag & _DXG_DEVICEMODE_D3D )
-			ddsd.ddsCaps.dwCaps |= DDSCAPS_3DDEVICE;
-
-		ddsd.dwWidth    = m_stDisplayInfo.wWidth;
-		ddsd.dwHeight   = m_stDisplayInfo.wHeight;
-
-		if ( FAILED(hr = m_pDD->CreateSurface(&ddsd, &m_pddsBackBuffer, NULL)) )			return E_FAIL;
-	}
-	else
-	{
-		ddsd.dwFlags           = DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
-		ddsd.ddsCaps.dwCaps    = DDSCAPS_PRIMARYSURFACE | DDSCAPS_FLIP | DDSCAPS_COMPLEX;
-		ddsd.dwBackBufferCount = 1;
-		if ( m_bDeviceModeFlag & _DXG_DEVICEMODE_D3D )
-			ddsd.ddsCaps.dwCaps |= DDSCAPS_3DDEVICE;
-
-		if ( FAILED(hr = m_pDD->CreateSurface(&ddsd, &m_pddsFrontBuffer, NULL)) )			return E_FAIL;
-
-		DDSCAPS2 ddscaps;
-		ZeroMemory(&ddscaps, sizeof(ddscaps));
-		ddscaps.dwCaps = DDSCAPS_BACKBUFFER;
-
-		if ( FAILED(hr = m_pddsFrontBuffer->GetAttachedSurface(&ddscaps, &m_pddsBackBuffer)) )
-			return E_FAIL;
-	}
-
-//	¿¡µðÆ®À©µµ¿ì Ãâ·ÂÀ» À§ÇØ¼­ Å¬¸®ÆÛ¸¦ ¼¼ÆÃÇÑ´Ù.////////////////////////////////////////////////////////////////
-	if ( FAILED(hr = m_pDD->CreateClipper(0, &m_lpcClipper, NULL)) )						return E_FAIL;
-	if ( FAILED(hr = m_lpcClipper->SetHWnd(0, m_hWnd)) )
-	{
-		m_lpcClipper->Release();
-		return E_FAIL;
-	}
-	if ( FAILED(hr = m_pddsFrontBuffer->SetClipper(m_lpcClipper)) )
-	{
-		m_lpcClipper->Release();
-		return E_FAIL;
-	}
-    m_pDD->FlipToGDISurface();
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	return S_OK;
-}
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::UpdateBoundsWnd()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	Ãâ·Â   : VOID 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 VOID CWHDXGraphicWindow::UpdateBoundsWnd()
 {
 	if ( m_bScreenModeFlag & _DXG_SCREENMODE_WINDOW )
@@ -814,134 +490,11 @@ VOID CWHDXGraphicWindow::UpdateBoundsWnd()
         SetRect(&m_rcWindow, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
     }
 }
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::CreateZBuffer()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : GUID* pDeviceGUID
-	Ãâ·Â   : HRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
-HRESULT CWHDXGraphicWindow::CreateZBuffer(GUID* pDeviceGUID)
-{
-    HRESULT hr;
-
-    D3DDEVICEDESC7 ddDesc;
-    m_pd3dDevice->GetCaps(&ddDesc);
-    if (ddDesc.dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_ZBUFFERLESSHSR)
-        return S_OK;
-
-    DDSURFACEDESC2 ddsd;
-	ZeroMemory(&ddsd, sizeof(DDSURFACEDESC2));
-    ddsd.dwSize = sizeof(ddsd);
-    m_pddsBackBuffer->GetSurfaceDesc(&ddsd);
-
-    ddsd.dwFlags				= DDSD_WIDTH | DDSD_HEIGHT | DDSD_CAPS | DDSD_PIXELFORMAT;
-    ddsd.ddsCaps.dwCaps			= DDSCAPS_ZBUFFER;
-    ddsd.ddpfPixelFormat.dwSize = 0;
-
-    if ( FAILED(hr = m_pD3D->EnumZBufferFormats(*pDeviceGUID, DXGEnumZBufferFormatsCallback, (VOID*)&ddsd.ddpfPixelFormat)) )
-	        return E_FAIL;
-
-    if ( 0 == ddsd.ddpfPixelFormat.dwSize )
-    {
-        ddsd.ddpfPixelFormat.dwRGBBitCount = 16;
-        if ( FAILED(hr = m_pD3D->EnumZBufferFormats(*pDeviceGUID, DXGEnumZBufferFormatsCallback,  (VOID*)&ddsd.ddpfPixelFormat)) )
-	        return E_FAIL;
-        if ( 0 == ddsd.ddpfPixelFormat.dwSize )
-	        return E_FAIL;
-    }
-
-    if ( FAILED(hr = m_pDD->CreateSurface(&ddsd, &m_pddsZBuffer, NULL)) )		return E_FAIL;
-    if ( FAILED(hr = m_pddsBackBuffer->AddAttachedSurface(m_pddsZBuffer)) )     return E_FAIL;
-
-    if ( FAILED(hr = m_pd3dDevice->SetRenderTarget(m_pddsBackBuffer, 0L)) )
-    {
-        return E_FAIL;
-    }
-
-    return S_OK;
-}
-
-
-HRESULT CWHDXGraphicWindow::Init3DDeviceObjects()
-{
-    // Set the transform matrices
-    D3DMATRIX matWorld, matView, matProj;
-
-	// ÇöÀç 800*600È­¸é¿¡ ¸Â°Ô 3D ÁÂÇ¥°è¸¦ ¼³Á¤ÇÑ´Ù.
- 	D3DVECTOR vEyePt    = D3DVECTOR(0, 0, -300.0f);
-    D3DVECTOR vLookatPt = D3DVECTOR(0, 0, 0);
-    D3DVECTOR vUpVec    = D3DVECTOR(0, 1, 0);
-    D3DUtil_SetIdentityMatrix(matWorld);
-    D3DUtil_SetViewMatrix(matView, vEyePt, vLookatPt, vUpVec);
-    D3DUtil_SetProjectionMatrix(matProj, g_PI/2, float(600.0f/800.0f), -1.0f, 1.0f);
-
-	// MATRIALÀÇ ÃÊ±âÈ­¸¦ ¼³Á¤ÇÑ´Ù.
-    D3DMATERIAL7 mtrl;
-	ZeroMemory(&mtrl, sizeof(mtrl));
-	mtrl.diffuse.r = mtrl.diffuse.g = mtrl.diffuse.b = 0.1f;
-	mtrl.ambient.r = mtrl.ambient.g = mtrl.ambient.b = 1.0f;
-    m_pd3dDevice->SetMaterial(&mtrl);
-
-	if ( !m_pd3dDevice )
-		return E_FAIL;
-
-    m_pd3dDevice->SetTransform(D3DTRANSFORMSTATE_WORLD,      &matWorld);
-    m_pd3dDevice->SetTransform(D3DTRANSFORMSTATE_VIEW,       &matView);
-    m_pd3dDevice->SetTransform(D3DTRANSFORMSTATE_PROJECTION, &matProj);
-
-	// RenderStateÀÇ ÃÊ±â°ª ¼³Á¤.
-	m_pd3dDevice->SetRenderState(D3DRENDERSTATE_AMBIENT, 0xFFFFFFFF);
-    m_pd3dDevice->SetRenderState(D3DRENDERSTATE_DITHERENABLE, FALSE); 
-	m_pd3dDevice->SetRenderState(D3DRENDERSTATE_CULLMODE, D3DCULL_NONE); 	
-	m_pd3dDevice->SetRenderState(D3DRENDERSTATE_ZENABLE, D3DZB_FALSE);
-	m_pd3dDevice->SetRenderState(D3DRENDERSTATE_FILLMODE, D3DFILL_SOLID);
-//	m_pd3dDevice->SetRenderState(D3DRENDERSTATE_FILLMODE, D3DFILL_WIREFRAME);
-//	m_pd3dDevice->SetRenderState(D3DRENDERSTATE_SHADEMODE, D3DSHADE_GOURAUD);
-	
-    // TextureStageStateÀÇ ÃÊ±â°ª ¼³Á¤.
-	m_pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-    m_pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE); 
-    m_pd3dDevice->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
-    m_pd3dDevice->SetTextureStageState(0, D3DTSS_MINFILTER, D3DTFN_POINT); 
-    m_pd3dDevice->SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTFG_POINT);
-	m_pd3dDevice->SetTextureStageState(0, D3DTSS_MIPFILTER, D3DTFP_NONE);
-
-    return S_OK;
-}
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::CreateGameFont()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : LPCSTR szFontName
-	         INT nXsize
-	         INT nYsize
-	         BYTE bFontType
-	Ãâ·Â   : VOID 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 HFONT CWHDXGraphicWindow::CreateGameFont(LPCSTR szFontName, INT nHeight, INT nWidth, INT nWeight, BOOL bItalic, BOOL bULine, BOOL bStrikeOut, DWORD dwCharSet)
 {
-	INT nYsize;
+	INT nYsize = 0;
 
-	// ÆùÆ®Å©±â ¸ÂÃß±â.
+	// ???? ???.
 	if ( m_pddsBackBuffer )
 	{
 		HDC hDC;
@@ -957,7 +510,13 @@ HFONT CWHDXGraphicWindow::CreateGameFont(LPCSTR szFontName, INT nHeight, INT nWi
 }
 VOID CWHDXGraphicWindow::CreateDefFont()
 {
-	// ÀÌ¹Ì ±âº»ÆùÆ®°¡ »ý¼ºµÇ¾î ÀÖÀ¸¸é »õ·Î ¸¸µé¼ö ÀÖµµ·Ï Clear.
+	{
+		DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&m_pDWriteFactory));
+		m_pDWriteFactory->CreateTextFormat(L"ËÎÌå", nullptr, DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE_NORMAL,
+			DWRITE_FONT_STRETCH_NORMAL, 12, L"zh-cn", &m_pDWriteTextFormat);
+
+	}
+	// ?? ????? ???? ??? ?? ??? ??? Clear.
 	if ( m_hDefGameFont != NULL )
 	{
 		DeleteObject(m_hDefGameFont); 
@@ -966,9 +525,6 @@ VOID CWHDXGraphicWindow::CreateDefFont()
 
 	m_hDefGameFont	= CreateGameFont("ËÎÌå", 9);
 }
-
-
-
 VOID CWHDXGraphicWindow::StringPlus(CHAR* szResult, CHAR* szSrc, ...)
 {
 	INT nCnt = 0;
@@ -990,8 +546,6 @@ VOID CWHDXGraphicWindow::StringPlus(CHAR* szResult, CHAR* szSrc, ...)
 
 	va_end(vaMarker);
 }
-
-
 CHAR* CWHDXGraphicWindow::IntToStr(INT nNum)
 {
 	static CHAR szResult[MAX_PATH];
@@ -999,267 +553,60 @@ CHAR* CWHDXGraphicWindow::IntToStr(INT nNum)
 	_itoa_s(nNum, szResult, 10);
 	return szResult;
 }
-
-
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::PutsHan()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : LPDIRECTDRAWSURFACE7 pSurface
-	         INT nX
-	         INT nY
-	         COLORREF foreColor
-	         COLORREF backColor
-	         CHAR* szFormat
-	         ...
-	Ãâ·Â   : VOID 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 VOID CWHDXGraphicWindow::PutsHan(LPDIRECTDRAWSURFACE7 pSurface, INT nX, INT nY, COLORREF foreColor, COLORREF backColor, CHAR* szText, HFONT hFont)
 {
-	HDC		hDC;
-	HFONT	hOldFont;
-
-    if (NULL == pSurface)
-		pSurface = m_pddsBackBuffer;
-			
-    if ( NULL == pSurface )
-		return;
-
-	if ( NULL == hFont )
-		hFont = m_hDefGameFont;
-
-	HRESULT hr = pSurface->GetDC(&hDC);
-
-	if (backColor == RGB( 0, 0, 0 ))		SetBkMode(hDC, TRANSPARENT);	
-	else									SetBkColor(hDC, backColor);
-
-	hOldFont = (HFONT)SelectObject(hDC, hFont);
-
-	SetTextColor(hDC, foreColor);
-
-	TextOut(hDC, nX, nY, szText, strlen(szText));
-
-	SelectObject(hDC, hOldFont);
-
-	if ( hFont != m_hDefGameFont )
-		DeleteObject(hFont);
-	
-	pSurface->ReleaseDC(hDC);
+	RECT rc;
+	rc.left = nX;
+	rc.top = nY;
+	rc.right = m_pD2D1DeviceContext->GetSize().width;
+	rc.bottom = m_pD2D1DeviceContext->GetSize().height;
+	PutsHan(NULL, rc, foreColor, backColor, szText, nullptr);
 }
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::PutsHan()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : LPDIRECTDRAWSURFACE7 pSurface
-	         INT nX
-	         INT nY
-	         COLORREF foreColor
-	         COLORREF backColor
-	         CHAR* szFormat
-	         ...
-	Ãâ·Â   : VOID 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 VOID CWHDXGraphicWindow::PutsHan(LPDIRECTDRAWSURFACE7 pSurface, RECT rc, COLORREF foreColor, COLORREF backColor, CHAR* szText, HFONT hFont)
 {
-	HDC		hDC;
-	HFONT	hOldFont;
-
-    if (NULL == pSurface)
-		pSurface = m_pddsBackBuffer;
-			
-    if ( NULL == pSurface )
-		return;
-
-	if ( NULL == hFont )
-		hFont = m_hDefGameFont;
-
-	HRESULT hr = pSurface->GetDC(&hDC);
-
-	if (backColor == RGB( 0, 0, 0 ))		SetBkMode(hDC, TRANSPARENT);	
-	else									SetBkColor(hDC, backColor);
-
-	hOldFont = (HFONT)SelectObject(hDC, hFont);
-
-	SetTextColor(hDC, foreColor);
-
-	DrawText(hDC, szText, -1, &rc, DT_CENTER|DT_SINGLELINE);
-
-	SelectObject(hDC, hOldFont);
-
-	if ( hFont != m_hDefGameFont )
-		DeleteObject(hFont);
-	
-	pSurface->ReleaseDC(hDC);
+	wchar_t* temp = nullptr;
+	static ID2D1SolidColorBrush* brsh = nullptr;
+	if (!brsh)
+	{
+		m_pD2D1DeviceContext->CreateSolidColorBrush(D2D1::ColorF(foreColor, 255), &brsh);
+	}
+	brsh->SetColor(D2D1::ColorF(foreColor, 255));
+	int needlen = MultiByteToWideChar(CP_ACP, 0, szText, -1, nullptr, 0);
+	temp = new wchar_t[needlen];
+	needlen = MultiByteToWideChar(CP_ACP, 0, szText, -1, temp, needlen);
+	m_pD2D1DeviceContext->DrawText(temp, needlen-1, m_pDWriteTextFormat, D2D1::RectF(rc.left, rc.top, rc.right, rc.bottom), brsh);
+	m_pD2D1DeviceContext->Flush();
+	SAFE_DELETE(temp);
 }
-
-
 SIZE CWHDXGraphicWindow::GetStrLength(LPDIRECTDRAWSURFACE7 pSurface, HFONT hFont, CHAR* szFormat, ...)
 {
-	HDC		hDC;
 	va_list arg;
     CHAR	szBuf[1024];
 	SIZE	sSize;
-	
-	sSize.cx = 0;
-	sSize.cy = 0;
-
-	HFONT	hOldFont;
-
-	if ( NULL == pSurface )
-		pSurface = m_pddsBackBuffer;
-			
-    if ( NULL == pSurface )					return sSize;
-
-	if ( NULL == hFont )
-		hFont = m_hDefGameFont;
-
-	HRESULT hr = pSurface->GetDC(&hDC);
+	IDWriteTextLayout* pLayout = nullptr;
 
 	va_start(arg, szFormat);
     vsprintf_s(szBuf, szFormat, arg);
     va_end(arg);
 
-	hOldFont = (HFONT)SelectObject(hDC, hFont);
+	sSize.cx = 0;
+	sSize.cy = 0;
 
-	GetTextExtentPoint32(hDC,szBuf,strlen(szBuf),&sSize);
-
-	SelectObject(hDC, hOldFont);
-	
-	pSurface->ReleaseDC(hDC);
-
+	wchar_t* temp = nullptr;
+	int needlen = MultiByteToWideChar(CP_ACP, 0, szBuf, -1, nullptr, 0);
+	temp = new wchar_t[needlen];
+	needlen = MultiByteToWideChar(CP_ACP, 0, szBuf, -1, temp, needlen);
+	if (SUCCEEDED(m_pDWriteFactory->CreateTextLayout(temp, needlen - 1, m_pDWriteTextFormat, 0, 0, &pLayout)))
+	{
+		DWRITE_TEXT_METRICS metrics;
+		pLayout->GetMetrics(&metrics);
+		sSize.cx = metrics.widthIncludingTrailingWhitespace;
+		sSize.cy = metrics.height;
+		SAFE_RELEASE(pLayout);
+	}
+	SAFE_DELETE(temp);
 	return sSize;
 }
-
-
-/*BOOL CWHDXGraphicWindow::StringDivideLen(INT nDivideLen, INT& nDividedLine, CHAR* szSrc,CDLList<CHAR*>* m_pxpStr)
-{
-	CHAR szTmpCheck[MAX_PATH];
-	CHAR szResult[MAX_PATH];
-	
-	nDividedLine = 1;
-
-	INT nStartLen	= 0;
-	INT nEndLen		= 0;
-	INT nResultLen	= 0;
-	INT nWordCheck	= 0;
-
-	if ( szSrc[0] != NULL )
-	{
-		ZeroMemory(szResult,MAX_PATH);
-
-		for ( INT nCnt = 0; nCnt < (INT)strlen(szSrc); nCnt++)
-		{
-			ZeroMemory(szTmpCheck, MAX_PATH);
-			nEndLen = nCnt+1;
-
-			// ÇöÀçºÎºÐ±îÁöÀÇ ¹®ÀÚ¿­À» ÀÐ´Â´Ù.
-			memcpy(&szTmpCheck, &szSrc[nStartLen], nEndLen-nStartLen);
-			INT nsLen;
-			nsLen = strlen(szTmpCheck);
-
-			// ÇöÀç±îÁö ÀÐ¾î¿Â ºÎºÐÀÌ Çã¿ë³ÐÀÌ¸¦ ³Ñ¾î¼¹À»¶§.
-			if (nsLen > nDivideLen )
-			{
-				// ÇöÀç 2¹ÙÀÌÆ® ¹®ÀÚ¶ó¸é. 
-				if ( szSrc[nEndLen-1] < 0 )
-				{
-					// ÇöÀç ¾Õ¿¡¹®ÀÚ°¡ 2¹ÙÀÌÆ® ¹®ÀÚ°¡ ¾Æ´Ï¶ó¸é
-					if ( !(nWordCheck%2) )
-					{
-						nStartLen += strlen(szTmpCheck)-1;
-						nCnt--;
-						CHAR* pszNewLine;
-						pszNewLine = new CHAR[nResultLen+1];
-						memcpy(pszNewLine,szResult,nResultLen);
-						pszNewLine[nResultLen]=NULL;
-						m_pxpStr->AddNode(pszNewLine);
-						nResultLen = 0;
-						nDividedLine++;
-					}
-					else
-					{
-						nStartLen += strlen(szTmpCheck)-2;
-						nCnt -= 2;
-						CHAR* pszNewLine;
-						pszNewLine = new CHAR[nResultLen];
-						memcpy(pszNewLine,szResult,nResultLen-1);
-						pszNewLine[nResultLen-1]=NULL;
-						m_pxpStr->AddNode(pszNewLine);
-						nResultLen = 0;
-						nDividedLine++;
-						nWordCheck--;
-					}
-				}
-				// 1¹ÙÀÌÆ® ¹®ÀÚ. 
-				// ÇöÀçº¸´Ù ÇÑ¹ÙÀÌÆ®¾ÕºÎºÐ±îÁö¸¸ °í·ÁÇØÁÖ¸é µÈ´Ù.
-				else
-				{
-					nStartLen += strlen(szTmpCheck)-1;
-					nCnt--;
-					CHAR* pszNewLine;
-					pszNewLine = new CHAR[nResultLen+1];
-					memcpy(pszNewLine,szResult,nResultLen);
-					pszNewLine[nResultLen]=NULL;
-					m_pxpStr->AddNode(pszNewLine);
-					nResultLen=0;
-					nDividedLine++;
-				}
-			}
-			else if(szSrc[nEndLen-1]=='\n')	// °­Á¦°³Çà     \nÀ¸·ÎÇÏ¸é  Error ????
-			{
-				nStartLen += strlen(szTmpCheck)-1;
-				CHAR* pszNewLine;
-				pszNewLine = new CHAR[nResultLen+1];
-				memcpy(pszNewLine,szResult,nResultLen);
-				pszNewLine[nResultLen]=NULL;
-				m_pxpStr->AddNode(pszNewLine);
-				nResultLen=0;
-				nDividedLine++;
-			}
-			else
-			{
-				if ( szSrc[nEndLen-1] < 0 )
-					nWordCheck++;
-
-				szResult[nResultLen] = szSrc[nEndLen-1];
-				nResultLen++;
-			}
-		}
-		if(nResultLen!=0)
-		{
-			CHAR* pszNewLine;
-			pszNewLine = new CHAR[nResultLen+1];
-			memcpy(pszNewLine,szResult,nResultLen);
-			pszNewLine[nResultLen]=NULL;
-			m_pxpStr->AddNode(pszNewLine);
-			nDividedLine++;
-			nResultLen=0;
-		}
-		return TRUE;
-	}
-	return FALSE;
-}
-*/
-
-
 BOOL CWHDXGraphicWindow::StringDivide(INT nDivideWidth, INT& nDividedLine, CHAR* szSrc, CHAR* szResult)
 {
 	CHAR szTmpCheck[MAX_PATH];
@@ -1282,26 +629,26 @@ BOOL CWHDXGraphicWindow::StringDivide(INT nDivideWidth, INT& nDividedLine, CHAR*
 
 			nEndLen = nCnt+1;
 
-			// ¸¸¾à¿¡ ±ÛÀÚÅ©±â°¡ ÃÖ´ë ±ÛÀÚÅ©±â¸¦ ³Ñ¾î°¡¸é ÃÖ´ëÄ¡·Î ¸ÂÃçÁØ´Ù.
+			// ??? ????? ?? ????? ???? ???? ????.
 			if ( nEndLen >= MAX_PATH * 2 )
 			{
 				szResult[MAX_PATH-1] = NULL;
 				break;
 			}
 
-			// ÇöÀçºÎºÐ±îÁöÀÇ ¹®ÀÚ¿­À» ÀÐ´Â´Ù.
+			// ??????? ???? ???.
 			memcpy(&szTmpCheck, &szSrc[nStartLen], nEndLen-nStartLen);
 
 			SIZE sizeLen;
 			sizeLen = GetStrLength(NULL, NULL, szTmpCheck);
 
-			// ÇöÀç±îÁö ÀÐ¾î¿Â ºÎºÐÀÌ Çã¿ë³ÐÀÌ¸¦ ³Ñ¾î¼¹À»¶§.
+			// ???? ??? ??? ????? ?????.
 			if ( sizeLen.cx > nDivideWidth )
 			{
-				// ÇöÀç 2¹ÙÀÌÆ® ¹®ÀÚ¶ó¸é. 
+				// ?? 2??? ????. 
 				if ( szSrc[nEndLen-1] < 0 )
 				{
-					// ÇöÀç ¾Õ¿¡¹®ÀÚ°¡ 2¹ÙÀÌÆ® ¹®ÀÚ°¡ ¾Æ´Ï¶ó¸é
+					// ?? ????? 2??? ??? ????
 					if ( !(nWordCheck%2) )
 					{
 						nStartLen += strlen(szTmpCheck)-1;
@@ -1319,8 +666,8 @@ BOOL CWHDXGraphicWindow::StringDivide(INT nDivideWidth, INT& nDividedLine, CHAR*
 						nWordCheck--;
 					}
 				}
-				// 1¹ÙÀÌÆ® ¹®ÀÚ. 
-				// ÇöÀçº¸´Ù ÇÑ¹ÙÀÌÆ®¾ÕºÎºÐ±îÁö¸¸ °í·ÁÇØÁÖ¸é µÈ´Ù.
+				// 1??? ??. 
+				// ???? ?????????? ????? ??.
 				else
 				{
 					nStartLen += strlen(szTmpCheck)-1;
@@ -1344,68 +691,131 @@ BOOL CWHDXGraphicWindow::StringDivide(INT nDivideWidth, INT& nDividedLine, CHAR*
 	return FALSE;
 
 }
+BOOL CWHDXGraphicWindow::DecodeWilImageData(int nWidth, int nHeight, const WORD* pwSrc, WORD* pwDst, WORD wChooseColor1, WORD wChooseColor2, BYTE bOpa)
+{
+	RECT rc;
+	rc.left = 0;
+	rc.top = 0;
+	rc.right = nWidth;
+	rc.bottom = nHeight;
 
+	int nWidthStart = 0, nWidthEnd = 0;
+	int nCntCopyWord = 0, nCurrWidth = 0, nLastWidth = 0;
 
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::GetRGBMaskInfoIN16Bits()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : LPDIRECTDRAWSURFACE7 pSurface
-	Ãâ·Â   : DXG_MASKINFO 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
-DXG_MASKINFO CWHDXGraphicWindow::GetRGBMaskInfoIN16Bits(LPDIRECTDRAWSURFACE7 pSurface)
-{	
-	DDPIXELFORMAT ddpf;
-	DXG_MASKINFO stRGBMaskInfo;
-
-	ZeroMemory(&stRGBMaskInfo, sizeof(DXG_MASKINFO));
-
-	if ( pSurface == NULL )		pSurface = m_pddsBackBuffer;
-
-    if ( pSurface )
+	for (INT nYCnt = rc.top; nYCnt < rc.bottom; nYCnt++)
 	{
-		memset(&ddpf, 0, sizeof(ddpf));
-		ddpf.dwSize = sizeof(ddpf);
-		ddpf.dwFlags = DDPF_RGB;
-		pSurface->GetPixelFormat(&ddpf);
+		// »ñÈ¡Ò»ÐÐµÄ³¤¶È£¨µ¥Î»ÊÇ×Ö£© 
+		nWidthEnd += pwSrc[nWidthStart];
+		nWidthStart++;
 
-		stRGBMaskInfo.dwRMask = ddpf.dwRBitMask;
-		stRGBMaskInfo.dwGMask = ddpf.dwGBitMask;
-		stRGBMaskInfo.dwBMask = ddpf.dwBBitMask;
+		// ÔÚÆÁÄ»ÉÏ´«²¥µÄ³¤¶ÈÓëÐÐ³¤Ò»Ñù¡£ 
+		for (INT x = nWidthStart; x < nWidthEnd; )
+		{
+			if (pwSrc[x] == 0xC0)
+			{
+				x++;
+				nCntCopyWord = pwSrc[x];
+				x++;
+				nCurrWidth += nCntCopyWord;
+			}
+			else if (pwSrc[x] == 0xC1)
+			{
+				x++;
+				nCntCopyWord = pwSrc[x];
+				x++;
 
-		DWORD dwCnt;
-		DWORD dwMask;
-		for ( dwCnt = 0, dwMask = ddpf.dwRBitMask; !( dwMask & 1 ); dwCnt++, dwMask >>= 1 );
-		stRGBMaskInfo.bRShift	= (BYTE) dwCnt;
-		for ( dwCnt = 0; ( ( dwMask>>dwCnt ) & 1 ); dwCnt++ );
-		stRGBMaskInfo.bRCnt		= (BYTE) dwCnt;
+				nLastWidth = nCurrWidth;
+				nCurrWidth += nCntCopyWord;
 
-		for ( dwCnt = 0, dwMask = ddpf.dwGBitMask; !( dwMask & 1 ); dwCnt++, dwMask >>= 1 );
-		stRGBMaskInfo.bGShift	= (BYTE) dwCnt;
-		for ( dwCnt = 0; ( ( dwMask>>dwCnt ) & 1 ); dwCnt++ );
-		stRGBMaskInfo.bGCnt		= (BYTE) dwCnt;
+				for (size_t i = 0; i < nCntCopyWord; i++)
+				{
+					DWORD* a = (DWORD*)pwDst;
+					a[(nYCnt * nWidth) + nLastWidth + i] = COLOR_B16TOB32(pwSrc[x + i], bOpa);
+				}
 
-		for ( dwCnt = 0, dwMask = ddpf.dwBBitMask; !( dwMask & 1 ); dwCnt++, dwMask >>= 1 );
-		stRGBMaskInfo.bBShift	= (BYTE) dwCnt;
-		for ( dwCnt = 0; ( ( dwMask>>dwCnt ) & 1 ); dwCnt++ );
-		stRGBMaskInfo.bBCnt		= (BYTE) dwCnt;
+				x += nCntCopyWord;
+			}
+			else if (pwSrc[x] == 0xC2 || pwSrc[x] == 0xC3)
+			{
+				WORD wDyingKind, wChooseColor;
+				wDyingKind = pwSrc[x];
+				switch (wDyingKind)
+				{
+				case 0xC2:
+					wChooseColor = wChooseColor1;
+					break;
+				case 0xC3:
+					wChooseColor = wChooseColor2;
+					break;
+				}
+				x++;
+				nCntCopyWord = pwSrc[x];
+				x++;
+
+				nLastWidth = nCurrWidth;
+				nCurrWidth += nCntCopyWord;
+
+				WORD wPixel;
+				WORD bBlueWantedColor, bGreenWantedColor, bRedWantedColor;
+				BYTE bBlueSrc, bGreenSrc, bRedSrc;
+				FLOAT rBlueRate, rGreenRate, bRedRate;
+
+				for (INT nCheck = 0; nCheck < nCntCopyWord; nCheck++)
+				{
+					wPixel = wChooseColor;
+					bBlueWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
+					bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
+					bRedWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
+
+					wPixel = pwSrc[x + nCheck];
+					bBlueSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
+					bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
+					bRedSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
+
+					rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask >> m_stBitsMaskInfo.bBShift));
+					rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask >> m_stBitsMaskInfo.bGShift));
+					bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask >> m_stBitsMaskInfo.bRShift));
+
+					bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor * rBlueRate));
+					bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor * rGreenRate));
+					bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor * bRedRate));
+
+					if (bBlueWantedColor > (m_stBitsMaskInfo.dwBMask >> m_stBitsMaskInfo.bBShift))
+						bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask >> m_stBitsMaskInfo.bBShift);
+					if (bGreenWantedColor > (m_stBitsMaskInfo.dwGMask >> m_stBitsMaskInfo.bGShift))
+						bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask >> m_stBitsMaskInfo.bGShift);
+					if (bRedWantedColor > (m_stBitsMaskInfo.dwRMask >> m_stBitsMaskInfo.bRShift))
+						bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask >> m_stBitsMaskInfo.bRShift);
+
+					pwDst[(nYCnt * nWidth) + (nLastWidth + nCheck)] = ((bRedWantedColor << m_stBitsMaskInfo.bRShift) |
+						(bGreenWantedColor << m_stBitsMaskInfo.bGShift) |
+						(bBlueWantedColor << m_stBitsMaskInfo.bBShift));
+				}
+				x += nCntCopyWord;
+			}
+		}
+		// ½«ÐÐÎ²ÒÆÖÁÏÂÒ»ÐÐµÄ¿ªÍ·¡£ 
+		nWidthEnd++;
+
+		nWidthStart = nWidthEnd;
+		nCurrWidth = 0;
 	}
 
-	return stRGBMaskInfo;
+	return TRUE;
 }
+BOOL CWHDXGraphicWindow::DrawImage(D2D1_RECT_F drawRect, D2D1_SIZE_U bitmapSize, const void* pBitmapData, UINT32 pitch)
+{
+	BOOL r = FALSE;
+	ID2D1Bitmap* pBitmap;
+	if (SUCCEEDED(m_pD2D1DeviceContext->CreateBitmap(bitmapSize, pBitmapData, pitch, s_BitmapProps, &pBitmap)))
+	{
+		m_pD2D1DeviceContext->DrawBitmap(pBitmap, &drawRect);
+		r = TRUE;
+	}
+	SAFE_RELEASE(pBitmap);
 
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// ±×¸®´Â ÇÔ¼öµé ¸ðÀ½.
-
+	return r;
+}
 WORD CWHDXGraphicWindow::ConvertColor24To16(COLORREF dwColor)
 {
 	WORD wRet;
@@ -1421,26 +831,6 @@ WORD CWHDXGraphicWindow::ConvertColor24To16(COLORREF dwColor)
 	wRet = (nRed << m_stBitsMaskInfo.bRShift) | (nGreen << m_stBitsMaskInfo.bGShift) | (nBlue << m_stBitsMaskInfo.bBShift); 
 	return wRet;
 }
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::DrawWithGDI()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : RECT rc
-	         LPDIRECTDRAWSURFACE7 pSurface
-	         DWORD dwColor
-	         DWORD dwPenStyleFlg
-	         BYTE bKind
-	Ãâ·Â   : HRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 HRESULT CWHDXGraphicWindow::DrawWithGDI(RECT rc, LPDIRECTDRAWSURFACE7 pSurface, DWORD dwColor, BYTE bKind)
 {
 	POINT	pt;
@@ -1510,91 +900,6 @@ HRESULT CWHDXGraphicWindow::DrawWithGDI(RECT rc, LPDIRECTDRAWSURFACE7 pSurface, 
 	return S_OK;
 }
 
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::DrawSprite()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : ÀÏ¹ÝÀûÀÎ ±×¸®±â. ÇÑÇÈ¼¿¾¿ ±×¸°´Ù. ½ºÅ©¸°¿µ¿ª Å¬¸®ÇÎ, ¼Ò½º¿µ¿ª Å¬¸®ÇÎ
-	ÀÔ·Â   : INT nX
-	         INT nY
-	         INT nXSize
-	         INT nYSize
-	         WORD* pwSrc
-	Ãâ·Â   : VOID 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
-BOOL CWHDXGraphicWindow::DrawWithImage(INT nX, INT nY, INT nXSize, INT nYSize, WORD* pwSrc)
-{
-	RECT			rc;
-	DDSURFACEDESC2	ddsd;
-
-	INT	nWidth		= nXSize;
-	INT	nHeight		= nYSize;
-	INT	nXOffset	= 0;
-	INT	nYOffset	= 0;
-	INT	nStartX		= 0;
-	INT	nStartY		= 0;
-	INT	nEndX		= m_stDisplayInfo.wWidth -1;
-	INT	nEndY		= m_stDisplayInfo.wHeight-1;
-
-	if ( m_pddsBackBuffer != NULL )
-	{
-		if (nX < nStartX )
-		{ 
-			nXOffset = nStartX - nX;
-			nWidth	 = nXSize - nXOffset;
-		}
-		if ( (nX+nXSize-1) > nEndX )
-			nWidth	 = nEndX - nX - nXOffset + 1;
-		
-		if ( nY < nStartY )
-		{ 
-			nYOffset	= nStartY - nY;
-			nHeight		= nYSize - nYOffset;
-		}
-		if ( (nY+nYSize-1) > nEndY )
-			nHeight	= nEndY - nY - nYOffset + 1;
-
-		if ( (nWidth > 0) && (nHeight > 0) )
-		{
-			rc.left		= nXOffset;
-			rc.right	= nXOffset + nWidth;
-			rc.top		= nYOffset;
-			rc.bottom	= nYOffset + nHeight;
-
-			ddsd.dwSize	= sizeof(DDSURFACEDESC2);
-			ddsd.lpSurface = NULL;
-			
-			m_pddsBackBuffer->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
-			if ( !ddsd.lpSurface )		return FALSE;
-			WORD* pwdDst;
-			pwdDst = (WORD*)ddsd.lpSurface;
-
-			for ( INT y=rc.top ; y < rc.bottom ; y++ )
-			{
-				for ( INT x=rc.left ; x < rc.right ; x++ )
-				{
-					if ( pwSrc[y * nXSize + x] != 0 )
-					{
-						pwdDst[((y+nY) * (ddsd.lPitch >> 1)) + (nX+x)] = pwSrc[y * nXSize + x];
-					}
-				}
-			}
-
-			m_pddsBackBuffer->Unlock(NULL);
-		}
-		return TRUE;
-	}
-	return FALSE;
-}
-
-
 BOOL CWHDXGraphicWindow::DrawWithImagePerLineClipRgn(INT nX, INT nY, INT nXSize, INT nYSize, WORD* pwSrc, WORD wClipWidth, WORD wClipHeight)
 {
 	RECT			rc;
@@ -1652,77 +957,6 @@ BOOL CWHDXGraphicWindow::DrawWithImagePerLineClipRgn(INT nX, INT nY, INT nXSize,
 	}
 	return FALSE;
 }
-
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::DrawWithSurface()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : LPDIRECTDRAWSURFACE7 pddsSrc
-	         RECT* prcSrc
-	         RECT* prcDst
-	Ãâ·Â   : BOOL 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
-BOOL CWHDXGraphicWindow::DrawWithSurface(INT nX, INT nY, INT nXSize, INT nYSize, LPDIRECTDRAWSURFACE7 pddsSrc)
-{
-	RECT	rc;
-	RECT	rcDst;
-	INT		nXOffset	= 0;
-	INT		nYOffset	= 0;
-	INT		nWidth		= nXSize;
-	INT		nHeight		= nYSize;
-	INT		nStartX		= 0;
-	INT		nStartY		= 0;
-
-	INT		nEndX		= m_stDisplayInfo.wWidth -1;
-	INT		nEndY		= m_stDisplayInfo.wHeight-1;;
-
-
-	if ( m_pddsBackBuffer != NULL )
-	{
-		if (nX < nStartX )
-		{ 
-			nXOffset	= nStartX - nX;
-			nWidth		= nXSize - nXOffset;
-		}
-		if ( (nX+nXSize-1) > nEndX )
-			nWidth		= nEndX - nX - nXOffset + 1;		
-		if ( nY < nStartY )
-		{ 
-			nYOffset	= nStartY - nY;
-			nHeight		= nYSize - nYOffset;
-		}		
-		if ( (nY+nYSize-1) > nEndY )
-			nHeight	= nEndY - nY - nYOffset + 1;
-
-		if ( (nWidth > 0) && (nHeight > 0) )
-		{
-			rc.left		 = nXOffset;
-			rc.right	 = nXOffset+nWidth;
-			rc.top		 = nYOffset;
-			rc.bottom	 = nYOffset+nHeight;
-
-			rcDst.left	 = rc.left+nX;
-			rcDst.top	 = rc.top+nY;
-			rcDst.right  = rc.right+nX;
-			rcDst.bottom = rc.bottom+nY;
-
-			m_pddsBackBuffer->Blt(&rcDst, pddsSrc, &rc, DDBLT_WAIT|DDBLT_KEYSRC, NULL);
-		}
-		return TRUE;
-	}
-	return FALSE;
-}
-
-
 BOOL CWHDXGraphicWindow::DrawWithImageForCompMemToMem(INT nX, INT nY, INT nXSize, INT nYSize, WORD* pwSrc, INT nDstXSize, INT nDstYSize, WORD* pwDst, WORD wChooseColor1, WORD wChooseColor2)
 {
 	RECT			rc;
@@ -1771,7 +1005,7 @@ BOOL CWHDXGraphicWindow::DrawWithImageForCompMemToMem(INT nX, INT nY, INT nXSize
 			BYTE  bRedWantedColor, bGreenWantedColor, bBlueWantedColor;
 			WORD  wPixel;
 
-			// yÃà Å¬¸®ÇÎ.
+			// y? ???.
 			for ( nYCnt=0 ; nYCnt < rc.top ; nYCnt++ )
 			{
 				nWidthEnd += pwSrc[nWidthStart];
@@ -1780,14 +1014,14 @@ BOOL CWHDXGraphicWindow::DrawWithImageForCompMemToMem(INT nX, INT nY, INT nXSize
 				nWidthStart	= nWidthEnd;
 			}
 
-			// yÃà¿¡ ´ëÇØ¼­ ½ÇÁ¦·Î ·çÇÎ½ÃÅ³ Count¸¸À» Á¤ÇÑ´Ù.
+			// y?? ??? ??? ???? Count?? ???.
 			for ( nYCnt=rc.top ; nYCnt < rc.bottom ; nYCnt++ )
 			{
-				// ÇÑ¶óÀÎÀÇ ±æÀÌ¸¦ ¾ò¾î¿Â´Ù.(´ÜÀ§´Â ¿öµå)
+				// ???? ??? ????.(??? ??)
 				nWidthEnd += pwSrc[nWidthStart];
 				nWidthStart++;
 
-				// ¶óÀÎÀÇ ±æÀÌ¸¸Å­ È­¸é¿¡ »Ñ·ÁÁØ´Ù.
+				// ??? ???? ??? ????.
 				for ( INT x = nWidthStart; x < nWidthEnd ; )
 				{
 					if ( pwSrc[x] == 0xC0 )
@@ -1812,14 +1046,14 @@ BOOL CWHDXGraphicWindow::DrawWithImageForCompMemToMem(INT nX, INT nY, INT nXSize
 						}
 						else
 						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
+							// rc.left?? ???? ??? ??? ?? ??.
 							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
 							{
 								x += (rc.left-nLastWidth);
 								memcpy(&pwDst[((nYCnt+nY) * nDstXSize) + (rc.left+nX)], &pwSrc[x], sizeof(WORD)*(nCurrWidth-rc.left));
 								x += (nCurrWidth-rc.left);
 							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
+							// rc.right?? ???? ??? ??? ?? ??.
 							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
 							{
 								memcpy(&pwDst[((nYCnt+nY) * nDstXSize) + (nLastWidth+nX)], &pwSrc[x], sizeof(WORD)*(rc.right-nLastWidth));
@@ -1858,7 +1092,7 @@ BOOL CWHDXGraphicWindow::DrawWithImageForCompMemToMem(INT nX, INT nY, INT nXSize
 						}
 						else
 						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
+							// rc.left?? ???? ??? ??? ?? ??.
 							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
 							{
 								x += (rc.left-nLastWidth);
@@ -1895,7 +1129,7 @@ BOOL CWHDXGraphicWindow::DrawWithImageForCompMemToMem(INT nX, INT nY, INT nXSize
 								}
 								x += (nCurrWidth-rc.left);
 							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
+							// rc.right?? ???? ??? ??? ?? ??.
 							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
 							{
 								for ( INT nCheck = 0; nCheck < rc.right-nLastWidth; nCheck++ )
@@ -1969,7 +1203,7 @@ BOOL CWHDXGraphicWindow::DrawWithImageForCompMemToMem(INT nX, INT nY, INT nXSize
 						}
 					}	
 				}
-				// ¶óÀÎÀÇ ³¡À» ´ÙÀ½ ¶óÀÎÀÇ ½ÃÀÛÀ¸·Î ¿Å°ÜÁØ´Ù.
+				// ??? ?? ?? ??? ???? ????.
 				nWidthEnd++;
 
 				nWidthStart	= nWidthEnd;
@@ -1982,8 +1216,6 @@ BOOL CWHDXGraphicWindow::DrawWithImageForCompMemToMem(INT nX, INT nY, INT nXSize
 	}
 	return FALSE;
 }
-
-
 BOOL CWHDXGraphicWindow::DrawWithImageForComp(INT nX, INT nY, RECT rcSrc, WORD* pwSrc, WORD wChooseColor1, WORD wChooseColor2)
 {
 	RECT			rc;
@@ -2043,7 +1275,7 @@ BOOL CWHDXGraphicWindow::DrawWithImageForComp(INT nX, INT nY, RECT rcSrc, WORD* 
 			BYTE  bRedWantedColor, bGreenWantedColor, bBlueWantedColor;
 			WORD  wPixel;
 
-			// yÃà Å¬¸®ÇÎ.
+			// y? ???.
 			for ( nYCnt=0 ; nYCnt < rc.top ; nYCnt++ )
 			{
 				nWidthEnd += pwSrc[nWidthStart];
@@ -2052,14 +1284,14 @@ BOOL CWHDXGraphicWindow::DrawWithImageForComp(INT nX, INT nY, RECT rcSrc, WORD* 
 				nWidthStart	= nWidthEnd;
 			}
 
-			// yÃà¿¡ ´ëÇØ¼­ ½ÇÁ¦·Î ·çÇÎ½ÃÅ³ Count¸¸À» Á¤ÇÑ´Ù.
+			// y?? ??? ??? ???? Count?? ???.
 			for ( nYCnt=rc.top ; nYCnt < rc.bottom ; nYCnt++ )
 			{
-				// ÇÑ¶óÀÎÀÇ ±æÀÌ¸¦ ¾ò¾î¿Â´Ù.(´ÜÀ§´Â ¿öµå)
+				// ???? ??? ????.(??? ??)
 				nWidthEnd += pwSrc[nWidthStart];
 				nWidthStart++;
 
-				// ¶óÀÎÀÇ ±æÀÌ¸¸Å­ È­¸é¿¡ »Ñ·ÁÁØ´Ù.
+				// ??? ???? ??? ????.
 				for ( INT x = nWidthStart; x < nWidthEnd ; )
 				{
 					if ( pwSrc[x] == 0xC0 )
@@ -2084,14 +1316,14 @@ BOOL CWHDXGraphicWindow::DrawWithImageForComp(INT nX, INT nY, RECT rcSrc, WORD* 
 						}
 						else
 						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
+							// rc.left?? ???? ??? ??? ?? ??.
 							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
 							{
 								x += (rc.left-nLastWidth);
 								memcpy(&pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (rc.left+nX)], &pwSrc[x], sizeof(WORD)*(nCurrWidth-rc.left));
 								x += (nCurrWidth-rc.left);
 							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
+							// rc.right?? ???? ??? ??? ?? ??.
 							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
 							{
 								memcpy(&pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX)], &pwSrc[x], sizeof(WORD)*(rc.right-nLastWidth));
@@ -2130,7 +1362,7 @@ BOOL CWHDXGraphicWindow::DrawWithImageForComp(INT nX, INT nY, RECT rcSrc, WORD* 
 						}
 						else
 						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
+							// rc.left?? ???? ??? ??? ?? ??.
 							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
 							{
 								x += (rc.left-nLastWidth);
@@ -2167,7 +1399,7 @@ BOOL CWHDXGraphicWindow::DrawWithImageForComp(INT nX, INT nY, RECT rcSrc, WORD* 
 								}
 								x += (nCurrWidth-rc.left);
 							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
+							// rc.right?? ???? ??? ??? ?? ??.
 							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
 							{
 								for ( INT nCheck = 0; nCheck < rc.right-nLastWidth; nCheck++ )
@@ -2241,7 +1473,7 @@ BOOL CWHDXGraphicWindow::DrawWithImageForComp(INT nX, INT nY, RECT rcSrc, WORD* 
 						}
 					}	
 				}
-				// ¶óÀÎÀÇ ³¡À» ´ÙÀ½ ¶óÀÎÀÇ ½ÃÀÛÀ¸·Î ¿Å°ÜÁØ´Ù.
+				// ??? ?? ?? ??? ???? ????.
 				nWidthEnd++;
 
 				nWidthStart	= nWidthEnd;
@@ -2254,3740 +1486,155 @@ BOOL CWHDXGraphicWindow::DrawWithImageForComp(INT nX, INT nY, RECT rcSrc, WORD* 
 	}
 	return FALSE;
 }
-
-
 BOOL CWHDXGraphicWindow::DrawWithImageForComp(INT nX, INT nY, INT nXSize, INT nYSize, WORD* pwSrc, WORD wChooseColor1, WORD wChooseColor2)
 {
-	RECT			rc;
-	DDSURFACEDESC2	ddsd;
+	WORD* pwdDst = (WORD*)new DWORD[nXSize * nYSize];
+	ZeroMemory(pwdDst, nXSize * nYSize * sizeof(DWORD));
+	D2D1_RECT_F rect = D2D1::RectF(nX, nY, nXSize + nX, nYSize + nY);
+	D2D1_SIZE_U size = D2D1::SizeU(nXSize, nYSize);
+	BOOL Result = FALSE;
 
-	INT	nWidth		= nXSize;
-	INT	nHeight		= nYSize;
-	INT	nXOffset	= 0;
-	INT	nYOffset	= 0;
-	INT	nStartX		= 0;
-	INT	nStartY		= 0;
-	INT	nEndX		= m_stDisplayInfo.wWidth -1;
-	INT	nEndY		= m_stDisplayInfo.wHeight-1;
-
-	if ( m_pddsBackBuffer != NULL )
+	if (DecodeWilImageData(nXSize, nYSize, pwSrc, pwdDst, wChooseColor1, wChooseColor2))
 	{
-		if (nX < nStartX )
-		{ 
-			nXOffset	= nStartX - nX;
-			nWidth		= nXSize - nXOffset;
-		}
-		if ( (nX+nXSize-1) > nEndX )
-			nWidth		= nEndX - nX - nXOffset + 1;		
-		if ( nY < nStartY )	
-		{ 
-			nYOffset	= nStartY - nY;
-			nHeight		= nYSize - nYOffset;
-		}		
-		if ( (nY+nYSize-1) > nEndY )
-			nHeight	= nEndY - nY - nYOffset + 1;
-
-		if ( (nWidth > 0) && (nHeight > 0) )
-		{
-			rc.left		= nXOffset;
-			rc.right	= nXOffset+nWidth;
-			rc.top		= nYOffset;
-			rc.bottom	= nYOffset+nHeight;
-
-			ddsd.dwSize	= sizeof(DDSURFACEDESC2);
-			ddsd.lpSurface = NULL;
-			
-			m_pddsBackBuffer->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
-			if ( !ddsd.lpSurface )			return FALSE;
-			WORD* pwdDst;
-			pwdDst = (WORD*)ddsd.lpSurface;
-
-			INT nWidthStart	= 0;
-			INT nWidthEnd	= 0;
-			INT nCurrWidth  = 0;
-			INT nCntCopyWord = 0;
-			INT nYCnt =0;
-			INT nLastWidth = 0;
-
-			FLOAT rBlueRate, rGreenRate, bRedRate;
-			BYTE  bRedSrc, bGreenSrc, bBlueSrc;
-			BYTE  bRedWantedColor, bGreenWantedColor, bBlueWantedColor;
-			WORD  wPixel;
-
-			// yÃà Å¬¸®ÇÎ.
-			for ( nYCnt=0 ; nYCnt < rc.top ; nYCnt++ )
-			{
-				nWidthEnd += pwSrc[nWidthStart];
-				nWidthStart++;
-				nWidthEnd++;
-				nWidthStart	= nWidthEnd;
-			}
-
-			// yÃà¿¡ ´ëÇØ¼­ ½ÇÁ¦·Î ·çÇÎ½ÃÅ³ Count¸¸À» Á¤ÇÑ´Ù.
-			for ( nYCnt=rc.top ; nYCnt < rc.bottom ; nYCnt++ )
-			{
-				// ÇÑ¶óÀÎÀÇ ±æÀÌ¸¦ ¾ò¾î¿Â´Ù.(´ÜÀ§´Â ¿öµå)
-				nWidthEnd += pwSrc[nWidthStart];
-				nWidthStart++;
-
-				// ¶óÀÎÀÇ ±æÀÌ¸¸Å­ È­¸é¿¡ »Ñ·ÁÁØ´Ù.
-				for ( INT x = nWidthStart; x < nWidthEnd ; )
-				{
-					if ( pwSrc[x] == 0xC0 )
-					{
-						x++;
-						nCntCopyWord = pwSrc[x];//ÖØ¸´µ¥ÔªÊý
-						x++;
-						nCurrWidth += nCntCopyWord;
-					}
-					else if ( pwSrc[x] == 0xC1 )
-					{
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-
-						nLastWidth = nCurrWidth;
-						nCurrWidth += nCntCopyWord;
-
-						if ( rc.left > nCurrWidth || rc.right < nLastWidth )
-						{
-							x += nCntCopyWord;
-						}
-						else
-						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
-							{
-								x += (rc.left-nLastWidth);
-								memcpy(&pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (rc.left+nX)], &pwSrc[x], sizeof(WORD)*(nCurrWidth-rc.left));
-								x += (nCurrWidth-rc.left);
-							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
-							{
-								memcpy(&pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX)], &pwSrc[x], sizeof(WORD)*(rc.right-nLastWidth));
-								x += nCntCopyWord;
-							}
-							else
-							{
-								memcpy(&pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX)], &pwSrc[x], sizeof(WORD)*nCntCopyWord);
-								x += nCntCopyWord;
-							}
-						}
-					}
-					else if ( pwSrc[x] == 0xC2 || pwSrc[x] == 0xC3 )
-					{
-						WORD wDyingKind, wChooseColor;
-						wDyingKind = pwSrc[x];
-						switch ( wDyingKind )
-						{
-						case 0xC2: 
-							wChooseColor = wChooseColor1;
-							break;
-						case 0xC3: 
-							wChooseColor = wChooseColor2;
-							break;
-						}
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-
-						nLastWidth = nCurrWidth;
-						nCurrWidth += nCntCopyWord;
-
-						if ( rc.left > nCurrWidth || rc.right < nLastWidth )
-						{
-							x += nCntCopyWord;
-						}
-						else
-						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
-							{
-								x += (rc.left-nLastWidth);
-								for ( INT nCheck = 0; nCheck < nCurrWidth-rc.left; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																										  (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																										  (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += (nCurrWidth-rc.left);
-							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
-							{
-								for ( INT nCheck = 0; nCheck < rc.right-nLastWidth; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																										  (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																										  (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-							else
-							{
-								for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																										  (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																									 	  (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-						}
-					}	
-				}
-				// ¶óÀÎÀÇ ³¡À» ´ÙÀ½ ¶óÀÎÀÇ ½ÃÀÛÀ¸·Î ¿Å°ÜÁØ´Ù.
-				nWidthEnd++;
-
-				nWidthStart	= nWidthEnd;
-				nCurrWidth = 0;
-			}
-		}
-
-		m_pddsBackBuffer->Unlock(NULL);
-		return TRUE;
+		Result = DrawImage(rect, size, pwdDst, nXSize*sizeof(DWORD));
 	}
-	return FALSE;
+	SAFE_DELETE_ARR(pwdDst);
+	return Result;
 }
-
-
 BOOL CWHDXGraphicWindow::DrawWithImageForCompClipRgnBase(INT nX, INT nY, INT nXSize, INT nYSize, WORD* pwSrc, WORD wClipWidth, WORD wClipHeight, WORD wChooseColor1, WORD wChooseColor2)
 {
-	RECT			rc;
-	DDSURFACEDESC2	ddsd;
+	WORD* pwdDst = (WORD*)new DWORD[nXSize * nYSize];
+	ZeroMemory(pwdDst, nXSize * nYSize * sizeof(DWORD));
+	D2D1_RECT_F rect = D2D1::RectF(nX, nY, wClipWidth + nX, wClipHeight + nY);
+	D2D1_SIZE_U size = D2D1::SizeU(wClipWidth, wClipHeight);
+	BOOL Result = FALSE;
 
-	INT	nWidth		= nXSize;
-	INT	nHeight		= nYSize;
-	INT	nXOffset	= 0;
-	INT	nYOffset	= 0;
-	INT	nStartX		= 0;
-	INT	nStartY		= 0;
-	INT	nEndX		= wClipWidth -1;
-	INT	nEndY		= wClipHeight-1;
-
-	if ( m_pddsBackBuffer != NULL )
+	if (DecodeWilImageData(nXSize, nYSize, pwSrc, pwdDst, wChooseColor1, wChooseColor2))
 	{
-		if (nX < nStartX )
-		{ 
-			nXOffset	= nStartX - nX;
-			nWidth		= nXSize - nXOffset;
-		}
-		if ( (nX+nXSize-1) > nEndX )
-			nWidth		= nEndX - nX - nXOffset + 1;		
-		if ( nY < nStartY )	
-		{ 
-			nYOffset	= nStartY - nY;
-			nHeight		= nYSize - nYOffset;
-		}		
-		if ( (nY+nYSize-1) > nEndY )
-			nHeight	= nEndY - nY - nYOffset + 1;
-
-		if ( (nWidth > 0) && (nHeight > 0) )
-		{
-			rc.left		= nXOffset;
-			rc.right	= nXOffset+nWidth;
-			rc.top		= nYOffset;
-			rc.bottom	= nYOffset+nHeight;
-
-			ddsd.dwSize	= sizeof(DDSURFACEDESC2);
-			ddsd.lpSurface = NULL;
-			
-			m_pddsBackBuffer->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
-			if ( !ddsd.lpSurface )			return FALSE;
-			WORD* pwdDst;
-			pwdDst = (WORD*)ddsd.lpSurface;
-
-			INT nWidthStart	= 0;
-			INT nWidthEnd	= 0;
-			INT nCurrWidth  = 0;
-			INT nCntCopyWord = 0;
-			INT nYCnt =0;
-			INT nLastWidth = 0;
-
-			FLOAT rBlueRate, rGreenRate, bRedRate;
-			BYTE  bRedSrc, bGreenSrc, bBlueSrc;
-			BYTE  bRedWantedColor, bGreenWantedColor, bBlueWantedColor;
-			WORD  wPixel;
-
-			// yÃà Å¬¸®ÇÎ.
-  			for ( nYCnt=0 ; nYCnt < rc.top ; nYCnt++ )
-			{
-				nWidthEnd += pwSrc[nWidthStart];
-				nWidthStart++;
-				nWidthEnd++;
-				nWidthStart	= nWidthEnd;
-			}
-
-			// yÃà¿¡ ´ëÇØ¼­ ½ÇÁ¦·Î ·çÇÎ½ÃÅ³ Count¸¸À» Á¤ÇÑ´Ù.
-			for ( nYCnt=rc.top ; nYCnt < rc.bottom ; nYCnt++ )
-			{
-				// ÇÑ¶óÀÎÀÇ ±æÀÌ¸¦ ¾ò¾î¿Â´Ù.(´ÜÀ§´Â ¿öµå)
-				nWidthEnd += pwSrc[nWidthStart];
-				nWidthStart++;
-
-				// ¶óÀÎÀÇ ±æÀÌ¸¸Å­ È­¸é¿¡ »Ñ·ÁÁØ´Ù.
-				for ( INT x = nWidthStart; x < nWidthEnd ; )
-				{
-					if ( pwSrc[x] == 0xC0 )
-					{
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-						nCurrWidth += nCntCopyWord;
-					}
-					else if ( pwSrc[x] == 0xC1 )
-					{
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-
-						nLastWidth = nCurrWidth;
-						nCurrWidth += nCntCopyWord;
-
-						if ( rc.left > nCurrWidth || rc.right < nLastWidth )
-						{
-							x += nCntCopyWord;
-						}
-						else
-						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
-							{
-								x += (rc.left-nLastWidth);
-								memcpy(&pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (rc.left+nX)], &pwSrc[x], sizeof(WORD)*(nCurrWidth-rc.left));
-								x += (nCurrWidth-rc.left);
-							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
-							{
-								memcpy(&pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX)], &pwSrc[x], sizeof(WORD)*(rc.right-nLastWidth));
-								x += nCntCopyWord;
-							}
-							else
-							{
-								memcpy(&pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX)], &pwSrc[x], sizeof(WORD)*nCntCopyWord);
-								x += nCntCopyWord;
-							}
-						}
-					}
-					else if ( pwSrc[x] == 0xC2 || pwSrc[x] == 0xC3 )
-					{
-						WORD wDyingKind, wChooseColor;
-						wDyingKind = pwSrc[x];
-						switch ( wDyingKind )
-						{
-						case 0xC2: 
-							wChooseColor = wChooseColor1;
-							break;
-						case 0xC3: 
-							wChooseColor = wChooseColor2;
-							break;
-						}
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-
-						nLastWidth = nCurrWidth;
-						nCurrWidth += nCntCopyWord;
-
-						if ( rc.left > nCurrWidth || rc.right < nLastWidth )
-						{
-							x += nCntCopyWord;
-						}
-						else
-						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
-							{
-								x += (rc.left-nLastWidth);
-								for ( INT nCheck = 0; nCheck < nCurrWidth-rc.left; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																										  (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																									 	  (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += (nCurrWidth-rc.left);
-							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
-							{
-								for ( INT nCheck = 0; nCheck < rc.right-nLastWidth; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																										  (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																									 	  (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-							else
-							{
-								for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																										  (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																									 	  (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-						}
-					}	
-				}
-				// ¶óÀÎÀÇ ³¡À» ´ÙÀ½ ¶óÀÎÀÇ ½ÃÀÛÀ¸·Î ¿Å°ÜÁØ´Ù.
-				nWidthEnd++;
-
-				nWidthStart	= nWidthEnd;
-				nCurrWidth = 0;
-			}
-		}
-
-		m_pddsBackBuffer->Unlock(NULL);
-		return TRUE;
+		Result = DrawImage(rect, size, pwdDst, nXSize * sizeof(DWORD));
 	}
-	return FALSE;
+	SAFE_DELETE_ARR(pwdDst);
+	return Result;
 }
-
-
 BOOL CWHDXGraphicWindow::DrawWithABlendCompDataWithBackBuffer(INT nX, INT nY, 
 															  INT nXSize, INT nYSize, WORD* pwSrc,
 															  WORD wClipWidth, WORD wClipHeight,
 															  WORD wChooseColor1, WORD wChooseColor2, BYTE bOpa)
 {
-	RECT			rc;
-	DDSURFACEDESC2	ddsd;
+	WORD* pwdDst = (WORD*)new DWORD[nXSize * nYSize];
+	ZeroMemory(pwdDst, nXSize * nYSize * sizeof(DWORD));
+	D2D1_RECT_F rect = D2D1::RectF(nX, nY, nXSize + nX, nYSize + nY);
+	D2D1_SIZE_U size = D2D1::SizeU(nXSize, nYSize);
+	BOOL Result = FALSE;
 
-	INT	nWidth		= nXSize;
-	INT	nHeight		= nYSize;
-	INT	nXOffset	= 0;
-	INT	nYOffset	= 0;
-	INT	nStartX		= 0;
-	INT	nStartY		= 0;
-	INT	nEndX		= wClipWidth -1;
-	INT	nEndY		= wClipHeight-1;
-
-	WORD wDyingKind, wChooseColor;
-
-	if ( m_pddsBackBuffer != NULL )
+	if (DecodeWilImageData(nXSize, nYSize, pwSrc, pwdDst, wChooseColor1, wChooseColor2, bOpa))
 	{
-		if (nX < nStartX )
-		{ 
-			nXOffset	= nStartX - nX;
-			nWidth		= nXSize - nXOffset;
-		}
-		if ( (nX+nXSize-1) > nEndX )
-			nWidth		= nEndX - nX - nXOffset + 1;		
-		if ( nY < nStartY )	
-		{ 
-			nYOffset	= nStartY - nY;
-			nHeight		= nYSize - nYOffset;
-		}		
-		if ( (nY+nYSize-1) > nEndY )
-			nHeight	= nEndY - nY - nYOffset + 1;
-
-		if ( (nWidth > 0) && (nHeight > 0) )
-		{
-			rc.left		= nXOffset;
-			rc.right	= nXOffset+nWidth;
-			rc.top		= nYOffset;
-			rc.bottom	= nYOffset+nHeight;
-
-			ddsd.dwSize	= sizeof(DDSURFACEDESC2);
-			ddsd.lpSurface = NULL;
-			
-			m_pddsBackBuffer->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
-			if ( !ddsd.lpSurface )			return FALSE;
-			WORD* pwdDst;
-			pwdDst = (WORD*)ddsd.lpSurface;
-
-			INT nWidthStart	= 0;
-			INT nWidthEnd	= 0;
-			INT nCurrWidth  = 0;
-			INT nCntCopyWord = 0;
-			INT nYCnt =0;
-			INT nLastWidth = 0;
-
-			BYTE bRedDst, bGreenDst, bBlueDst;
-			BYTE bRedSrc, bGreenSrc, bBlueSrc;
-			BYTE bRedWantedColor, bGreenWantedColor, bBlueWantedColor;
-			WORD wPixel;
-			FLOAT rBlueRate, rGreenRate, bRedRate;
-
-			// yÃà Å¬¸®ÇÎ.
-  			for ( nYCnt=0 ; nYCnt < rc.top ; nYCnt++ )
-			{
-				nWidthEnd += pwSrc[nWidthStart];
-				nWidthStart++;
-				nWidthEnd++;
-				nWidthStart	= nWidthEnd;
-			}
-
-			// yÃà¿¡ ´ëÇØ¼­ ½ÇÁ¦·Î ·çÇÎ½ÃÅ³ Count¸¸À» Á¤ÇÑ´Ù.
-			for ( nYCnt=rc.top ; nYCnt < rc.bottom ; nYCnt++ )
-			{
-				// ÇÑ¶óÀÎÀÇ ±æÀÌ¸¦ ¾ò¾î¿Â´Ù.(´ÜÀ§´Â ¿öµå)
-				nWidthEnd += pwSrc[nWidthStart];
-				nWidthStart++;
-
-				// ¶óÀÎÀÇ ±æÀÌ¸¸Å­ È­¸é¿¡ »Ñ·ÁÁØ´Ù.
-				for ( INT x = nWidthStart; x < nWidthEnd ; )
-				{
-					if ( pwSrc[x] == 0xC0 )
-					{
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-						nCurrWidth += nCntCopyWord;
-					}
-					else if ( pwSrc[x] == 0xC1 )
-					{
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-
-						nLastWidth = nCurrWidth;
-						nCurrWidth += nCntCopyWord;
-
-						if ( rc.left > nCurrWidth || rc.right < nLastWidth )
-						{
-							x += nCntCopyWord;
-						}
-						else
-						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
-							{
-								x += (rc.left-nLastWidth);
-								for ( INT nCheck = 0; nCheck < nCurrWidth-rc.left; nCheck++ )
-								{
-									wPixel	   = pwSrc[x+nCheck];
-									bBlueSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	   = pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (rc.left+nX+nCheck)];
-									bBlueDst   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenDst  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedDst    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									bBlueDst   = (BYTE)((bOpa*(bBlueDst -bBlueSrc )+100*bBlueSrc  ) / 100);
-									bGreenDst  = (BYTE)((bOpa*(bGreenDst-bGreenSrc)+100*bGreenSrc ) / 100);
-									bRedDst    = (BYTE)((bOpa*(bRedDst  -bRedSrc  )+100*bRedSrc   ) / 100);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (rc.left+nX+nCheck)] = ((bRedDst  <<m_stBitsMaskInfo.bRShift) |
-																									   (bGreenDst<<m_stBitsMaskInfo.bGShift) |
-																									   (bBlueDst <<m_stBitsMaskInfo.bBShift));										
-								}
-								x += (nCurrWidth-rc.left);
-							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
-							{
-								for ( INT nCheck = 0; nCheck < rc.right-nLastWidth; nCheck++ )
-								{
-									wPixel	   = pwSrc[x+nCheck];
-									bBlueSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	   = pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)];
-									bBlueDst   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenDst  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedDst    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									bBlueDst   = (BYTE)((bOpa*(bBlueDst -bBlueSrc )+100*bBlueSrc  ) / 100);
-									bGreenDst  = (BYTE)((bOpa*(bGreenDst-bGreenSrc)+100*bGreenSrc ) / 100);
-									bRedDst    = (BYTE)((bOpa*(bRedDst  -bRedSrc  )+100*bRedSrc   ) / 100);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedDst  <<m_stBitsMaskInfo.bRShift) |
-																									      (bGreenDst<<m_stBitsMaskInfo.bGShift) |
-																										  (bBlueDst <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-							else
-							{
-								for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-								{
-									wPixel	   = pwSrc[x+nCheck];
-									bBlueSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	   = pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)];
-									bBlueDst   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenDst  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedDst    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									bBlueDst   = (BYTE)((bOpa*(bBlueDst -bBlueSrc )+100*bBlueSrc  ) / 100);
-									bGreenDst  = (BYTE)((bOpa*(bGreenDst-bGreenSrc)+100*bGreenSrc ) / 100);
-									bRedDst    = (BYTE)((bOpa*(bRedDst  -bRedSrc  )+100*bRedSrc   ) / 100);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedDst  <<m_stBitsMaskInfo.bRShift) |
-																									      (bGreenDst<<m_stBitsMaskInfo.bGShift) |
-																										  (bBlueDst <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-						}
-					}
-					else if ( pwSrc[x] == 0xC2 || pwSrc[x] == 0xC3 )
-					{
-						wDyingKind = pwSrc[x];
-						switch ( wDyingKind )
-						{
-						case 0xC2: 
-							wChooseColor = wChooseColor1;
-							break;
-						case 0xC3: 
-							wChooseColor = wChooseColor2;
-							break;
-						}
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-
-						nLastWidth = nCurrWidth;
-						nCurrWidth += nCntCopyWord;
-
-						if ( rc.left > nCurrWidth || rc.right < nLastWidth )
-						{
-							x += nCntCopyWord;
-						}
-						else
-						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
-							{
-								x += (rc.left-nLastWidth);
-								for ( INT nCheck = 0; nCheck < nCurrWidth-rc.left; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-
-									wPixel  = pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (rc.left+nX+nCheck)];
-									bBlueDst   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenDst  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedDst    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									bBlueDst   = (BYTE)((bOpa*(bBlueDst -bBlueWantedColor )+100*bBlueWantedColor ) / 100);
-									bGreenDst  = (BYTE)((bOpa*(bGreenDst-bGreenWantedColor)+100*bGreenWantedColor) / 100);
-									bRedDst    = (BYTE)((bOpa*(bRedDst  -bRedWantedColor  )+100*bRedWantedColor  ) / 100);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (rc.left+nX+nCheck)] = ((bRedDst  <<m_stBitsMaskInfo.bRShift) |
-																									   (bGreenDst<<m_stBitsMaskInfo.bGShift) |
-																									   (bBlueDst <<m_stBitsMaskInfo.bBShift));
-								}
-								x += (nCurrWidth-rc.left);
-							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
-							{
-								for ( INT nCheck = 0; nCheck < rc.right-nLastWidth; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-
-									wPixel  = pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)];
-									bBlueDst   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenDst  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedDst    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									bBlueDst   = (BYTE)((bOpa*(bBlueDst -bBlueWantedColor )+100*bBlueWantedColor ) / 100);
-									bGreenDst  = (BYTE)((bOpa*(bGreenDst-bGreenWantedColor)+100*bGreenWantedColor) / 100);
-									bRedDst    = (BYTE)((bOpa*(bRedDst  -bRedWantedColor  )+100*bRedWantedColor  ) / 100);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedDst  <<m_stBitsMaskInfo.bRShift) |
-																									      (bGreenDst<<m_stBitsMaskInfo.bGShift) |
-																										  (bBlueDst <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-							else
-							{
-								for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-
-									wPixel  = pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)];
-									bBlueDst   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenDst  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedDst    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									bBlueDst   = (BYTE)((bOpa*(bBlueDst -bBlueWantedColor )+100*bBlueWantedColor ) / 100);
-									bGreenDst  = (BYTE)((bOpa*(bGreenDst-bGreenWantedColor)+100*bGreenWantedColor) / 100);
-									bRedDst    = (BYTE)((bOpa*(bRedDst  -bRedWantedColor  )+100*bRedWantedColor  ) / 100);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedDst  <<m_stBitsMaskInfo.bRShift) |
-																									      (bGreenDst<<m_stBitsMaskInfo.bGShift) |
-																										  (bBlueDst <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-						}
-					}	
-				}
-				// ¶óÀÎÀÇ ³¡À» ´ÙÀ½ ¶óÀÎÀÇ ½ÃÀÛÀ¸·Î ¿Å°ÜÁØ´Ù.
-				nWidthEnd++;
-
-				nWidthStart	= nWidthEnd;
-				nCurrWidth = 0;
-			}
-		}
-
-		m_pddsBackBuffer->Unlock(NULL);
-		return TRUE;
+		//m_pD2D1DeviceContext->SetPrimitiveBlend(D2D1_PRIMITIVE_BLEND_ADD);
+		Result = DrawImage(rect, size, pwdDst, nXSize * sizeof(DWORD));
 	}
-	return FALSE;
+	SAFE_DELETE_ARR(pwdDst);
+	return Result;
 }
-
-
-// nX, nY´Â Áß½ÉÁ¡ÀÇ ÁÂÇ¥ÀÌ´Ù.
 BOOL CWHDXGraphicWindow::DrawWithShadowABlend(INT nX, INT nY, INT nXSize, INT nYSize, WORD* pwSrc, WORD wClipWidth, WORD wClipHeight,
 											  WORD* pwShadowClrSrc, BOOL bBlend, BYTE bShadowType, BYTE bOpa)
 
 {
-	// ÂïÁö ¾Ê´Â ±×¸²ÀÚ.
+	// ?? ?? ???.
 	if ( bShadowType == 48 )
 		return FALSE;
 
-	RECT			rc;
-	DDSURFACEDESC2	ddsd;
+	WORD* pwdDst = (WORD*)new DWORD[nXSize * nYSize];
+	ZeroMemory(pwdDst, nXSize * nYSize * sizeof(DWORD));
+	D2D1_RECT_F rect = D2D1::RectF(nX, nY, nXSize + nX, nYSize + nY);
+	D2D1_SIZE_U size = D2D1::SizeU(nXSize, nYSize);
+	BOOL Result = FALSE;
 
-	INT	nWidth		= nXSize;
-	INT	nHeight		= nYSize;
-	INT	nXOffset	= 0;
-	INT	nYOffset	= 0;
-	INT	nStartX		= 0;
-	INT	nStartY		= 0;
-	INT	nEndX		= wClipWidth -1;
-	INT	nEndY		= wClipHeight-1;
-
-
-	if ( m_pddsBackBuffer != NULL )
+	if (DecodeWilImageData(nXSize, nYSize, pwSrc, pwdDst, 0xFFFF, 0xFFFF, bOpa))
 	{
-		rc.left		= 0;
-		rc.right	= nWidth;
-		rc.top		= 0;
-		rc.bottom	= nHeight;
-
-		ddsd.dwSize	= sizeof(DDSURFACEDESC2);
-		ddsd.lpSurface = NULL;
-			
-		m_pddsBackBuffer->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
-		if ( !ddsd.lpSurface )			return FALSE;
-		WORD* pwdDst;
-		pwdDst = (WORD*)ddsd.lpSurface;
-
-		INT nWidthStart	= 0;
-		INT nWidthEnd	= 0;
-		INT nCurrWidth  = 0;
-		INT nCntCopyWord = 0;
-		INT nYCnt =0;
-		INT nLastWidth = 0;
-		INT nDstXPos = 0;
-		INT nDstYPos = 0;
-
-		WORD wPixel;
-		BYTE bBlueWantedColor, bGreenWantedColor, bRedWantedColor, bBlueDst, bGreenDst, bRedDst;
-		RECT rcScrnShadow;
-		WORD wSahdowColor = pwShadowClrSrc[0];
-
-		if ( bShadowType == 49 )
-		{
-			SetRect(&rcScrnShadow, nX, nY, nX+nHeight/2+nWidth, nY+nHeight/2);
-		}
-		else if ( bShadowType == 50 )
-		{
-			SetRect(&rcScrnShadow, nX, nY, nX+nWidth, nY+nHeight);
-		}
-
-		// yÃà¿¡ ´ëÇØ¼­ ½ÇÁ¦·Î ·çÇÎ½ÃÅ³ Count¸¸À» Á¤ÇÑ´Ù.
-		for ( nYCnt=rc.top ; nYCnt < rc.bottom ; nYCnt++ )
-		{
-			// ÇÑ¶óÀÎÀÇ ±æÀÌ¸¦ ¾ò¾î¿Â´Ù.(´ÜÀ§´Â ¿öµå)
-			nWidthEnd += pwSrc[nWidthStart];
-			nWidthStart++;
-
-			if ( bShadowType == 49 )
-			{
-				nDstYPos = nYCnt-nYCnt/2+nY;
-			}
-			else if ( bShadowType == 50 )
-			{
-				nDstYPos = nYCnt+nY;
-			}
-
-			if ( nDstYPos < 0 || nDstYPos >= wClipHeight || (bShadowType==49 && nYCnt%2) )
-			{
-				// ¶óÀÎÀÇ ³¡À» ´ÙÀ½ ¶óÀÎÀÇ ½ÃÀÛÀ¸·Î ¿Å°ÜÁØ´Ù.
-				nWidthEnd++;
-				nWidthStart	= nWidthEnd;
-				nCurrWidth = 0;
-				continue;
-			}
-
-			// ¶óÀÎÀÇ ±æÀÌ¸¸Å­ È­¸é¿¡ »Ñ·ÁÁØ´Ù.
-			for ( INT x = nWidthStart; x < nWidthEnd ; )
-			{
-				if ( pwSrc[x] == 0xC0 )
-				{
-					x++;
-					nCntCopyWord = pwSrc[x];
-					x++;
-					nCurrWidth += nCntCopyWord;
-				}
-				else if ( pwSrc[x] == 0xC1 || pwSrc[x] == 0xC2 || pwSrc[x] == 0xC3 )
-				{
-					x++;
-					nCntCopyWord = pwSrc[x];
-					x++;
-
-					nLastWidth = nCurrWidth;
-					nCurrWidth += nCntCopyWord;
-
-					if ( bShadowType == 49 )
-					{
-						nDstXPos = (nLastWidth+nX+(rc.bottom-nYCnt)/2);
-					}
-					else if ( bShadowType == 50 )
-					{
-						nDstXPos = (nLastWidth+nX);
-					}
-
-					if ( !bBlend ) 
-					{
-						// ¿ÞÂÊ °É¸±¶§.
-						if ( nDstXPos < 0 && nDstXPos+nCntCopyWord >= 0 )
-						{
-							for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-							{
-								if ( nDstXPos+nCheck >= 0 && nDstXPos+nCheck < wClipWidth )
-								{
-									pwdDst[(nDstYPos * (ddsd.lPitch >> 1)) + nDstXPos+nCheck] = wSahdowColor;
-
-								}
-							}
-							x += nCntCopyWord;
-						}
-						// ¿À¸¥ÂÊ °É¸±¶§.
-						else if ( nDstXPos < wClipWidth && nDstXPos+nCntCopyWord >= wClipWidth )
-						{
-							for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-							{
-								if ( nDstXPos+nCheck >= 0 && nDstXPos+nCheck < wClipWidth )
-								{
-									pwdDst[(nDstYPos * (ddsd.lPitch >> 1)) + nDstXPos+nCheck] = wSahdowColor;
-
-								}
-							}
-							x += nCntCopyWord;
-						}
-						// ¾È°É¸±¶§.
-						else if ( nDstXPos >= 0 && nDstXPos+nCntCopyWord < wClipWidth )
-						{
-							memcpy(&pwdDst[(nDstYPos * (ddsd.lPitch >> 1)) + nDstXPos], pwShadowClrSrc, sizeof(WORD)*nCntCopyWord);
-//							memset(&pwdDst[(nDstYPos * (ddsd.lPitch >> 1)) + nDstXPos], wSahdowColor, sizeof(WORD)*nCntCopyWord);
-							x += nCntCopyWord;
-						}
-						else
-						{
-							x += nCntCopyWord;
-						}
-					}
-					else
-					{
-						// ¿ÞÂÊ °É¸±¶§.
-						if ( nDstXPos < 0 && nDstXPos+nCntCopyWord >= 0 )
-						{
-							for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-							{
-								if ( nDstXPos+nCheck >= 0 && nDstXPos+nCheck < wClipWidth )
-								{
-//									pwdDst[(nDstYPos * (ddsd.lPitch >> 1)) + nDstXPos+nCheck] = wSahdowColor;
-									wPixel = wSahdowColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel  = pwdDst[(nDstYPos * (ddsd.lPitch >> 1)) + nDstXPos+nCheck];
-									bBlueDst   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenDst  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedDst    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									bBlueDst   = (BYTE)((bOpa*(bBlueDst -bBlueWantedColor)+100*bBlueWantedColor  ) / 100);
-									bGreenDst  = (BYTE)((bOpa*(bGreenDst-bGreenWantedColor)+100*bGreenWantedColor) / 100);
-									bRedDst    = (BYTE)((bOpa*(bRedDst  -bRedWantedColor)+100*bRedWantedColor    ) / 100);
-
-									pwdDst[(nDstYPos * (ddsd.lPitch >> 1)) + nDstXPos+nCheck] = ((bRedDst  <<m_stBitsMaskInfo.bRShift) |
-																						  		 (bGreenDst<<m_stBitsMaskInfo.bGShift) |
-																								 (bBlueDst <<m_stBitsMaskInfo.bBShift));							
-								}
-							}
-							x += nCntCopyWord;
-						}
-						// ¿À¸¥ÂÊ °É¸±¶§.
-						else if ( nDstXPos < wClipWidth && nDstXPos+nCntCopyWord >= wClipWidth )
-						{
-							for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-							{
-								if ( nDstXPos+nCheck >= 0 && nDstXPos+nCheck < wClipWidth )
-								{
-//									pwdDst[(nDstYPos * (ddsd.lPitch >> 1)) + nDstXPos+nCheck] = wSahdowColor;
-
-									WORD wPixel = wSahdowColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel  = pwdDst[(nDstYPos * (ddsd.lPitch >> 1)) + nDstXPos+nCheck];
-									bBlueDst   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenDst  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedDst    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									bBlueDst   = (BYTE)((bOpa*(bBlueDst -bBlueWantedColor)+100*bBlueWantedColor  ) / 100);
-									bGreenDst  = (BYTE)((bOpa*(bGreenDst-bGreenWantedColor)+100*bGreenWantedColor) / 100);
-									bRedDst    = (BYTE)((bOpa*(bRedDst  -bRedWantedColor)+100*bRedWantedColor    ) / 100);
-
-									pwdDst[(nDstYPos * (ddsd.lPitch >> 1)) + nDstXPos+nCheck] = ((bRedDst  <<m_stBitsMaskInfo.bRShift) |
-																						  		 (bGreenDst<<m_stBitsMaskInfo.bGShift) |
-																								 (bBlueDst <<m_stBitsMaskInfo.bBShift));							
-
-								}
-							}
-							x += nCntCopyWord;
-						}
-						// ¾È°É¸±¶§.
-						else if ( nDstXPos >= 0 && nDstXPos+nCntCopyWord < wClipWidth )
-						{
-	//						memset(&pwdDst[(nDstYPos * (ddsd.lPitch >> 1)) + nDstXPos], wSahdowColor, sizeof(WORD)*nCntCopyWord);
-	//						x += nCntCopyWord;
-
-							for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-							{
-	//							pwdDst[(nDstYPos * (ddsd.lPitch >> 1)) + nDstXPos+nCheck] = wSahdowColor;
-
-								wPixel = wSahdowColor;
-								bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-								bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-								bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-								wPixel  = pwdDst[(nDstYPos * (ddsd.lPitch >> 1)) + nDstXPos+nCheck];
-								bBlueDst   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-								bGreenDst  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-								bRedDst    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-								bBlueDst   = (BYTE)((bOpa*(bBlueDst -bBlueWantedColor)+100*bBlueWantedColor  ) / 100);
-								bGreenDst  = (BYTE)((bOpa*(bGreenDst-bGreenWantedColor)+100*bGreenWantedColor) / 100);
-								bRedDst    = (BYTE)((bOpa*(bRedDst  -bRedWantedColor)+100*bRedWantedColor    ) / 100);
-
-								pwdDst[(nDstYPos * (ddsd.lPitch >> 1)) + nDstXPos+nCheck] = ((bRedDst  <<m_stBitsMaskInfo.bRShift) |
-																							 (bGreenDst<<m_stBitsMaskInfo.bGShift) |
-																							 (bBlueDst <<m_stBitsMaskInfo.bBShift));							
-							}
-							x += nCntCopyWord;
-						}
-						else
-						{
-							x += nCntCopyWord;
-						}
-					}
-				}
-			}
-			// ¶óÀÎÀÇ ³¡À» ´ÙÀ½ ¶óÀÎÀÇ ½ÃÀÛÀ¸·Î ¿Å°ÜÁØ´Ù.
-			nWidthEnd++;
-
-			nWidthStart	= nWidthEnd;
-			nCurrWidth = 0;
-		}
-			
-		m_pddsBackBuffer->Unlock(NULL);
-		return TRUE;
+		Result = DrawImage(rect, size, pwdDst, nXSize * sizeof(DWORD));
 	}
-	return FALSE;
+	SAFE_DELETE_ARR(pwdDst);
+	return Result;
 }
-
-
-
 VOID CWHDXGraphicWindow::DrawWithShadowABlend(INT nX, INT nY, INT nXSize, INT nYSize, INT nPX, INT nPY, WORD* pwSrc, WORD wClipWidth, WORD wClipHeight,
 											  WORD* pwShadowClrSrc, BOOL bBlend, BYTE bOpa)
 {
-	DDSURFACEDESC2	ddsd;
+	WORD* pwdDst = (WORD*)new DWORD[nXSize * nYSize];
+	ZeroMemory(pwdDst, nXSize * nYSize * sizeof(DWORD));
+	D2D1_RECT_F rect = D2D1::RectF(nX, nY, wClipWidth + nX, wClipHeight + nY);
+	D2D1_SIZE_U size = D2D1::SizeU(nXSize, nYSize);
 
-#define _HALF_CELL_WIDTH	24
-#define _HALF_CELL_HEIGHT	16
-
-//  È­¸é(800*600)¿¡¼­ ±×¸²ÀÚ°¡ ÂïÈú »çÀÌÁî¸¦ ±¸ÇÑ´Ù.
-	
-	// È­¸é(800*600)¿¡¼­ÀÇ ¼¿½ÃÀÛÁÂÇ¥°¡ ¾Æ´Ñ ½ÇÁ¦ Áß½ÉÁ¡ ÁÂÇ¥(¼¿À§ Á¤Áß¾ÓÁ¡ÀÌ´Ù.)
-	INT		nScrnCenterX = nX - nPX + 24;//_HALF_CELL_WIDTH;
-	INT		nScrnCenterY = nY - nPY + 16;//_HALF_CELL_HEIGHT;
-	INT		nRealCenterX = nX - nScrnCenterX;
-	INT		nRealCenterY = nY - nScrnCenterY;
-
-	INT		nShadowCenterX = nX;
-	INT		nShadowCenterY = nY-nRealCenterY/2;
-
-	RECT	rcSrc		 = {0, 0, nXSize, nYSize};
-
-	BYTE bRedDst, bGreenDst, bBlueDst;
-	BYTE bRedWantedColor, bGreenWantedColor, bBlueWantedColor;
-	WORD wPixel;
-	WORD wSahdowColor = pwShadowClrSrc[0];
-
-	if ( m_pddsBackBuffer != NULL )
+	if (DecodeWilImageData(nXSize, nYSize, pwSrc, pwdDst, 0xFFFF, 0xFFFF, bOpa))
 	{
-		ddsd.dwSize	= sizeof(DDSURFACEDESC2);
-		ddsd.lpSurface = NULL;
-
-		m_pddsBackBuffer->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
-		if ( !ddsd.lpSurface )			return;
-		WORD* pwdDst = NULL;
-		pwdDst = (WORD*)ddsd.lpSurface;
-
-		if ( pwdDst )
-		{
-			INT nWidthStart	 = 0;
-			INT nWidthEnd	 = 0;
-			INT nCurrWidth   = 0;
-			INT nLastWidth	 = 0;
-			INT nCntCopyWord = 0;
-			INT nYCnt		 = 0;
-
-			INT nDstYPos = nShadowCenterY;
-
-			for ( nYCnt=rcSrc.top ; nYCnt < rcSrc.bottom ; nYCnt++ )
-			{
-				if ( nDstYPos >= wClipHeight )
-				{
-					m_pddsBackBuffer->Unlock(NULL);
-					return;
-				}
-				// yÃà Å¬¸®ÇÎ¹× ÇÑÁÙ¾¿ °Ç³Ê¶Ù±â.
-				if ( nYCnt%2 == 0 ||  nDstYPos < 0 )
-				{
-					nWidthEnd += pwSrc[nWidthStart];
-					nWidthStart++;
-					nWidthEnd++;
-					nWidthStart	= nWidthEnd;
-
-					nDstYPos++;
-				}
-				else
-				{
-					// ÇÑ¶óÀÎÀÇ ±æÀÌ¸¦ ¾ò¾î¿Â´Ù.(´ÜÀ§´Â ¿öµå)
-					nWidthEnd += pwSrc[nWidthStart];
-					nWidthStart++;
-
-					// ¶óÀÎÀÇ ±æÀÌ¸¸Å­ È­¸é¿¡ »Ñ·ÁÁØ´Ù.
-					for ( INT x = nWidthStart; x < nWidthEnd ; )
-					{
-						if ( pwSrc[x] == 0xC0 )
-						{		
-							x++;
-							nCntCopyWord = pwSrc[x];
-							x++;
-							nCurrWidth += nCntCopyWord;
-						}
-						else
-						{
-							x++;
-							nCntCopyWord = pwSrc[x];
-							x++;
-							nLastWidth = nCurrWidth;
-							nCurrWidth += nCntCopyWord;
-
-							if ( bBlend )
-							{
-								if ((nShadowCenterX+nLastWidth+((-nRealCenterY/2)-nYCnt/2)) < 0 && (nShadowCenterX+nCurrWidth+((-nRealCenterY/2)-nYCnt/2)) >= 0 )
-								{
-								}
-								else if ((nShadowCenterX+nLastWidth+((-nRealCenterY/2)-nYCnt/2)) < wClipWidth && (nShadowCenterX+nCurrWidth+((-nRealCenterY/2)-nYCnt/2)) >= wClipWidth )
-								{
-								}
-								else if ( (nShadowCenterX+nCurrWidth+((-nRealCenterY/2)-nYCnt/2)) < 0 )
-								{
-								}
-								else if ( (nShadowCenterX+nCurrWidth+((-nRealCenterY/2)-nYCnt/2)) >= wClipWidth )
-								{
-								}
-								else
-								{
-									for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-									{
-										wPixel = wSahdowColor;
-										bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-										bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-										bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-										wPixel  = pwdDst[nDstYPos*(ddsd.lPitch >> 1) + (nShadowCenterX+nLastWidth+((-nRealCenterY/2)-nYCnt/2)) + nCheck];
-										bBlueDst   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-										bGreenDst  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-										bRedDst    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-										bBlueDst   = (BYTE)((bOpa*(bBlueDst -bBlueWantedColor)+100*bBlueWantedColor  ) / 100);
-										bGreenDst  = (BYTE)((bOpa*(bGreenDst-bGreenWantedColor)+100*bGreenWantedColor) / 100);
-										bRedDst    = (BYTE)((bOpa*(bRedDst  -bRedWantedColor)+100*bRedWantedColor    ) / 100);
-
-										pwdDst[nDstYPos*(ddsd.lPitch >> 1) + (nShadowCenterX+nLastWidth+((-nRealCenterY/2)-nYCnt/2)+nCheck)] = ((bRedDst  <<m_stBitsMaskInfo.bRShift) |
-																																				(bGreenDst<<m_stBitsMaskInfo.bGShift) |
-																																				(bBlueDst <<m_stBitsMaskInfo.bBShift));							}
-								}
-							}
-							else
-							{
-								if ((nShadowCenterX+nLastWidth+((-nRealCenterY/2)-nYCnt/2)) < 0 && (nShadowCenterX+nCurrWidth+((-nRealCenterY/2)-nYCnt/2)) >= 0 )
-								{
-								}
-								else if ((nShadowCenterX+nLastWidth+((-nRealCenterY/2)-nYCnt/2)) < wClipWidth && (nShadowCenterX+nCurrWidth+((-nRealCenterY/2)-nYCnt/2)) >= wClipWidth )
-								{
-								}
-								else if ( (nShadowCenterX+nCurrWidth+((-nRealCenterY/2)-nYCnt/2)) < 0 )
-								{
-								}
-								else if ( (nShadowCenterX+nCurrWidth+((-nRealCenterY/2)-nYCnt/2)) >= wClipWidth )
-								{
-								}
-								else
-								{
-//									memset(&pwdDst[nDstYPos*(ddsd.lPitch >> 1) + (nShadowCenterX+nLastWidth+((-nRealCenterY/2)-nYCnt/2))], wSahdowColor, sizeof(WORD)*nCntCopyWord);
-									memcpy(&pwdDst[nDstYPos*(ddsd.lPitch >> 1) + (nShadowCenterX+nLastWidth+((-nRealCenterY/2)-nYCnt/2))], pwShadowClrSrc, sizeof(WORD)*nCntCopyWord);
-								}
-							}
-							x += nCntCopyWord;
-						}
-					}
-					// ¶óÀÎÀÇ ³¡À» ´ÙÀ½ ¶óÀÎÀÇ ½ÃÀÛÀ¸·Î ¿Å°ÜÁØ´Ù.
-					nWidthEnd++;
-
-					nWidthStart	= nWidthEnd;
-					nCurrWidth = 0;
-				}
-			}
-			m_pddsBackBuffer->Unlock(NULL);
-		}
+		DrawImage(rect, size, pwdDst, nXSize * sizeof(DWORD));
 	}
+	SAFE_DELETE_ARR(pwdDst);
 }
-
-
 BOOL CWHDXGraphicWindow::DrawWithABlendCompDataWithLightedColor(INT nX, INT nY, 
 															    INT nXSize, INT nYSize, WORD* pwSrc,
 															    WORD wClipWidth, WORD wClipHeight,
 															    WORD wChooseColor1, WORD wChooseColor2)
 {
-	RECT			rc;
-	DDSURFACEDESC2	ddsd;
+	WORD* pwdDst = (WORD*)new DWORD[nXSize * nYSize];
+	ZeroMemory(pwdDst, nXSize * nYSize * sizeof(DWORD));
+	D2D1_RECT_F rect = D2D1::RectF(nX, nY, wClipWidth + nX, wClipHeight + nY);
+	D2D1_SIZE_U size = D2D1::SizeU(wClipWidth, wClipHeight);
+	BOOL Result = FALSE;
 
-	INT	nWidth		= nXSize;
-	INT	nHeight		= nYSize;
-	INT	nXOffset	= 0;
-	INT	nYOffset	= 0;
-	INT	nStartX		= 0;
-	INT	nStartY		= 0;
-	INT	nEndX		= wClipWidth -1;
-	INT	nEndY		= wClipHeight-1;
-
-	FLOAT fBright = 0.3f;
-
-	if ( m_pddsBackBuffer != NULL )
+	if (DecodeWilImageData(nXSize, nYSize, pwSrc, pwdDst, wChooseColor1, wChooseColor2))
 	{
-		if (nX < nStartX )
-		{ 
-			nXOffset	= nStartX - nX;
-			nWidth		= nXSize - nXOffset;
-		}
-		if ( (nX+nXSize-1) > nEndX )
-			nWidth		= nEndX - nX - nXOffset + 1;		
-		if ( nY < nStartY )	
-		{ 
-			nYOffset	= nStartY - nY;
-			nHeight		= nYSize - nYOffset;
-		}		
-		if ( (nY+nYSize-1) > nEndY )
-			nHeight	= nEndY - nY - nYOffset + 1;
-
-		if ( (nWidth > 0) && (nHeight > 0) )
-		{
-			rc.left		= nXOffset;
-			rc.right	= nXOffset+nWidth;
-			rc.top		= nYOffset;
-			rc.bottom	= nYOffset+nHeight;
-
-			ddsd.dwSize	= sizeof(DDSURFACEDESC2);
-			ddsd.lpSurface = NULL;
-			
-			m_pddsBackBuffer->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
-			if ( !ddsd.lpSurface )			return FALSE;
-			WORD* pwdDst;
-			pwdDst = (WORD*)ddsd.lpSurface;
-
-			INT nWidthStart	= 0;
-			INT nWidthEnd	= 0;
-			INT nCurrWidth  = 0;
-			INT nCntCopyWord = 0;
-			INT nYCnt =0;
-			INT nLastWidth = 0;
-
-			BYTE  bRedWantedColor, bGreenWantedColor, bBlueWantedColor;
-			BYTE bRedSrc, bGreenSrc, bBlueSrc;
-			WORD wPixel;
-			WORD wDyingKind, wChooseColor;
-			FLOAT rBlueRate, rGreenRate, bRedRate;
-
-			// yÃà Å¬¸®ÇÎ.
-  			for ( nYCnt=0 ; nYCnt < rc.top ; nYCnt++ )
-			{
-				nWidthEnd += pwSrc[nWidthStart];
-				nWidthStart++;
-				nWidthEnd++;
-				nWidthStart	= nWidthEnd;
-			}
-
-			// yÃà¿¡ ´ëÇØ¼­ ½ÇÁ¦·Î ·çÇÎ½ÃÅ³ Count¸¸À» Á¤ÇÑ´Ù.
-			for ( nYCnt=rc.top ; nYCnt < rc.bottom ; nYCnt++ )
-			{
-				// ÇÑ¶óÀÎÀÇ ±æÀÌ¸¦ ¾ò¾î¿Â´Ù.(´ÜÀ§´Â ¿öµå)
-				nWidthEnd += pwSrc[nWidthStart];
-				nWidthStart++;
-
-				// ¶óÀÎÀÇ ±æÀÌ¸¸Å­ È­¸é¿¡ »Ñ·ÁÁØ´Ù.
-				for ( INT x = nWidthStart; x < nWidthEnd ; )
-				{
-					if ( pwSrc[x] == 0xC0 )
-					{
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-						nCurrWidth += nCntCopyWord;
-					}
-					else if ( pwSrc[x] == 0xC1 )
-					{
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-
-						nLastWidth = nCurrWidth;
-						nCurrWidth += nCntCopyWord;
-
-						if ( rc.left > nCurrWidth || rc.right < nLastWidth )
-						{
-							x += nCntCopyWord;
-						}
-						else
-						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
-							{
-								x += (rc.left-nLastWidth);
-								for ( INT nCheck = 0; nCheck < nCurrWidth-rc.left; nCheck++ )
-								{
-									wPixel = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueSrc = (BYTE)((FLOAT)bBlueSrc + ((FLOAT)bBlueSrc*rBlueRate*fBright));
-									bGreenSrc = (BYTE)((FLOAT)bGreenSrc + ((FLOAT)bGreenSrc*rGreenRate*fBright));
-									bRedSrc = (BYTE)((FLOAT)bRedSrc + ((FLOAT)bRedSrc*bRedRate*fBright));
-
-									if ( bBlueSrc > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueSrc = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenSrc > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenSrc = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedSrc > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedSrc = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (rc.left+nX+nCheck)] = ((bBlueSrc <<m_stBitsMaskInfo.bBShift) |
-																									   (bGreenSrc<<m_stBitsMaskInfo.bGShift) |
-																									   (bRedSrc  <<m_stBitsMaskInfo.bRShift));			
-								}
-								x += (nCurrWidth-rc.left);
-							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
-							{
-								for ( INT nCheck = 0; nCheck < rc.right-nLastWidth; nCheck++ )
-								{
-									wPixel = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueSrc = (BYTE)((FLOAT)bBlueSrc + ((FLOAT)bBlueSrc*rBlueRate*fBright));
-									bGreenSrc = (BYTE)((FLOAT)bGreenSrc + ((FLOAT)bGreenSrc*rGreenRate*fBright));
-									bRedSrc = (BYTE)((FLOAT)bRedSrc + ((FLOAT)bRedSrc*bRedRate*fBright));
-
-									if ( bBlueSrc > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueSrc = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenSrc > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenSrc = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedSrc > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedSrc = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bBlueSrc <<m_stBitsMaskInfo.bRShift) |
-																									      (bGreenSrc<<m_stBitsMaskInfo.bGShift) |
-																										  (bRedSrc  <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-							else
-							{
-								for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-								{
-									wPixel = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueSrc = (BYTE)((FLOAT)bBlueSrc + ((FLOAT)bBlueSrc*rBlueRate*fBright));
-									bGreenSrc = (BYTE)((FLOAT)bGreenSrc + ((FLOAT)bGreenSrc*rGreenRate*fBright));
-									bRedSrc = (BYTE)((FLOAT)bRedSrc + ((FLOAT)bRedSrc*bRedRate*fBright));
-
-									if ( bBlueSrc > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueSrc = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenSrc > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenSrc = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedSrc > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedSrc = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bBlueSrc <<m_stBitsMaskInfo.bBShift) |
-																									      (bGreenSrc<<m_stBitsMaskInfo.bGShift) |
-																										  (bRedSrc  <<m_stBitsMaskInfo.bRShift));			
-								}
-								x += nCntCopyWord;
-							}
-						}
-					}
-					else if ( pwSrc[x] == 0xC2 || pwSrc[x] == 0xC3 )
-					{
-						wDyingKind = pwSrc[x];
-						switch ( wDyingKind )
-						{
-						case 0xC2: 
-							wChooseColor = wChooseColor1;
-							break;
-						case 0xC3: 
-							wChooseColor = wChooseColor2;
-							break;
-						}
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-
-						nLastWidth = nCurrWidth;
-						nCurrWidth += nCntCopyWord;
-
-						if ( rc.left > nCurrWidth || rc.right < nLastWidth )
-						{
-							x += nCntCopyWord;
-						}
-						else
-						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
-							{
-								x += (rc.left-nLastWidth);
-								for ( INT nCheck = 0; nCheck < nCurrWidth-rc.left; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									bBlueSrc = bBlueWantedColor;
-									bGreenSrc = bGreenWantedColor;
-									bRedSrc = bRedWantedColor;
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueSrc = (BYTE)((FLOAT)bBlueSrc + ((FLOAT)bBlueSrc*rBlueRate*fBright));
-									bGreenSrc = (BYTE)((FLOAT)bGreenSrc + ((FLOAT)bGreenSrc*rGreenRate*fBright));
-									bRedSrc = (BYTE)((FLOAT)bRedSrc + ((FLOAT)bRedSrc*bRedRate*fBright));
-
-									if ( bBlueSrc > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueSrc = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenSrc > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenSrc = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedSrc > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedSrc = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (rc.left+nX+nCheck)] = ((bBlueSrc <<m_stBitsMaskInfo.bBShift) |
-																									   (bGreenSrc<<m_stBitsMaskInfo.bGShift) |
-																									   (bRedSrc  <<m_stBitsMaskInfo.bRShift));			
-								}
-								x += (nCurrWidth-rc.left);
-							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
-							{
-								for ( INT nCheck = 0; nCheck < rc.right-nLastWidth; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									bBlueSrc = bBlueWantedColor;
-									bGreenSrc = bGreenWantedColor;
-									bRedSrc = bRedWantedColor;
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueSrc = (BYTE)((FLOAT)bBlueSrc + ((FLOAT)bBlueSrc*rBlueRate*fBright));
-									bGreenSrc = (BYTE)((FLOAT)bGreenSrc + ((FLOAT)bGreenSrc*rGreenRate*fBright ));
-									bRedSrc = (BYTE)((FLOAT)bRedSrc + ((FLOAT)bRedSrc*bRedRate*fBright));
-
-									if ( bBlueSrc > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueSrc = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenSrc > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenSrc = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedSrc > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedSrc = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bBlueSrc <<m_stBitsMaskInfo.bRShift) |
-																									      (bGreenSrc<<m_stBitsMaskInfo.bGShift) |
-																										  (bRedSrc  <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-							else
-							{
-								for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									bBlueSrc = bBlueWantedColor;
-									bGreenSrc = bGreenWantedColor;
-									bRedSrc = bRedWantedColor;
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueSrc = (BYTE)((FLOAT)bBlueSrc + ((FLOAT)bBlueSrc*rBlueRate*fBright));
-									bGreenSrc = (BYTE)((FLOAT)bGreenSrc + ((FLOAT)bGreenSrc*rGreenRate*fBright));
-									bRedSrc = (BYTE)((FLOAT)bRedSrc + ((FLOAT)bRedSrc*bRedRate*fBright));
-
-									if ( bBlueSrc > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueSrc = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenSrc > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenSrc = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedSrc > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedSrc = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bBlueSrc <<m_stBitsMaskInfo.bBShift) |
-																									      (bGreenSrc<<m_stBitsMaskInfo.bGShift) |
-																										  (bRedSrc  <<m_stBitsMaskInfo.bRShift));			
-								}
-							x += nCntCopyWord;
-							}
-						}
-					}	
-				}
-				// ¶óÀÎÀÇ ³¡À» ´ÙÀ½ ¶óÀÎÀÇ ½ÃÀÛÀ¸·Î ¿Å°ÜÁØ´Ù.
-				nWidthEnd++;
-
-				nWidthStart	= nWidthEnd;
-				nCurrWidth = 0;
-			}
-		}
-
-		m_pddsBackBuffer->Unlock(NULL);
-		return TRUE;
+		Result = DrawImage(rect, size, pwdDst, nXSize * sizeof(DWORD));
 	}
-	return FALSE;
+	SAFE_DELETE_ARR(pwdDst);
+	return Result;
 }
-
-
-
 BOOL CWHDXGraphicWindow::DrawWithImageForCompClipRgnColor(INT nX, INT nY, INT nXSize, INT nYSize, WORD* pwSrc, WORD wClipWidth, WORD wClipHeight, WORD wColor, BOOL bFocused, BOOL bBlend)
 {
-	RECT			rc;
-	DDSURFACEDESC2	ddsd;
+	WORD* pwdDst = (WORD*)new DWORD[nXSize * nYSize];
+	ZeroMemory(pwdDst, nXSize * nYSize * sizeof(DWORD));
 
-	INT	nWidth		= nXSize;
-	INT	nHeight		= nYSize;
-	INT	nXOffset	= 0;
-	INT	nYOffset	= 0;
-	INT	nStartX		= 0;
-	INT	nStartY		= 0;
-	INT	nEndX		= wClipWidth -1;
-	INT	nEndY		= wClipHeight-1;
-
-	if ( m_pddsBackBuffer != NULL )
+	if (DecodeWilImageData(nXSize, nYSize, pwSrc, pwdDst))
 	{
-		if (nX < nStartX )
-		{ 
-			nXOffset	= nStartX - nX;
-			nWidth		= nXSize - nXOffset;
-		}
-		if ( (nX+nXSize-1) > nEndX )
-			nWidth		= nEndX - nX - nXOffset + 1;		
-		if ( nY < nStartY )	
-		{ 
-			nYOffset	= nStartY - nY;
-			nHeight		= nYSize - nYOffset;
-		}		
-		if ( (nY+nYSize-1) > nEndY )
-			nHeight	= nEndY - nY - nYOffset + 1;
-
-		if ( (nWidth > 0) && (nHeight > 0) )
-		{
-			rc.left		= nXOffset;
-			rc.right	= nXOffset+nWidth;
-			rc.top		= nYOffset;
-			rc.bottom	= nYOffset+nHeight;
-
-			ddsd.dwSize	= sizeof(DDSURFACEDESC2);
-			ddsd.lpSurface = NULL;
-			
-			m_pddsBackBuffer->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
-			if ( !ddsd.lpSurface )			return FALSE;
-			WORD* pwdDst;
-			pwdDst = (WORD*)ddsd.lpSurface;
-
-			INT nWidthStart	= 0;
-			INT nWidthEnd	= 0;
-			INT nCurrWidth  = 0;
-			INT nCntCopyWord = 0;
-			INT nYCnt =0;
-			INT nLastWidth = 0;
-
-			BYTE  bRedStateColor,  bGreenStateColor,  bBlueStateColor;
-			BYTE  bRedSrc, bGreenSrc, bBlueSrc;
-			BYTE  bBlueDst, bGreenDst, bRedDst;
-			WORD  wPixel;
-			FLOAT rBlueRate, rGreenRate, rRedRate;
-			FLOAT rbLightRate = 0.0f;
-
-			// yÃà Å¬¸®ÇÎ.
-  			for ( nYCnt=0 ; nYCnt < rc.top ; nYCnt++ )
-			{
-				nWidthEnd += pwSrc[nWidthStart];
-				nWidthStart++;
-				nWidthEnd++;
-				nWidthStart	= nWidthEnd;
-			}
-
-			// yÃà¿¡ ´ëÇØ¼­ ½ÇÁ¦·Î ·çÇÎ½ÃÅ³ Count¸¸À» Á¤ÇÑ´Ù.
-			for ( nYCnt=rc.top ; nYCnt < rc.bottom ; nYCnt++ )
-			{
-				// ÇÑ¶óÀÎÀÇ ±æÀÌ¸¦ ¾ò¾î¿Â´Ù.(´ÜÀ§´Â ¿öµå)
-				nWidthEnd += pwSrc[nWidthStart];
-				nWidthStart++;
-
-				// ¶óÀÎÀÇ ±æÀÌ¸¸Å­ È­¸é¿¡ »Ñ·ÁÁØ´Ù.
-				for ( INT x = nWidthStart; x < nWidthEnd ; )
-				{
-					if ( pwSrc[x] == 0xC0 )
-					{
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-						nCurrWidth += nCntCopyWord;
-					}
-					else if ( pwSrc[x] == 0xC1 || pwSrc[x] == 0xC2 || pwSrc[x] == 0xC3 )
-					{
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-
-						nLastWidth = nCurrWidth;
-						nCurrWidth += nCntCopyWord;
-
-						if ( rc.left > nCurrWidth || rc.right < nLastWidth )
-						{
-							x += nCntCopyWord;
-						}
-						else
-						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
-							{
-								x += (rc.left-nLastWidth);
-								for ( INT nCheck = 0; nCheck < nCurrWidth-rc.left; nCheck++ )
-								{
-									wPixel = wColor;
-									bBlueStateColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenStateColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedStateColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									// Focus¿©ºÎ.
-									if ( bFocused )			rbLightRate = 0.6f;
-									else					rbLightRate = 0.0f;
-
-									if ( !wColor )	
-									{
-										BYTE bTemp = (BYTE)(bBlueSrc+(bGreenSrc>>1)+bRedSrc)/3;
-										bTemp = bTemp + (BYTE)(bTemp*rbLightRate);
-										if ( bTemp > 31 )	bTemp = 31;
-										bBlueStateColor = bRedStateColor = bTemp;
-										bGreenStateColor = bTemp<<1;
-									}
-									else
-									{
-										rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-										rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-										rRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-										bBlueStateColor  = ( (BYTE)((FLOAT)bBlueStateColor *rBlueRate ) + (BYTE)((FLOAT)bBlueStateColor *rBlueRate *rbLightRate) );
-										bGreenStateColor = ( (BYTE)((FLOAT)bGreenStateColor*rGreenRate) + (BYTE)((FLOAT)bGreenStateColor*rGreenRate*rbLightRate) );
-										bRedStateColor   = ( (BYTE)((FLOAT)bRedStateColor  *rRedRate  ) + (BYTE)((FLOAT)bRedStateColor  *rRedRate  *rbLightRate) );					
-
-										if ( bBlueStateColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-											bBlueStateColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-										if ( bGreenStateColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-											bGreenStateColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-										if ( bRedStateColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-											bRedStateColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-									}
-
-									if ( bBlend )
-									{
-										wPixel	   = pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)];
-										bBlueDst   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-										bGreenDst  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-										bRedDst    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-										bBlueDst   = (BYTE)((50*(bBlueDst -bBlueStateColor )+100*bBlueStateColor  ) / 100);
-										bGreenDst  = (BYTE)((50*(bGreenDst-bGreenStateColor)+100*bGreenStateColor ) / 100);
-										bRedDst    = (BYTE)((50*(bRedDst  -bRedStateColor  )+100*bRedStateColor   ) / 100);
-									}
-									else
-									{
-										bBlueDst   = bBlueStateColor;
-										bGreenDst  = bGreenStateColor;
-										bRedDst    = bRedStateColor;
-									}
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (rc.left+nX+nCheck)] = ((bBlueDst <<m_stBitsMaskInfo.bBShift) |
-																									   (bGreenDst<<m_stBitsMaskInfo.bGShift) |
-																									   (bRedDst  <<m_stBitsMaskInfo.bRShift));			
-								}
-								x += (nCurrWidth-rc.left);
-							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
-							{
-								for ( INT nCheck = 0; nCheck < rc.right-nLastWidth; nCheck++ )
-								{
-									wPixel = wColor;
-									bBlueStateColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenStateColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedStateColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									// Focus¿©ºÎ.
-									if ( bFocused )			rbLightRate = 0.6f;
-									else					rbLightRate = 0.0f;
-
-									if ( !wColor )	
-									{
-										BYTE bTemp = (BYTE)(bBlueSrc+(bGreenSrc>>1)+bRedSrc)/3;
-										bTemp = bTemp + (BYTE)(bTemp*rbLightRate);
-										if ( bTemp > 31 )	bTemp = 31;
-										bBlueStateColor = bRedStateColor = bTemp;
-										bGreenStateColor = bTemp<<1;
-									}
-									else
-									{
-										rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-										rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-										rRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-										bBlueStateColor  = ( (BYTE)((FLOAT)bBlueStateColor *rBlueRate ) + (BYTE)((FLOAT)bBlueStateColor *rBlueRate *rbLightRate) );
-										bGreenStateColor = ( (BYTE)((FLOAT)bGreenStateColor*rGreenRate) + (BYTE)((FLOAT)bGreenStateColor*rGreenRate*rbLightRate) );
-										bRedStateColor   = ( (BYTE)((FLOAT)bRedStateColor  *rRedRate  ) + (BYTE)((FLOAT)bRedStateColor  *rRedRate  *rbLightRate) );					
-
-										if ( bBlueStateColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-											bBlueStateColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-										if ( bGreenStateColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-											bGreenStateColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-										if ( bRedStateColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-											bRedStateColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-									}
-
-									if ( bBlend )
-									{
-										wPixel	   = pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)];
-										bBlueDst   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-										bGreenDst  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-										bRedDst    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-										bBlueDst   = (BYTE)((50*(bBlueDst -bBlueStateColor )+100*bBlueStateColor  ) / 100);
-										bGreenDst  = (BYTE)((50*(bGreenDst-bGreenStateColor)+100*bGreenStateColor ) / 100);
-										bRedDst    = (BYTE)((50*(bRedDst  -bRedStateColor  )+100*bRedStateColor   ) / 100);
-									}
-									else
-									{
-										bBlueDst   = bBlueStateColor;
-										bGreenDst  = bGreenStateColor;
-										bRedDst    = bRedStateColor;
-									}
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bBlueDst <<m_stBitsMaskInfo.bRShift) |
-																									      (bGreenDst<<m_stBitsMaskInfo.bGShift) |
-																										  (bRedDst  <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-							else
-							{
-								for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-								{
-									wPixel = wColor;
-									bBlueStateColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenStateColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedStateColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									// Focus¿©ºÎ.
-									if ( bFocused )			rbLightRate = 0.6f;
-									else					rbLightRate = 0.0f;
-
-									if ( !wColor )	
-									{
-										BYTE bTemp = (BYTE)(bBlueSrc+(bGreenSrc>>1)+bRedSrc)/3;
-										bTemp = bTemp + (BYTE)(bTemp*rbLightRate);
-										if ( bTemp > 31 )	bTemp = 31;
-										bBlueStateColor = bRedStateColor = bTemp;
-										bGreenStateColor = bTemp<<1;
-									}
-									else
-									{
-										rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-										rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-										rRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-										bBlueStateColor  = ( (BYTE)((FLOAT)bBlueStateColor *rBlueRate ) + (BYTE)((FLOAT)bBlueStateColor *rBlueRate *rbLightRate) );
-										bGreenStateColor = ( (BYTE)((FLOAT)bGreenStateColor*rGreenRate) + (BYTE)((FLOAT)bGreenStateColor*rGreenRate*rbLightRate) );
-										bRedStateColor   = ( (BYTE)((FLOAT)bRedStateColor  *rRedRate  ) + (BYTE)((FLOAT)bRedStateColor  *rRedRate  *rbLightRate) );					
-
-										if ( bBlueStateColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-											bBlueStateColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-										if ( bGreenStateColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-											bGreenStateColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-										if ( bRedStateColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-											bRedStateColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-									}
-
-									if ( bBlend )
-									{
-										wPixel	   = pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)];
-										bBlueDst   = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-										bGreenDst  = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-										bRedDst    = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-										bBlueDst   = (BYTE)((50*(bBlueDst -bBlueStateColor )+100*bBlueStateColor  ) / 100);
-										bGreenDst  = (BYTE)((50*(bGreenDst-bGreenStateColor)+100*bGreenStateColor ) / 100);
-										bRedDst    = (BYTE)((50*(bRedDst  -bRedStateColor  )+100*bRedStateColor   ) / 100);
-									}
-									else
-									{
-										bBlueDst   = bBlueStateColor;
-										bGreenDst  = bGreenStateColor;
-										bRedDst    = bRedStateColor;
-									}
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bBlueDst <<m_stBitsMaskInfo.bBShift) |
-																									      (bGreenDst<<m_stBitsMaskInfo.bGShift) |
-																										  (bRedDst  <<m_stBitsMaskInfo.bRShift));			
-								}
-								x += nCntCopyWord;
-							}
-						}
-					}
-				}
-				// ¶óÀÎÀÇ ³¡À» ´ÙÀ½ ¶óÀÎÀÇ ½ÃÀÛÀ¸·Î ¿Å°ÜÁØ´Ù.
-				nWidthEnd++;
-
-				nWidthStart	= nWidthEnd;
-				nCurrWidth = 0;
-			}
-		}
-
-		m_pddsBackBuffer->Unlock(NULL);
+		D2D1_RECT_U rect = D2D1::RectU(nX, nY, wClipWidth + nX, wClipHeight + nY);
+		m_pD2D1Bitmap1->CopyFromMemory(&rect, (const void*)pwdDst, nXSize * sizeof(DWORD));
+		m_pD2D1DeviceContext->Flush();
+		SAFE_DELETE(pwdDst);
 		return TRUE;
 	}
+	SAFE_DELETE(pwdDst);
 	return FALSE;
 }
-
-
-
 BOOL CWHDXGraphicWindow::DrawWithImageForCompClipRgnColor(INT nX, INT nY, INT nXSize, INT nYSize, WORD* pwSrc, WORD wClipWidth, WORD wClipHeight,WORD wColor , WORD wChooseColor1, WORD wChooseColor2)
 {
-	RECT			rc;
-	DDSURFACEDESC2	ddsd;
+	WORD* pwdDst = (WORD*)new DWORD[nXSize * nYSize];
+	ZeroMemory(pwdDst, nXSize * nYSize * sizeof(DWORD));
 
-	INT	nWidth		= nXSize;
-	INT	nHeight		= nYSize;
-	INT	nXOffset	= 0;
-	INT	nYOffset	= 0;
-	INT	nStartX		= 0;
-	INT	nStartY		= 0;
-	INT	nEndX		= wClipWidth -1;
-	INT	nEndY		= wClipHeight-1;
-
-	INT FiveMiddle	= 0xf;
-	INT SixMiddle	= 0x1f;
-
-	BYTE bsBlueColor,bsGreenColor,bsRedColor;
-	BYTE bdBlueColor,bdGreenColor,bdRedColor;
-
-	bdBlueColor  = (BYTE)((wColor & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-	bdGreenColor = (BYTE)((wColor & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-	bdRedColor   = (BYTE)((wColor & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-	if ( m_pddsBackBuffer != NULL )
+	if (DecodeWilImageData(nXSize, nYSize, pwSrc, pwdDst))
 	{
-		if (nX < nStartX )
-		{ 
-			nXOffset	= nStartX - nX;
-			nWidth		= nXSize - nXOffset;
-		}
-		if ( (nX+nXSize-1) > nEndX )
-			nWidth		= nEndX - nX - nXOffset + 1;		
-		if ( nY < nStartY )	
-		{ 
-			nYOffset	= nStartY - nY;
-			nHeight		= nYSize - nYOffset;
-		}		
-		if ( (nY+nYSize-1) > nEndY )
-			nHeight	= nEndY - nY - nYOffset + 1;
-
-		if ( (nWidth > 0) && (nHeight > 0) )
-		{
-			rc.left		= nXOffset;
-			rc.right	= nXOffset+nWidth;
-			rc.top		= nYOffset;
-			rc.bottom	= nYOffset+nHeight;
-
-			ddsd.dwSize	= sizeof(DDSURFACEDESC2);
-			ddsd.lpSurface = NULL;
-			
-			m_pddsBackBuffer->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
-			if ( !ddsd.lpSurface )			return FALSE;
-			WORD* pwdDst;
-			pwdDst = (WORD*)ddsd.lpSurface;
-
-			INT nWidthStart	= 0;
-			INT nWidthEnd	= 0;
-			INT nCurrWidth  = 0;
-			INT nCntCopyWord = 0;
-			INT nYCnt =0;
-			INT nLastWidth = 0;
-
-			FLOAT rBlueRate, rGreenRate, bRedRate;
-			BYTE  bRedSrc, bGreenSrc, bBlueSrc;
-			BYTE  bRedWantedColor, bGreenWantedColor, bBlueWantedColor;
-			WORD  wPixel;
-
-			// yÃà Å¬¸®ÇÎ.
-			for ( nYCnt=0 ; nYCnt < rc.top ; nYCnt++ )
-			{
-				nWidthEnd += pwSrc[nWidthStart];
-				nWidthStart++;
-				nWidthEnd++;
-				nWidthStart	= nWidthEnd;
-			}
-
-			// yÃà¿¡ ´ëÇØ¼­ ½ÇÁ¦·Î ·çÇÎ½ÃÅ³ Count¸¸À» Á¤ÇÑ´Ù.
-			for ( nYCnt=rc.top ; nYCnt < rc.bottom ; nYCnt++ )
-			{
-				// ÇÑ¶óÀÎÀÇ ±æÀÌ¸¦ ¾ò¾î¿Â´Ù.(´ÜÀ§´Â ¿öµå)
-				nWidthEnd += pwSrc[nWidthStart];
-				nWidthStart++;
-
-				// ¶óÀÎÀÇ ±æÀÌ¸¸Å­ È­¸é¿¡ »Ñ·ÁÁØ´Ù.
-				for ( INT x = nWidthStart; x < nWidthEnd ; )
-				{
-					if ( pwSrc[x] == 0xC0 )
-					{
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-						nCurrWidth += nCntCopyWord;
-					}
-					else if ( pwSrc[x] == 0xC1 )
-					{
-						x++;
-						nCntCopyWord = pwSrc[x];	// °¹¼ö
-						x++;
-
-						nLastWidth = nCurrWidth;
-						nCurrWidth += nCntCopyWord;
-
-						if ( rc.left > nCurrWidth || rc.right < nLastWidth )
-						{
-							x += nCntCopyWord;		// ¾óÅä ´çÅä ¾ÊÀº °æ¿ì
-						}
-						else
-						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
-							{
-								x += (rc.left-nLastWidth);
-
-								for(WORD i = 0 ; i < (sizeof(WORD)*(nCurrWidth-rc.left)/2);i++)
-								{
-									bsBlueColor  = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bsGreenColor = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bsRedColor   = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									BYTE	temp;
-
-									temp = (bsRedColor+(bsGreenColor>>1)+bsBlueColor)/3;
-
-									bsBlueColor = temp>0 ? (temp&bdBlueColor) : 0;
-									bsGreenColor = temp>0 ? (temp&(bdGreenColor<<1)) : 0;
-									bsRedColor = temp>0 ? (temp&bdRedColor) :  0;
-
-									if ( bsBlueColor >= 32 )  bsBlueColor = 31;
-									if ( bsGreenColor >= 64 )  bsGreenColor = 63;
-									if ( bsRedColor >= 32 )  bsRedColor = 31;
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (rc.left+nX) + i] = (bsBlueColor<<m_stBitsMaskInfo.bBShift) |  (bsGreenColor<<m_stBitsMaskInfo.bGShift) | (bsRedColor<<m_stBitsMaskInfo.bRShift);
-								}
-
-								x += (nCurrWidth-rc.left);
-							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
-							{
-								for(WORD i = 0 ; i < (sizeof(WORD)*(rc.right-nLastWidth));i++)
-								{
-									bsBlueColor  = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bsGreenColor = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bsRedColor   = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-									
-									BYTE	temp;
-
-									temp = (bsRedColor+(bsGreenColor>>1)+bsBlueColor)/3;
-
-									bsBlueColor = temp>0 ? (temp&bdBlueColor) : 0;
-									bsGreenColor = temp>0 ? (temp&(bdGreenColor<<1)) : 0;
-									bsRedColor = temp>0 ? (temp&bdRedColor) :  0;
-
-									if ( bsBlueColor >= 32 )  bsBlueColor = 31;
-									if ( bsGreenColor >= 64 )  bsGreenColor = 63;
-									if ( bsRedColor >= 32 )  bsRedColor = 31;
-									
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX) + i] = (bsBlueColor<<m_stBitsMaskInfo.bBShift) |  (bsGreenColor<<m_stBitsMaskInfo.bGShift) | (bsRedColor<<m_stBitsMaskInfo.bRShift);
-								}
-//								memcpy(&pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX)], &pwSrc[x], sizeof(WORD)*(rc.right-nLastWidth));
-								x += nCntCopyWord;
-							}
-							else
-							{
-								for(WORD i = 0 ; i < (sizeof(WORD)*nCntCopyWord/2);i++)
-								{
-									bsBlueColor  = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bsGreenColor = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bsRedColor   = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									BYTE	temp;
-
-									temp = (bsRedColor+(bsGreenColor>>1)+bsBlueColor)/3;
-
-									bsBlueColor = temp>0 ? (temp&bdBlueColor) : 0;
-									bsGreenColor = temp>0 ? (temp&(bdGreenColor<<1)) : 0;
-									bsRedColor = temp>0 ? (temp&bdRedColor) :  0;
-
-									if ( bsBlueColor >= 32 )  bsBlueColor = 31;
-									if ( bsGreenColor >= 64 )  bsGreenColor = 63;
-									if ( bsRedColor >= 32 )  bsRedColor = 31;
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX) + i] = (bsBlueColor<<m_stBitsMaskInfo.bBShift) |  (bsGreenColor<<m_stBitsMaskInfo.bGShift) | (bsRedColor<<m_stBitsMaskInfo.bRShift);
-								}
-								x += nCntCopyWord;
-							}
-						}
-					}
-					else if ( pwSrc[x] == 0xC2 || pwSrc[x] == 0xC3 )
-					{
-						WORD wDyingKind, wChooseColor;
-						wDyingKind = pwSrc[x];
-						switch ( wDyingKind )
-						{
-						case 0xC2: 
-							wChooseColor = wChooseColor1;
-							break;
-						case 0xC3: 
-							wChooseColor = wChooseColor2;
-							break;
-						}
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-
-						nLastWidth = nCurrWidth;
-						nCurrWidth += nCntCopyWord;
-
-						if ( rc.left > nCurrWidth || rc.right < nLastWidth )
-						{
-							x += nCntCopyWord;
-						}
-						else
-						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
-							{
-								x += (rc.left-nLastWidth);
-								for ( INT nCheck = 0; nCheck < nCurrWidth-rc.left; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									BYTE	temp;
-
-									temp = (bsRedColor+(bGreenWantedColor>>1)+bBlueWantedColor)/3;
-
-									bBlueWantedColor = temp>0 ? (temp&bdBlueColor) : 0;
-									bGreenWantedColor = temp>0 ? (temp&(bdGreenColor<<1)) : 0;
-									bRedWantedColor = temp>0 ? (temp&bdRedColor) :  0;
-
-									if ( bBlueWantedColor >= 32 )  bBlueWantedColor = 31;
-									if ( bGreenWantedColor >= 64 )  bGreenWantedColor = 63;
-									if ( bRedWantedColor >= 32 )  bRedWantedColor = 31;
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																										  (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																										  (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += (nCurrWidth-rc.left);
-							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
-							{
-								for ( INT nCheck = 0; nCheck < rc.right-nLastWidth; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									BYTE	temp;
-
-									temp = (bsRedColor+(bGreenWantedColor>>1)+bBlueWantedColor)/3;
-
-									bBlueWantedColor = temp>0 ? (temp&bdBlueColor) : 0;
-									bGreenWantedColor = temp>0 ? (temp&(bdGreenColor<<1)) : 0;
-									bRedWantedColor = temp>0 ? (temp&bdRedColor) :  0;
-
-									if ( bBlueWantedColor >= 32 )  bBlueWantedColor = 31;
-									if ( bGreenWantedColor >= 64 )  bGreenWantedColor = 63;
-									if ( bRedWantedColor >= 32 )  bRedWantedColor = 31;
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																										  (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																										  (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-							else
-							{
-								for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									BYTE	temp;
-
-									temp = (bsRedColor+(bGreenWantedColor>>1)+bBlueWantedColor)/3;
-
-									bBlueWantedColor = temp>0 ? (temp&bdBlueColor) : 0;
-									bGreenWantedColor = temp>0 ? (temp&(bdGreenColor<<1)) : 0;
-									bRedWantedColor = temp>0 ? (temp&bdRedColor) :  0;
-
-									if ( bBlueWantedColor >= 32 )  bBlueWantedColor = 31;
-									if ( bGreenWantedColor >= 64 )  bGreenWantedColor = 63;
-									if ( bRedWantedColor >= 32 )  bRedWantedColor = 31;
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																										  (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																									 	  (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-						}
-					}	
-				}
-				// ¶óÀÎÀÇ ³¡À» ´ÙÀ½ ¶óÀÎÀÇ ½ÃÀÛÀ¸·Î ¿Å°ÜÁØ´Ù.
-				nWidthEnd++;
-
-				nWidthStart	= nWidthEnd;
-				nCurrWidth = 0;
-			}
-		}
-
-		m_pddsBackBuffer->Unlock(NULL);
+		D2D1_RECT_U rect = D2D1::RectU(nX, nY, wClipWidth + nX, wClipHeight + nY);
+		m_pD2D1Bitmap1->CopyFromMemory(&rect, (const void*)pwdDst, nXSize * sizeof(DWORD));
+		m_pD2D1DeviceContext->Flush();
+		SAFE_DELETE(pwdDst);
 		return TRUE;
 	}
+	SAFE_DELETE(pwdDst);
 	return FALSE;
 }
 
-
-
-BOOL CWHDXGraphicWindow::DrawWithImageForCompClipRgnGray(INT nX, INT nY, INT nXSize, INT nYSize, WORD* pwSrc , WORD wClipWidth, WORD wClipHeight, WORD wChooseColor1, WORD wChooseColor2)
-{
-	RECT			rc;
-	DDSURFACEDESC2	ddsd;
-
-	INT	nWidth		= nXSize;
-	INT	nHeight		= nYSize;
-	INT	nXOffset	= 0;
-	INT	nYOffset	= 0;
-	INT	nStartX		= 0;
-	INT	nStartY		= 0;
-	INT	nEndX		= wClipWidth -1;
-	INT	nEndY		= wClipHeight-1;
-
-	INT FiveMiddle	= 0xf;
-	INT SixMiddle	= 0x1f;
-
-	BYTE bsBlueColor,bsGreenColor,bsRedColor;
-	BYTE bdBlueColor,bdGreenColor,bdRedColor;
-
-	bdBlueColor  = 0x0f;
-	bdGreenColor = 0x1f;
-	bdRedColor   = 0x0f;
-
-	if ( m_pddsBackBuffer != NULL )
-	{
-		if (nX < nStartX )
-		{ 
-			nXOffset	= nStartX - nX;
-			nWidth		= nXSize - nXOffset;
-		}
-		if ( (nX+nXSize-1) > nEndX )
-			nWidth		= nEndX - nX - nXOffset + 1;		
-		if ( nY < nStartY )	
-		{ 
-			nYOffset	= nStartY - nY;
-			nHeight		= nYSize - nYOffset;
-		}		
-		if ( (nY+nYSize-1) > nEndY )
-			nHeight	= nEndY - nY - nYOffset + 1;
-
-		if ( (nWidth > 0) && (nHeight > 0) )
-		{
-			rc.left		= nXOffset;
-			rc.right	= nXOffset+nWidth;
-			rc.top		= nYOffset;
-			rc.bottom	= nYOffset+nHeight;
-
-			ddsd.dwSize	= sizeof(DDSURFACEDESC2);
-			ddsd.lpSurface = NULL;
-			
-			m_pddsBackBuffer->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
-			if ( !ddsd.lpSurface )			return FALSE;
-			WORD* pwdDst;
-			pwdDst = (WORD*)ddsd.lpSurface;
-
-			INT nWidthStart	= 0;
-			INT nWidthEnd	= 0;
-			INT nCurrWidth  = 0;
-			INT nCntCopyWord = 0;
-			INT nYCnt =0;
-			INT nLastWidth = 0;
-
-			FLOAT rBlueRate, rGreenRate, bRedRate;
-			BYTE  bRedSrc, bGreenSrc, bBlueSrc;
-			BYTE  bRedWantedColor, bGreenWantedColor, bBlueWantedColor;
-			WORD  wPixel;
-
-			// yÃà Å¬¸®ÇÎ.
-			for ( nYCnt=0 ; nYCnt < rc.top ; nYCnt++ )
-			{
-				nWidthEnd += pwSrc[nWidthStart];
-				nWidthStart++;
-				nWidthEnd++;
-				nWidthStart	= nWidthEnd;
-			}
-
-			// yÃà¿¡ ´ëÇØ¼­ ½ÇÁ¦·Î ·çÇÎ½ÃÅ³ Count¸¸À» Á¤ÇÑ´Ù.
-			for ( nYCnt=rc.top ; nYCnt < rc.bottom ; nYCnt++ )
-			{
-				// ÇÑ¶óÀÎÀÇ ±æÀÌ¸¦ ¾ò¾î¿Â´Ù.(´ÜÀ§´Â ¿öµå)
-				nWidthEnd += pwSrc[nWidthStart];
-				nWidthStart++;
-
-				// ¶óÀÎÀÇ ±æÀÌ¸¸Å­ È­¸é¿¡ »Ñ·ÁÁØ´Ù.
-				for ( INT x = nWidthStart; x < nWidthEnd ; )
-				{
-					if ( pwSrc[x] == 0xC0 )
-					{
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-						nCurrWidth += nCntCopyWord;
-					}
-					else if ( pwSrc[x] == 0xC1 )
-					{
-						x++;
-						nCntCopyWord = pwSrc[x];	// °¹¼ö
-						x++;
-
-						nLastWidth = nCurrWidth;
-						nCurrWidth += nCntCopyWord;
-
-						if ( rc.left > nCurrWidth || rc.right < nLastWidth )
-						{
-							x += nCntCopyWord;		// ¾óÅä ´çÅä ¾ÊÀº °æ¿ì
-						}
-						else
-						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
-							{
-								x += (rc.left-nLastWidth);
-
-								for(WORD i = 0 ; i < (sizeof(WORD)*(nCurrWidth-rc.left)/2);i++)
-								{
-									bsBlueColor  = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bsGreenColor = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bsRedColor   = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									// Draw Gray 									
-									BYTE	temp;
-
-									temp = (bsRedColor+bsGreenColor/2+bsBlueColor)/3;
-
-									bsBlueColor = temp>0 ? (temp) : 0;
-									bsGreenColor = temp>0 ? (temp<<1) : 0;
-									bsRedColor = temp>0 ? (temp) :  0;									
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (rc.left+nX) + i] = (bsBlueColor<<m_stBitsMaskInfo.bBShift) |  (bsGreenColor<<m_stBitsMaskInfo.bGShift) | (bsRedColor<<m_stBitsMaskInfo.bRShift);
-								}
-
-								x += (nCurrWidth-rc.left);
-							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
-							{
-								for(WORD i = 0 ; i < (sizeof(WORD)*(rc.right-nLastWidth));i++)
-								{
-									bsBlueColor  = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bsGreenColor = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bsRedColor   = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									// Draw Gray 									
-
-									BYTE	temp;
-
-									temp = (bsRedColor+bsGreenColor/2+bsBlueColor)/3;
-
-									bsBlueColor = temp>0 ? (temp) : 0;
-									bsGreenColor = temp>0 ? (temp<<1) : 0;
-									bsRedColor = temp>0 ? (temp) :  0;
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX) + i] = (bsBlueColor<<m_stBitsMaskInfo.bBShift) |  (bsGreenColor<<m_stBitsMaskInfo.bGShift) | (bsRedColor<<m_stBitsMaskInfo.bRShift);
-								}
-//								memcpy(&pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX)], &pwSrc[x], sizeof(WORD)*(rc.right-nLastWidth));
-								x += nCntCopyWord;
-							}
-							else
-							{
-								for(WORD i = 0 ; i < (sizeof(WORD)*nCntCopyWord/2);i++)
-								{
-									bsBlueColor  = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bsGreenColor = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bsRedColor   = (BYTE)((pwSrc[x+i] & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-									// Draw Gray 
-									BYTE	temp;
-
-									temp = (bsRedColor+bsGreenColor/2+bsBlueColor)/3;
-
-									bsBlueColor = temp>0 ? (temp) : 0;
-									bsGreenColor = temp>0 ? (temp<<1) : 0;
-									bsRedColor = temp>0 ? (temp) :  0;
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX) + i] = (bsBlueColor<<m_stBitsMaskInfo.bBShift) |  (bsGreenColor<<m_stBitsMaskInfo.bGShift) | (bsRedColor<<m_stBitsMaskInfo.bRShift);
-								}
-								x += nCntCopyWord;
-							}
-						}
-					}
-					else if ( pwSrc[x] == 0xC2 || pwSrc[x] == 0xC3 )
-					{
-						WORD wDyingKind, wChooseColor;
-						wDyingKind = pwSrc[x];
-						switch ( wDyingKind )
-						{
-						case 0xC2: 
-							wChooseColor = wChooseColor1;
-							break;
-						case 0xC3: 
-							wChooseColor = wChooseColor2;
-							break;
-						}
-						x++;
-						nCntCopyWord = pwSrc[x];
-						x++;
-
-						nLastWidth = nCurrWidth;
-						nCurrWidth += nCntCopyWord;
-
-						if ( rc.left > nCurrWidth || rc.right < nLastWidth )
-						{
-							x += nCntCopyWord;
-						}
-						else
-						{
-							// rc.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							if ( nLastWidth < rc.left && rc.left <= nCurrWidth )
-							{
-								x += (rc.left-nLastWidth);
-								for ( INT nCheck = 0; nCheck < nCurrWidth-rc.left; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									// Draw Gray 
-									BYTE	temp;
-									temp = (bRedWantedColor+bGreenWantedColor/2+bBlueWantedColor)/3;
-
-									bBlueWantedColor = temp>0 ? (temp) : 0;
-									bGreenWantedColor = temp>0 ? (temp<<1) : 0;
-									bRedWantedColor = temp>0 ? (temp) :  0;
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																										  (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																										  (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += (nCurrWidth-rc.left);
-							}
-							// rc.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-							else if ( nLastWidth <= rc.right && rc.right < nCurrWidth )
-							{
-								for ( INT nCheck = 0; nCheck < rc.right-nLastWidth; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-									// Draw Gray 
-									BYTE	temp;
-									temp = (bRedWantedColor+bGreenWantedColor/2+bBlueWantedColor)/3;
-
-									bBlueWantedColor = temp>0 ? (temp) : 0;
-									bGreenWantedColor = temp>0 ? (temp<<1) : 0;
-									bRedWantedColor = temp>0 ? (temp) :  0;
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																										  (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																										  (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-							else
-							{
-								for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-								{
-									wPixel	  = wChooseColor;
-									bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									wPixel	  = pwSrc[x+nCheck];
-									bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-									bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-									bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-									rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-									rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-									bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-									bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-									bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-									bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-									if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-										bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-									if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-										bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-									if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-										bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-									
-									// Draw Gray 
-									BYTE	temp;
-									temp = (bRedWantedColor+bGreenWantedColor/2+bBlueWantedColor)/3;
-
-									bBlueWantedColor = temp>0 ? (temp) : 0;
-									bGreenWantedColor = temp>0 ? (temp<<1) : 0;
-									bRedWantedColor = temp>0 ? (temp) :  0;
-
-									pwdDst[((nYCnt+nY) * (ddsd.lPitch >> 1)) + (nLastWidth+nX+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																										  (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																									 	  (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-								}
-								x += nCntCopyWord;
-							}
-						}
-					}	
-				}
-				// ¶óÀÎÀÇ ³¡À» ´ÙÀ½ ¶óÀÎÀÇ ½ÃÀÛÀ¸·Î ¿Å°ÜÁØ´Ù.
-				nWidthEnd++;
-
-				nWidthStart	= nWidthEnd;
-				nCurrWidth = 0;
-			}
-		}
-
-		m_pddsBackBuffer->Unlock(NULL);
-		return TRUE;
-	}
-	return FALSE;
-}
-
-
-VOID CWHDXGraphicWindow::DrawWithGrayBackBuffer()
-{
-	DDSURFACEDESC2	ddsd;
-	RECT			rc = {0, 0, 800, 500};
-
-	if ( m_pddsBackBuffer == NULL )			return;
-
-	ddsd.dwSize	= sizeof(DDSURFACEDESC2);
-	ddsd.lpSurface = NULL;
-		
-	m_pddsBackBuffer->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
-	if ( !ddsd.lpSurface )		return;
-	WORD *pwdSrc, *pwdDst;
-	BYTE bsBlueColor, bsGreenColor, bsRedColor;
-	pwdDst = (WORD*)ddsd.lpSurface;
-	pwdSrc = (WORD*)ddsd.lpSurface;
-
-	for ( INT y=rc.top ; y < rc.bottom ; y++ )
-	{
-		for ( INT x=rc.left ; x < rc.right ; x++ )
-		{
-			bsBlueColor  = (BYTE)((pwdSrc[y * (ddsd.lPitch >> 1) + x] & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-			bsGreenColor = (BYTE)((pwdSrc[y * (ddsd.lPitch >> 1) + x] & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-			bsRedColor   = (BYTE)((pwdSrc[y * (ddsd.lPitch >> 1) + x] & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-			// Draw Gray 									
-			BYTE	temp;
-
-			temp = (bsRedColor+bsGreenColor/2+bsBlueColor)/3;
-
-			bsBlueColor  = temp>0 ? (temp)    : 0;
-			bsGreenColor = temp>0 ? (temp<<1) : 0;
-			bsRedColor   = temp>0 ? (temp)    : 0;									
-
-			pwdDst[y * (ddsd.lPitch >> 1) + x] = (bsBlueColor<<m_stBitsMaskInfo.bBShift) |  (bsGreenColor<<m_stBitsMaskInfo.bGShift) | (bsRedColor<<m_stBitsMaskInfo.bRShift);
-		}
-	}
-
-	m_pddsBackBuffer->Unlock(NULL);
-}
-
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::DrawWithImageForCompClipRgnToMem()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : ¾ÐÃàµÈ ¼Ò½º ÀÌ¹ÌÁöÀÇ ¿øÇÏ´Â »çÀÌÁî ¾ÐÃàÀ» Ç®Àº »óÅÂ·Î Àü´Þ¹ÞÀº ¸Þ¸ð¸®(pwDst)¿¡ Ä«ÇÇÇÑ´Ù.
-
-	ÀÔ·Â   : INT nStartX
-	         INT nStartY
-	         INT nWantedXSize
-	         INT nWantedYSize
-	         WORD* pwSrc
-	         WORD wClipWidth
-	         WORD wClipHeight
-	         WORD wChooseColor1
-	         WORD wChooseColor2
-	Ãâ·Â   : BOOL
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
-BOOL CWHDXGraphicWindow::DrawWithImageForCompColorToMem(RECT rcWanted, WORD* pwSrc, WORD wColor, WORD* pwDst)
-{
-	if ( rcWanted.left < 0 || rcWanted.right < 0 || rcWanted.top < 0 || rcWanted.bottom < 0 ||
-		 rcWanted.right - rcWanted.left < 0 || rcWanted.bottom - rcWanted.top < 0 || pwDst == NULL )
-		 return FALSE;
-
-	INT nWidthStart		= 0;
-	INT nWidthEnd		= 0;
-	INT nCurrWidth		= 0;
-	INT nCntCopyWord	= 0;
-	INT nYCnt			= 0;
-	INT nLastWidth		= 0;
-
-	// yÃà Å¬¸®ÇÎ.
-  	for ( nYCnt=0 ; nYCnt < rcWanted.top ; nYCnt++ )
-	{
- 		nWidthEnd += pwSrc[nWidthStart];
-		nWidthStart++;
-		nWidthEnd++;
-		nWidthStart	= nWidthEnd;
-	}
-
-	INT nNewCurrWidth = 0;
-
-	FLOAT rBlueRate, rGreenRate, rRedRate;
-	BYTE  bRedSrc, bGreenSrc, bBlueSrc;
-	BYTE  bRedStateColor, bGreenStateColor, bBlueStateColor;
-	WORD  wPixel;
-
-	// yÃà¿¡ ´ëÇØ¼­ ½ÇÁ¦·Î ·çÇÎ½ÃÅ³ Count¸¸À» Á¤ÇÑ´Ù.
-	for ( nYCnt=rcWanted.top ; nYCnt < rcWanted.bottom ; nYCnt++ )
-	{
-		// ÇÑ¶óÀÎÀÇ ±æÀÌ¸¦ ¾ò¾î¿Â´Ù.(´ÜÀ§´Â ¿öµå)
-		nWidthEnd += pwSrc[nWidthStart];
-		nWidthStart++;
-
-		// ¶óÀÎÀÇ ±æÀÌ¸¸Å­ È­¸é¿¡ »Ñ·ÁÁØ´Ù.
-		for ( INT x = nWidthStart; x < nWidthEnd ; )
-		{
-			if ( pwSrc[x] == 0xC0 )
-			{
-				x++;
-				nCntCopyWord = pwSrc[x];
-				x++;
-				nLastWidth = nCurrWidth;
-				nCurrWidth += nCntCopyWord;
-
-				// rcWanted.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-				if ( nLastWidth <= rcWanted.left && nCurrWidth >= rcWanted.right )
-				{
-					memset(&pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left))  + nNewCurrWidth], 0, sizeof(WORD)*(rcWanted.right-rcWanted.left));
-					nNewCurrWidth += rcWanted.right-rcWanted.left;
-				}
-				else if ( nLastWidth < rcWanted.left && nCurrWidth > rcWanted.left )
-				{
-					memset(&pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + nNewCurrWidth], 0, sizeof(WORD)*(nCurrWidth-rcWanted.left));
-					nNewCurrWidth += nCurrWidth-rcWanted.left;
-				}
-				else if ( nLastWidth >= rcWanted.left && nCurrWidth <= rcWanted.right )
-				{
-					memset(&pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left))  + nNewCurrWidth], 0, sizeof(WORD)*(nCntCopyWord));
-					nNewCurrWidth += nCntCopyWord;
-				}
-				// rcWanted.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-				else if ( nLastWidth < rcWanted.right && nCurrWidth > rcWanted.right )
-				{
-					memset(&pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + nNewCurrWidth], 0, sizeof(WORD)*(rcWanted.right-nLastWidth));
-					nNewCurrWidth += rcWanted.right-nLastWidth;
-				}
-			}
-			else if ( pwSrc[x] == 0xC1 || pwSrc[x] == 0xC2 || pwSrc[x] == 0xC3 )
-			{
-				x++;
-				nCntCopyWord = pwSrc[x];
-				x++;
-
-				nLastWidth = nCurrWidth;
-				nCurrWidth += nCntCopyWord;
-
-				if ( rcWanted.left > nCurrWidth || rcWanted.right < nLastWidth )
-				{
-					x += nCntCopyWord;
-				}
-				else
-				{
-					// rcWanted.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-					if ( nLastWidth <= rcWanted.left && nCurrWidth >= rcWanted.right )
-					{
-						x += (rcWanted.left-nLastWidth);
-						for ( INT nCheck = 0; nCheck < rcWanted.right-rcWanted.left; nCheck++ )
-						{
-							wPixel = wColor;
-							bBlueStateColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenStateColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedStateColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							wPixel = pwSrc[x+nCheck];
-							bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							if ( !wColor )	
-							{
-								BYTE bTemp = (BYTE)(bBlueSrc+(bGreenSrc>>1)+bRedSrc)/3;
-								if ( bTemp > 31 )	bTemp = 31;
-								bBlueStateColor = bRedStateColor = bTemp;
-								bGreenStateColor = bTemp<<1;
-							}
-							else
-							{
-								rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-								rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-								rRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-								bBlueStateColor  = (BYTE)((FLOAT)bBlueStateColor *rBlueRate );
-								bGreenStateColor = (BYTE)((FLOAT)bGreenStateColor*rGreenRate);
-								bRedStateColor   = (BYTE)((FLOAT)bRedStateColor  *rRedRate  );
-
-								if ( bBlueStateColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-									bBlueStateColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-								if ( bGreenStateColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-									bGreenStateColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-								if ( bRedStateColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-									bRedStateColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-							}
-
-							if ( !bRedStateColor && !bGreenStateColor && !bBlueStateColor )		bRedStateColor = bGreenStateColor = bBlueStateColor = 1;
-
-							pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + (nNewCurrWidth+nCheck)] = ((bRedStateColor  <<m_stBitsMaskInfo.bRShift) |
-																													   (bGreenStateColor<<m_stBitsMaskInfo.bGShift) |
-																													   (bBlueStateColor <<m_stBitsMaskInfo.bBShift));			
-						}
-						nNewCurrWidth += rcWanted.right-rcWanted.left;
-						x += (nCurrWidth-rcWanted.left);
-					}
-					else if ( nLastWidth < rcWanted.left && nCurrWidth > rcWanted.left )
-					{
-						x += (rcWanted.left-nLastWidth);
-						for ( INT nCheck = 0; nCheck < nCurrWidth-rcWanted.left; nCheck++ )
-						{
-							wPixel = wColor;
-							bBlueStateColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenStateColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedStateColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							wPixel = pwSrc[x+nCheck];
-							bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							if ( !wColor )	
-							{
-								BYTE bTemp = (BYTE)(bBlueSrc+(bGreenSrc>>1)+bRedSrc)/3;
-								if ( bTemp > 31 )	bTemp = 31;
-								bBlueStateColor = bRedStateColor = bTemp;
-								bGreenStateColor = bTemp<<1;
-							}
-							else
-							{
-								rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-								rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-								rRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-								bBlueStateColor  = (BYTE)((FLOAT)bBlueStateColor *rBlueRate );
-								bGreenStateColor = (BYTE)((FLOAT)bGreenStateColor*rGreenRate);
-								bRedStateColor   = (BYTE)((FLOAT)bRedStateColor  *rRedRate  );
-
-								if ( bBlueStateColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-									bBlueStateColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-								if ( bGreenStateColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-									bGreenStateColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-								if ( bRedStateColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-									bRedStateColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-							}
-
-							if ( !bRedStateColor && !bGreenStateColor && !bBlueStateColor )		bRedStateColor = bGreenStateColor = bBlueStateColor = 1;
-
-							pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + (nNewCurrWidth+nCheck)] = ((bRedStateColor  <<m_stBitsMaskInfo.bRShift) |
-																													   (bGreenStateColor<<m_stBitsMaskInfo.bGShift) |
-																													   (bBlueStateColor <<m_stBitsMaskInfo.bBShift));										
-						}
-						nNewCurrWidth += nCurrWidth-rcWanted.left;
-						x += (nCurrWidth-rcWanted.left);
-					}
-					else if ( nLastWidth >= rcWanted.left && nCurrWidth <= rcWanted.right )
-					{
-						for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-						{
-							wPixel = wColor;
-							bBlueStateColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenStateColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedStateColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							wPixel = pwSrc[x+nCheck];
-							bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							if ( !wColor )	
-							{
-								BYTE bTemp = (BYTE)(bBlueSrc+(bGreenSrc>>1)+bRedSrc)/3;
-								if ( bTemp > 31 )	bTemp = 31;
-								bBlueStateColor = bRedStateColor = bTemp;
-								bGreenStateColor = bTemp<<1;
-							}
-							else
-							{
-								if ( nCheck == 17 )
-									int b = 0;
-
-								rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-								rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-								rRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-								bBlueStateColor  = (BYTE)((FLOAT)bBlueStateColor *rBlueRate );
-								bGreenStateColor = (BYTE)((FLOAT)bGreenStateColor*rGreenRate);
-								bRedStateColor   = (BYTE)((FLOAT)bRedStateColor  *rRedRate  );
-
-								if ( bBlueStateColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-									bBlueStateColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-								if ( bGreenStateColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-									bGreenStateColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-								if ( bRedStateColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-									bRedStateColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-							}
-
-							if ( !bRedStateColor && !bGreenStateColor && !bBlueStateColor )		bRedStateColor = bGreenStateColor = bBlueStateColor = 1;
-
-							pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + (nNewCurrWidth+nCheck)] = ((bRedStateColor  <<m_stBitsMaskInfo.bRShift) |
-																													   (bGreenStateColor<<m_stBitsMaskInfo.bGShift) |
-																													   (bBlueStateColor <<m_stBitsMaskInfo.bBShift));			
-						}
-						nNewCurrWidth += nCntCopyWord;
-						x += nCntCopyWord;
-					}
-					// rcWanted.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-					else if ( nLastWidth < rcWanted.right && nCurrWidth > rcWanted.right )
-					{
-						for ( INT nCheck = 0; nCheck < rcWanted.right-nLastWidth; nCheck++ )
-						{
-							wPixel = wColor;
-							bBlueStateColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenStateColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedStateColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							wPixel = pwSrc[x+nCheck];
-							bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							if ( !wColor )	
-							{
-								BYTE bTemp = (BYTE)(bBlueSrc+(bGreenSrc>>1)+bRedSrc)/3;
-								if ( bTemp > 31 )	bTemp = 31;
-								bBlueStateColor = bRedStateColor = bTemp;
-								bGreenStateColor = bTemp<<1;
-							}
-							else
-							{
-								rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-								rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-								rRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-								bBlueStateColor  = (BYTE)((FLOAT)bBlueStateColor *rBlueRate );
-								bGreenStateColor = (BYTE)((FLOAT)bGreenStateColor*rGreenRate);
-								bRedStateColor   = (BYTE)((FLOAT)bRedStateColor  *rRedRate  );
-
-								if ( bBlueStateColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-									bBlueStateColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-								if ( bGreenStateColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-									bGreenStateColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-								if ( bRedStateColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-									bRedStateColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-							}
-
-							if ( !bRedStateColor && !bGreenStateColor && !bBlueStateColor )		bRedStateColor = bGreenStateColor = bBlueStateColor = 1;
-
-							pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + (nNewCurrWidth+nCheck)] = ((bRedStateColor  <<m_stBitsMaskInfo.bRShift) |
-																													   (bGreenStateColor<<m_stBitsMaskInfo.bGShift) |
-																													   (bBlueStateColor <<m_stBitsMaskInfo.bBShift));			
-						}
-						nNewCurrWidth += rcWanted.right-nLastWidth;
-						x += nCntCopyWord;
-					}
-					else
-					{
-						x += nCntCopyWord;
-					}
-				}
-			}	
-		}
-		// ¶óÀÎÀÇ ³¡À» ´ÙÀ½ ¶óÀÎÀÇ ½ÃÀÛÀ¸·Î ¿Å°ÜÁØ´Ù.
-		nWidthEnd++;
-
-		nWidthStart	= nWidthEnd;
-		nCurrWidth = 0;
-		nNewCurrWidth = 0;
-	}
-	return TRUE;
-}
-
-
-
-
-BOOL CWHDXGraphicWindow::DrawWithImageForCompToMem(RECT rcWanted, WORD* pwSrc, WORD wChooseColor1, WORD wChooseColor2, WORD* pwDst)
-{
-	if ( rcWanted.left < 0 || rcWanted.right < 0 || rcWanted.top < 0 || rcWanted.bottom < 0 ||
-		 rcWanted.right - rcWanted.left < 0 || rcWanted.bottom - rcWanted.top < 0 || pwDst == NULL )
-		 return FALSE;
-
-	INT nWidthStart		= 0;
-	INT nWidthEnd		= 0;
-	INT nCurrWidth		= 0;
-	INT nCntCopyWord	= 0;
-	INT nYCnt			= 0;
-	INT nLastWidth		= 0;
-
-	// yÃà Å¬¸®ÇÎ.
-  	for ( nYCnt=0 ; nYCnt < rcWanted.top ; nYCnt++ )
-	{
- 		nWidthEnd += pwSrc[nWidthStart];
-		nWidthStart++;
-		nWidthEnd++;
-		nWidthStart	= nWidthEnd;
-	}
-
-	INT nNewCurrWidth = 0;
-
-	FLOAT rBlueRate, rGreenRate, bRedRate;
-	BYTE  bRedSrc, bGreenSrc, bBlueSrc;
-	BYTE  bRedWantedColor, bGreenWantedColor, bBlueWantedColor;
-	WORD  wPixel;
-
-	// yÃà¿¡ ´ëÇØ¼­ ½ÇÁ¦·Î ·çÇÎ½ÃÅ³ Count¸¸À» Á¤ÇÑ´Ù.
-	for ( nYCnt=rcWanted.top ; nYCnt < rcWanted.bottom ; nYCnt++ )
-	{
-		// ÇÑ¶óÀÎÀÇ ±æÀÌ¸¦ ¾ò¾î¿Â´Ù.(´ÜÀ§´Â ¿öµå)
-		nWidthEnd += pwSrc[nWidthStart];
-		nWidthStart++;
-
-		// ¶óÀÎÀÇ ±æÀÌ¸¸Å­ È­¸é¿¡ »Ñ·ÁÁØ´Ù.
-		for ( INT x = nWidthStart; x < nWidthEnd ; )
-		{
-			if ( pwSrc[x] == 0xC0 )
-			{
-				x++;
-				nCntCopyWord = pwSrc[x];
-				x++;
-				nLastWidth = nCurrWidth;
-				nCurrWidth += nCntCopyWord;
-
-				// rcWanted.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-				if ( nLastWidth <= rcWanted.left && nCurrWidth >= rcWanted.right )
-				{
-					memset(&pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left))  + nNewCurrWidth], 0, sizeof(WORD)*(rcWanted.right-rcWanted.left));
-					nNewCurrWidth += rcWanted.right-rcWanted.left;
-				}
-				else if ( nLastWidth < rcWanted.left && nCurrWidth > rcWanted.left )
-				{
-					memset(&pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + nNewCurrWidth], 0, sizeof(WORD)*(nCurrWidth-rcWanted.left));
-					nNewCurrWidth += nCurrWidth-rcWanted.left;
-				}
-				else if ( nLastWidth >= rcWanted.left && nCurrWidth <= rcWanted.right )
-				{
-					memset(&pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left))  + nNewCurrWidth], 0, sizeof(WORD)*(nCntCopyWord));
-					nNewCurrWidth += nCntCopyWord;
-				}
-				// rcWanted.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-				else if ( nLastWidth < rcWanted.right && nCurrWidth > rcWanted.right )
-				{
-					memset(&pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + nNewCurrWidth], 0, sizeof(WORD)*(rcWanted.right-nLastWidth));
-					nNewCurrWidth += rcWanted.right-nLastWidth;
-				}
-			}
-			else if ( pwSrc[x] == 0xC1 )
-			{
-				x++;
-				nCntCopyWord = pwSrc[x];
-				x++;
-
-				nLastWidth = nCurrWidth;
-				nCurrWidth += nCntCopyWord;
-
-				if ( rcWanted.left > nCurrWidth || rcWanted.right < nLastWidth )
-				{
-					x += nCntCopyWord;
-				}
-				else
-				{
-					// rcWanted.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-					if ( nLastWidth <= rcWanted.left && nCurrWidth >= rcWanted.right )
-					{
-						x += (rcWanted.left-nLastWidth);
-						memcpy(&pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + nNewCurrWidth], &pwSrc[x], sizeof(WORD)*(rcWanted.right-rcWanted.left));
-						nNewCurrWidth += rcWanted.right-rcWanted.left;
-						x += (nCurrWidth-rcWanted.left);
-					}
-					else if ( nLastWidth < rcWanted.left && nCurrWidth > rcWanted.left )
-					{
-						x += (rcWanted.left-nLastWidth);
-						memcpy(&pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + nNewCurrWidth], &pwSrc[x], sizeof(WORD)*(nCurrWidth-rcWanted.left));
-						nNewCurrWidth += nCurrWidth-rcWanted.left;
-						x += (nCurrWidth-rcWanted.left);
-					}
-					else if ( nLastWidth >= rcWanted.left && nCurrWidth <= rcWanted.right )
-					{
-						memcpy(&pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + nNewCurrWidth], &pwSrc[x], sizeof(WORD)*nCntCopyWord);
-						nNewCurrWidth += nCntCopyWord;
-						x += nCntCopyWord;
-					}
-					// rcWanted.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-					else if ( nLastWidth < rcWanted.right && nCurrWidth > rcWanted.right )
-					{
-						memcpy(&pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + nNewCurrWidth], &pwSrc[x], sizeof(WORD)*(rcWanted.right-nLastWidth));
-						nNewCurrWidth += rcWanted.right-nLastWidth;
-						x += nCntCopyWord;
-					}
-					else
-					{
-						x += nCntCopyWord;
-					}
-				}
-			}
-			else if ( pwSrc[x] == 0xC2 || pwSrc[x] == 0xC3 )
-			{
-				WORD wDyingKind, wChooseColor;
-				wDyingKind = pwSrc[x];
-				switch ( wDyingKind )
-				{
-				case 0xC2: 
-					wChooseColor = wChooseColor1;
-					break;
-				case 0xC3: 
-					wChooseColor = wChooseColor2;
-					break;
-				}
-				x++;
-				nCntCopyWord = pwSrc[x];
-				x++;
-
-				nLastWidth = nCurrWidth;
-				nCurrWidth += nCntCopyWord;
-
-				if ( rcWanted.left > nCurrWidth || rcWanted.right < nLastWidth )
-				{
-					x += nCntCopyWord;
-				}
-				else
-				{
-					// rcWanted.leftÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-					if ( nLastWidth <= rcWanted.left && nCurrWidth >= rcWanted.right )
-					{
-						x += (rcWanted.left-nLastWidth);
-						for ( INT nCheck = 0; nCheck < rcWanted.right-rcWanted.left; nCheck++ )
-						{
-							wPixel	  = wChooseColor;
-							bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							wPixel	  = pwSrc[x+nCheck];
-							bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-							rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-							bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-							bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-							bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-							bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-							if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-								bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-							if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-								bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-							if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-								bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-							pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + (nNewCurrWidth+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																													   (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																													   (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-						}
-						nNewCurrWidth += rcWanted.right-rcWanted.left;
-						x += (nCurrWidth-rcWanted.left);
-					}
-					else if ( nLastWidth < rcWanted.left && nCurrWidth > rcWanted.left )
-					{
-						x += (rcWanted.left-nLastWidth);
-						for ( INT nCheck = 0; nCheck < nCurrWidth-rcWanted.left; nCheck++ )
-						{
-							wPixel	  = wChooseColor;
-							bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							wPixel	  = pwSrc[x+nCheck];
-							bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-							rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-							bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-							bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-							bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-							bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-							if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-								bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-							if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-								bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-							if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-								bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-							pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + (nNewCurrWidth+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																													   (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																													   (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));										
-						}
-						nNewCurrWidth += nCurrWidth-rcWanted.left;
-						x += (nCurrWidth-rcWanted.left);
-					}
-					else if ( nLastWidth >= rcWanted.left && nCurrWidth <= rcWanted.right )
-					{
-						for ( INT nCheck = 0; nCheck < nCntCopyWord; nCheck++ )
-						{
-							wPixel	  = wChooseColor;
-							bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							wPixel	  = pwSrc[x+nCheck];
-							bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-							rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-							bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-							bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-							bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-							bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-							if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-								bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-							if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-								bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-							if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-								bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-							pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + (nNewCurrWidth+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																													   (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																													   (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-						}
-						nNewCurrWidth += nCntCopyWord;
-						x += nCntCopyWord;
-					}
-					// rcWanted.rightÁ¡À» ±âÁØÀ¸·Î Ä«ÇÇÇÒ ¿µ¿ªÀÌ °É¸° °æ¿ì.
-					else if ( nLastWidth < rcWanted.right && nCurrWidth > rcWanted.right )
-					{
-						for ( INT nCheck = 0; nCheck < rcWanted.right-nLastWidth; nCheck++ )
-						{
-							wPixel	  = wChooseColor;
-							bBlueWantedColor  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenWantedColor = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedWantedColor   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							wPixel	  = pwSrc[x+nCheck];
-							bBlueSrc  = (BYTE)((wPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-							bGreenSrc = (BYTE)((wPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-							bRedSrc   = (BYTE)((wPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-							rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-							rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-							bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-							bBlueWantedColor = (BYTE)(((FLOAT)bBlueWantedColor*rBlueRate));
-							bGreenWantedColor = (BYTE)(((FLOAT)bGreenWantedColor*rGreenRate));
-							bRedWantedColor = (BYTE)(((FLOAT)bRedWantedColor*bRedRate));
-
-							if ( bBlueWantedColor > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-								bBlueWantedColor = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-							if ( bGreenWantedColor > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-								bGreenWantedColor = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-							if ( bRedWantedColor > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-								bRedWantedColor = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-
-							pwDst[((nYCnt-rcWanted.top) * (rcWanted.right-rcWanted.left)) + (nNewCurrWidth+nCheck)] = ((bRedWantedColor  <<m_stBitsMaskInfo.bRShift) |
-																													   (bGreenWantedColor<<m_stBitsMaskInfo.bGShift) |
-																													   (bBlueWantedColor <<m_stBitsMaskInfo.bBShift));			
-						}
-						nNewCurrWidth += rcWanted.right-nLastWidth;
-						x += nCntCopyWord;
-					}
-					else
-					{
-						x += nCntCopyWord;
-					}
-				}
-			}	
-		}
-		// ¶óÀÎÀÇ ³¡À» ´ÙÀ½ ¶óÀÎÀÇ ½ÃÀÛÀ¸·Î ¿Å°ÜÁØ´Ù.
-		nWidthEnd++;
-
-		nWidthStart	= nWidthEnd;
-		nCurrWidth = 0;
-		nNewCurrWidth = 0;
-	}
-	return TRUE;
-}
-
-
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::DrawWithABlendForIntersectCompData()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : INT nX					: ¹é¹öÆÛ»óÀÇ ±×¸²½ÃÀÛÀ§Ä¡.
-	         INT nY					
-	         INT nSrcXSize			: ¿øº»±×¸²ÀÇ »çÀÌÁî.
-	         INT nSrcYSize
-	         WORD* pwSrc			: ¿øº»±×¸²ÀÇ µ¥ÀÌÅ¸.
-	         INT nDstXSize			: Å¸°Ù±×¸²ÀÇ »çÀÌÁî.
-	         INT nDstYSize
-	         WORD* pwDst			: Å¸°Ù±×¸²ÀÇ µ¥ÀÌÅ¸.
-	         WORD wSrcChooseColor1	: ¿øº»±×¸²ÀÇ ¿°»ö ÀÌ¹ÌÁö1 ÄÃ·¯.
-	         WORD wSrcChooseColor2
-	         WORD wDstChooseColor1	: Å¸°Ù±×¸²ÀÇ ¿°»ö ÀÌ¹ÌÁö1 ÄÃ·¯.
-	         WORD wDstChooseColor2
-	Ãâ·Â   : BOOL 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
-BOOL CWHDXGraphicWindow::DrawWithABlendForIntersectCompData(INT nSrcX, INT nSrcY, 
-															INT nSrcXSize, INT nSrcYSize, WORD* pwSrc,
-															INT nDstX, INT nDstY,
-															INT nDstXSize, INT nDstYSize, WORD* pwDst,
-															WORD wClipWidth, WORD wClipHeight,
-															BYTE bOpa, BOOL bFocused,
-															WORD wSrcChooseColor1, WORD wSrcChooseColor2, 
-															WORD wDstChooseColor1, WORD wDstChooseColor2,
-															WORD wSrcColor, WORD wDstColor)
-{
-	DDSURFACEDESC2	ddsd;
-	RECT rcSrc, rcDst;
-	RECT rcSrcIntersect = { 0, 0, 0, 0 };
-	RECT rcDstIntersect = { 0, 0, 0, 0 };
-	WORD* pwdDst = NULL;
-
-	INT	nSrcWidth	= nSrcXSize;
-	INT	nSrcHeight	= nSrcYSize;
-	INT	nXSrcOffset	= 0;
-	INT	nYSrcOffset	= 0;
-
-	INT	nDstWidth	= nDstXSize;
-	INT	nDstHeight	= nDstYSize;
-	INT	nXDstOffset	= 0;
-	INT	nYDstOffset	= 0;
-
-	INT	nEndX		= wClipWidth -1;
-	INT	nEndY		= wClipHeight-1;
-	INT	nStartX		= 0;
-	INT	nStartY		= 0;
-
-	WORD* pwDstSave = NULL;
-	WORD* pwSrcSave = NULL;
-
-	if ( m_pddsBackBuffer != NULL )
-	{
-		// SourceÀÇ È­¸éÅ¬¸®ÇÎÇÑ ¿µ¿ª.
-		if ( nSrcX < nStartX )
-		{ 
-			nXSrcOffset	= nStartX - nSrcX;
-			nSrcWidth	= nSrcXSize - nXSrcOffset;
-		}
-		if ( (nSrcX+nSrcXSize-1) > nEndX )
-			nSrcWidth	= nEndX - nSrcX - nXSrcOffset + 1;		
-		if ( nSrcY < nStartY )	
-		{ 
-			nYSrcOffset	= nStartY - nSrcY;
-			nSrcHeight	= nSrcYSize - nYSrcOffset;
-		}		
-		if ( (nSrcY+nSrcYSize-1) > nEndY )
-			nSrcHeight	= nEndY - nSrcY - nYSrcOffset + 1;
-
-		if ( (nSrcWidth > 0) && (nSrcHeight > 0) )
-		{
-			// Source¿µ¿ªÀÇ ¼³Á¤.
-			rcSrc.left		= nXSrcOffset;
-			rcSrc.right		= nXSrcOffset+nSrcWidth;
-			rcSrc.top		= nYSrcOffset;
-			rcSrc.bottom	= nYSrcOffset+nSrcHeight;
-
-			// DestinationÀÇ È­¸éÅ¬¸®ÇÎÇÑ ¿µ¿ª.
-			if ( nDstX < nStartX )
-			{ 
-				nXDstOffset	= nStartX - nDstX;
-				nDstWidth	= nDstXSize - nXDstOffset;
-			}
-			if ( (nDstX+nDstXSize-1) > nEndX )
-				nDstWidth	= nEndX - nDstX - nXDstOffset + 1;		
-			if ( nDstY < nStartY )	
-			{ 
-				nYDstOffset	= nStartY - nDstY;
-				nDstHeight	= nDstYSize - nYDstOffset;
-			}		
-			if ( (nDstY+nDstYSize-1) > nEndY )
-				nDstHeight	= nEndY - nDstY - nYDstOffset + 1;
-
-			if ( (nDstWidth > 0) && (nDstHeight > 0) )
-			{
-				// Destination¿µ¿ªÀÇ ¼³Á¤.
-				rcDst.left		= nXDstOffset;
-				rcDst.right		= nXDstOffset+nDstWidth;
-				rcDst.top		= nYDstOffset;
-				rcDst.bottom	= nYDstOffset+nDstHeight;
-
-				// µÎÀÌ¹ÌÁöÀÇ °ãÄ¡´Â ¿µ¿ªÀ» ±¸ÇÑ´Ù.
-				RECT rcTemp;
-
-				// ¼Ò½º¿µ¿ª¿¡ »ó´ëÀûÀÎ µ¥½ºÆ®¿µ¿ªÀ» ±¸ÇÑ´Ù.
-				rcTemp.left = rcDst.left + (nDstX-nSrcX);
-				rcTemp.top = rcDst.top + (nDstY-nSrcY);
-				rcTemp.right = rcDst.right + (nDstX-nSrcX);
-				rcTemp.bottom = rcDst.bottom + (nDstY-nSrcY);
-
-				// ¼Ò½º ·ºÆ®¿µ¿ªÀ» ±âÁØÀ¸·Î ÇÑ µÎ »ç°¢ÇüÀÇ ±³Â÷»ç°¢ÇüÀ» ±¸ÇÑ´Ù.
-				IntersectRect(&rcSrcIntersect, &rcSrc, &rcTemp);
-
-				// µ¥½ºÆ®¿µ¿ª¿¡ »ó´ëÀûÀÎ ¼Ò½º¿µ¿ªÀ» ±¸ÇÑ´Ù.
-				rcTemp.left = rcSrc.left + (nSrcX-nDstX);
-				rcTemp.top = rcSrc.top + (nSrcY-nDstY);
-				rcTemp.right = rcSrc.right + (nSrcX-nDstX);
-				rcTemp.bottom = rcSrc.bottom + (nSrcY-nDstY);
-
-				// µ¥½ºÆ® ·ºÆ®¿µ¿ªÀ» ±âÁØÀ¸·Î ÇÑ µÎ »ç°¢ÇüÀÇ ±³Â÷»ç°¢ÇüÀ» ±¸ÇÑ´Ù.
-				IntersectRect(&rcDstIntersect, &rcTemp, &rcDst);
-
-				ddsd.dwSize	= sizeof(DDSURFACEDESC2);
-				ddsd.lpSurface = NULL;
-				m_pddsBackBuffer->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
-				if ( !ddsd.lpSurface )			return FALSE;
-				pwdDst = (WORD*)ddsd.lpSurface;
-
-				pwSrcSave = new WORD[(rcSrcIntersect.right-rcSrcIntersect.left)*(rcSrcIntersect.bottom-rcSrcIntersect.top)];
-				pwDstSave = new WORD[(rcDstIntersect.right-rcDstIntersect.left)*(rcDstIntersect.bottom-rcDstIntersect.top)];
-
-				if ( wSrcColor == 0XFFFF && wDstColor == 0XFFFF )
-				{
-					DrawWithImageForCompToMem(rcSrcIntersect, (WORD*)pwSrc, wSrcChooseColor1, wSrcChooseColor2, pwSrcSave);
-					DrawWithImageForCompToMem(rcDstIntersect, (WORD*)pwDst, wDstChooseColor1, wDstChooseColor2, pwDstSave);
-				}
-				else if ( wSrcColor != 0XFFFF && wDstColor == 0XFFFF )
-				{
-					DrawWithImageForCompColorToMem(rcSrcIntersect, (WORD*)pwSrc, wSrcColor, pwSrcSave);
-					DrawWithImageForCompToMem(rcDstIntersect, (WORD*)pwDst, wDstChooseColor1, wDstChooseColor2, pwDstSave);
-				}
-				else if ( wSrcColor == 0XFFFF && wDstColor != 0XFFFF )
-				{
-					DrawWithImageForCompToMem(rcSrcIntersect, (WORD*)pwSrc, wSrcChooseColor1, wSrcChooseColor2, pwSrcSave);
-					DrawWithImageForCompColorToMem(rcDstIntersect, (WORD*)pwDst, wDstColor, pwDstSave);
-				}
-				else
-				{
-					DrawWithImageForCompColorToMem(rcSrcIntersect, (WORD*)pwSrc, wSrcColor, pwSrcSave);
-					DrawWithImageForCompColorToMem(rcDstIntersect, (WORD*)pwDst, wDstColor, pwDstSave);
-				}
-
-				BYTE bRedDst, bGreenDst, bBlueDst;
-				BYTE bRedSrc, bGreenSrc, bBlueSrc;
-				WORD wSrcPixel, wDstPixel;
-				FLOAT rBlueRate, rGreenRate, bRedRate;
-
-				for ( INT nYCnt = 0; nYCnt < rcSrcIntersect.bottom - rcSrcIntersect.top; nYCnt++ )
-					for ( INT nXCnt = 0; nXCnt < rcSrcIntersect.right - rcSrcIntersect.left; nXCnt++ )
-				{
-					wSrcPixel = pwSrcSave[nYCnt*(rcSrcIntersect.right - rcSrcIntersect.left) + nXCnt];
-					wDstPixel = pwDstSave[nYCnt*(rcDstIntersect.right - rcDstIntersect.left) + nXCnt];
-					if ( wSrcPixel != 0 && wDstPixel != 0 )
-					{
-						bBlueSrc  = (BYTE)((wSrcPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-						bGreenSrc = (BYTE)((wSrcPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-						bRedSrc   = (BYTE)((wSrcPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-						if ( bFocused )
-						{
-							rBlueRate = (FLOAT)((FLOAT)bBlueSrc / (FLOAT)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift));
-							rGreenRate = (FLOAT)((FLOAT)bGreenSrc / (FLOAT)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift));
-							bRedRate = (FLOAT)((FLOAT)bRedSrc / (FLOAT)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift));
-
-							bBlueSrc = (BYTE)((FLOAT)bBlueSrc + ((FLOAT)bBlueSrc*rBlueRate));
-							bGreenSrc = (BYTE)((FLOAT)bGreenSrc + ((FLOAT)bGreenSrc*rGreenRate));
-							bRedSrc = (BYTE)((FLOAT)bRedSrc + ((FLOAT)bRedSrc*bRedRate));
-
-							if ( bBlueSrc > (m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift) )
-								bBlueSrc = (BYTE)(m_stBitsMaskInfo.dwBMask>>m_stBitsMaskInfo.bBShift);
-							if ( bGreenSrc > (m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift) )
-								bGreenSrc = (BYTE)(m_stBitsMaskInfo.dwGMask>>m_stBitsMaskInfo.bGShift);
-							if ( bRedSrc > (m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift) )
-								bRedSrc = (BYTE)(m_stBitsMaskInfo.dwRMask>>m_stBitsMaskInfo.bRShift);
-
-							// Æ÷Ä¿½º°¡ µÆÀ»¶§ Opacity°ªÀ» ³ô¿©ÁØ´Ù.
-							bOpa = 40;
-						}
-
-						bBlueDst  = (BYTE)((wDstPixel & m_stBitsMaskInfo.dwBMask) >> m_stBitsMaskInfo.bBShift);
-						bGreenDst = (BYTE)((wDstPixel & m_stBitsMaskInfo.dwGMask) >> m_stBitsMaskInfo.bGShift);
-						bRedDst   = (BYTE)((wDstPixel & m_stBitsMaskInfo.dwRMask) >> m_stBitsMaskInfo.bRShift);
-
-						bBlueDst  = (BYTE)((bOpa*(bBlueDst -bBlueSrc )+100*bBlueSrc ) / 100);
-						bGreenDst = (BYTE)((bOpa*(bGreenDst-bGreenSrc)+100*bGreenSrc) / 100);
-						bRedDst   = (BYTE)((bOpa*(bRedDst  -bRedSrc  )+100*bRedSrc  ) / 100);
-
-						pwdDst[((nYCnt+nSrcY+rcSrcIntersect.top) * (ddsd.lPitch >> 1)) + (rcSrcIntersect.left+nSrcX+nXCnt)] = 
-												((bRedDst  <<m_stBitsMaskInfo.bRShift) |
-												 (bGreenDst<<m_stBitsMaskInfo.bGShift) |
-												 (bBlueDst <<m_stBitsMaskInfo.bBShift));
-					}
-				}
-
-				SAFE_DELETE(pwSrcSave);
-				SAFE_DELETE(pwDstSave);
-				m_pddsBackBuffer->Unlock(NULL);
-				return TRUE;
-			}
-		}
-	}
-	return FALSE;
-}
-
-
-
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : CWHDXGraphicWindow::Present()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : LPRECT lprcDest
-	         LPRECT lprcSrc
-	         BYTE bCntRgn
-	Ãâ·Â   : HRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 HRESULT CWHDXGraphicWindow::Present()
 {
 	HRESULT hr;
+
+	{
+		DXGI_PRESENT_PARAMETERS params;
+		params.DirtyRectsCount = 0;
+		params.pDirtyRects = NULL;
+		params.pScrollOffset = NULL;
+		params.pScrollRect = NULL;
+		hr = m_pDXGISwapChain4->Present1(1, 0, &params);
+
+		return hr;
+	}
 
 	if ( NULL == m_pddsFrontBuffer || NULL == m_pddsBackBuffer )
 	{
@@ -5998,7 +1645,7 @@ HRESULT CWHDXGraphicWindow::Present()
 	{
 		if ( m_bScreenModeFlag & _DXG_SCREENMODE_WINDOW )
 		{
-		 //¿¡µðÆ®À©µµ¿ì Ãâ·ÂÀ» À§ÇØ¼­ Å¬¸®ÆÛ¸¦ ¼¼ÆÃÇÑ´Ù.
+		 //?????? ??? ??? ???? ????.
 			m_pddsFrontBuffer->SetClipper(m_lpcClipper);
 			hr = m_pddsFrontBuffer->Blt(&m_rcWindow, m_pddsBackBuffer, NULL, DDBLT_WAIT, NULL);
 		}
@@ -6017,22 +1664,6 @@ HRESULT CWHDXGraphicWindow::Present()
 			return hr;
 	} 
 }
-
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : RestoreSurfaces()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	Ãâ·Â   : HRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
 HRESULT CWHDXGraphicWindow::RestoreSurfaces()
 {
     HRESULT hr;
@@ -6044,254 +1675,4 @@ HRESULT CWHDXGraphicWindow::RestoreSurfaces()
         return hr;
 
     return S_OK;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-/******************************************************************************************************************
-
-  Callback Function
-
-*******************************************************************************************************************/
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : WINAPI DXGDriverEnumCallbackEx()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : GUID *pGUID
-	         LPSTR szDesc
-	         LPSTR szName
-	         LPVOID pContext
-	         HMONITOR hm
-	Ãâ·Â   : static BOOL 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
-static BOOL WINAPI DXGDriverEnumCallbackEx(GUID *pGUID, LPSTR szDesc, LPSTR szName, LPVOID pContext, HMONITOR hm)
-{
-    LPDIRECTDRAW7			pDD	 = NULL;
-    LPDIRECT3D7				pD3D = NULL;
-	DXG_ENUM_DEVICEINFO		stDXGEnumDeviceInfo;
-    HRESULT					hr;
-
-    if ( FAILED(hr = DirectDrawCreateEx(pGUID, (VOID**) &pDD, IID_IDirectDraw7, NULL)) )
-	{
-		MessageBox(NULL, TEXT("[DXGDriverEnumCallbackEx]") TEXT("Can't create DDraw during enumeration!"), "MirDXG", MB_ICONERROR | MB_OK);
-        return D3DENUMRET_OK;
-	}
-
-    if ( FAILED(hr = pDD->QueryInterface(IID_IDirect3D7, (VOID**) &pD3D)) )
-    {
-		SAFE_RELEASE(pDD);
-		MessageBox(NULL, TEXT("[DXGDriverEnumCallbackEx]") TEXT("Can't query IDirect3D7 during enumeration!"), "MirDXG", MB_ICONERROR | MB_OK);
-        return D3DENUMRET_OK;
-    }
-
-    ZeroMemory(&stDXGEnumDeviceInfo, sizeof(DXG_ENUM_DEVICEINFO));
-    lstrcpyn(stDXGEnumDeviceInfo.szDriverDesc, szDesc, 255);
-
-    stDXGEnumDeviceInfo.ddDriverCaps.dwSize = sizeof(DDCAPS);
-    stDXGEnumDeviceInfo.ddHELCaps.dwSize    = sizeof(DDCAPS);
-    pDD->GetCaps(&stDXGEnumDeviceInfo.ddDriverCaps, &stDXGEnumDeviceInfo.ddHELCaps);
-
-    if ( pGUID )
-    {
-        stDXGEnumDeviceInfo.guidDriver  = (*pGUID);
-        stDXGEnumDeviceInfo.pDriverGUID = &stDXGEnumDeviceInfo.guidDriver;
-    }
-
-    if ( FAILED(hr = pDD->EnumDisplayModes(0, NULL, &stDXGEnumDeviceInfo, DXGEnumDisplayModeCallback)) )
-	{
-		MessageBox(NULL, TEXT("[DXGDriverEnumCallbackEx]") TEXT("Can't enumerate displaymode!"), "MirDXG", MB_ICONERROR | MB_OK);
-	}
-
-    qsort(stDXGEnumDeviceInfo.pddsdModes, stDXGEnumDeviceInfo.dwNumModes, sizeof(DDSURFACEDESC2), DXGModesSortCallback);
-
-    if ( FAILED(hr = pD3D->EnumDevices(DXG3DDeviceEnumCallback, &stDXGEnumDeviceInfo)) )
-	{
-		MessageBox(NULL, TEXT("[DXGDriverEnumCallbackEx]") TEXT("Can't enumerate device!"), "MirDXG", MB_ICONERROR | MB_OK);
-	}
-
-    SAFE_DELETE(stDXGEnumDeviceInfo.pddsdModes);
-	SAFE_RELEASE(pD3D);
-	SAFE_RELEASE(pDD);
-
-	return DDENUMRET_OK;
-}
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : WINAPI DXGEnumDisplayModeCallback()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : DDSURFACEDESC2* pddsd
-	         VOID* pParentInfo
-	Ãâ·Â   : static HRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
-static HRESULT WINAPI DXGEnumDisplayModeCallback(DDSURFACEDESC2* pddsd, VOID* pParentInfo)
-{
-    DXG_ENUM_DEVICEINFO* pDevice = (DXG_ENUM_DEVICEINFO*) pParentInfo;
-
-    DDSURFACEDESC2* pddsdNewModes = new DDSURFACEDESC2[pDevice->dwNumModes+1];
-    memcpy(pddsdNewModes, pDevice->pddsdModes, pDevice->dwNumModes * sizeof(DDSURFACEDESC2));
-    SAFE_DELETE(pDevice->pddsdModes);
-    pDevice->pddsdModes = pddsdNewModes;
-
-    pDevice->pddsdModes[pDevice->dwNumModes++] = (*pddsd);
-
-    return DDENUMRET_OK;
-}
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : DXGModesSortCallback()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : const VOID* arg1
-	         const VOID* arg2
-	Ãâ·Â   : static int 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
-static int DXGModesSortCallback(const VOID* arg1, const VOID* arg2)
-{
-    DDSURFACEDESC2* p1 = (DDSURFACEDESC2*)arg1;
-    DDSURFACEDESC2* p2 = (DDSURFACEDESC2*)arg2;
-
-    if ( p1->dwWidth < p2->dwWidth )        return -1;
-    if ( p1->dwWidth > p2->dwWidth )        return +1;
-
-    if ( p1->dwHeight < p2->dwHeight )      return -1;
-    if ( p1->dwHeight > p2->dwHeight )      return +1;
-
-    if ( p1->ddpfPixelFormat.dwRGBBitCount < p2->ddpfPixelFormat.dwRGBBitCount )        return -1;
-    if ( p1->ddpfPixelFormat.dwRGBBitCount > p2->ddpfPixelFormat.dwRGBBitCount )        return +1;
-
-    return 0;
-}
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : WINAPI DXG3DDeviceEnumCallback()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : TCHAR* szDesc
-	         TCHAR* szName
-	         D3DDEVICEDESC7* pDesc
-	         VOID* pParentInfo
-	Ãâ·Â   : static HRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
-static HRESULT WINAPI DXG3DDeviceEnumCallback(TCHAR* szDesc, TCHAR* szName, D3DDEVICEDESC7* pDesc, VOID* pParentInfo)
-{
-    DXG_ENUM_DEVICEINFO* pDriverInfo = (DXG_ENUM_DEVICEINFO*)pParentInfo;
-    DXG_ENUM_DEVICEINFO* pDeviceInfo = &g_stDXGEnumDeviceInfo[g_bNumDevices];
-    ZeroMemory(pDeviceInfo, sizeof(DXG_ENUM_DEVICEINFO));
-
-    pDeviceInfo->f3DHardware = pDesc->dwDevCaps & D3DDEVCAPS_HWRASTERIZATION;
-    memcpy(&pDeviceInfo->ddDeviceDesc, pDesc, sizeof(D3DDEVICEDESC7));
-
-    pDeviceInfo->ddDriverCaps       = pDriverInfo->ddDriverCaps;
-    pDeviceInfo->ddHELCaps          = pDriverInfo->ddHELCaps;
-    pDeviceInfo->guidDevice         = pDesc->deviceGUID;
-    pDeviceInfo->pDeviceGUID        = &pDeviceInfo->guidDevice;
-    pDeviceInfo->pddsdModes         = new DDSURFACEDESC2[pDriverInfo->dwNumModes];
-
-    if ( pDriverInfo->pDriverGUID )
-    {
-        pDeviceInfo->guidDriver  = pDriverInfo->guidDriver;
-        pDeviceInfo->pDriverGUID = &pDeviceInfo->guidDriver;
-    }
-    else
-    {
-        pDeviceInfo->pDriverGUID = NULL;
-    }
-    lstrcpyn(pDeviceInfo->szDriverDesc, pDriverInfo->szDriverDesc, 255);
-    lstrcpyn(pDeviceInfo->szDeviceDesc, szName, 255);
-
-    for ( DWORD dwCnt=0; dwCnt<pDriverInfo->dwNumModes; dwCnt++ )
-    {
-        DDSURFACEDESC2 ddsdMode = pDriverInfo->pddsdModes[dwCnt];
-        DWORD dwRenderDepths    = pDeviceInfo->ddDeviceDesc.dwDeviceRenderBitDepth;
-        DWORD dwDepth           = ddsdMode.ddpfPixelFormat.dwRGBBitCount;
-
-        if ( ( ( dwDepth == 32 ) && ( dwRenderDepths & DDBD_32 ) ) ||
-             ( ( dwDepth == 24 ) && ( dwRenderDepths & DDBD_24 ) ) ||
-             ( ( dwDepth == 16 ) && ( dwRenderDepths & DDBD_16 ) ) )
-        {
-            pDeviceInfo->pddsdModes[pDeviceInfo->dwNumModes++] = ddsdMode;
-        }
-    }
-
-    if ( 0 == pDeviceInfo->dwNumModes )
-        return D3DENUMRET_OK;
-
-    g_bNumDevices++;
-    if ( NULL != pDeviceInfo->pDriverGUID && FALSE == pDeviceInfo->f3DHardware )
-            return D3DENUMRET_OK;
-
-    return D3DENUMRET_OK;
-}
-
-
-/******************************************************************************************************************
-
-	ÇÔ¼ö¸í : WINAPI DXGEnumZBufferFormatsCallback()
-
-	ÀÛ¼ºÀÚ : 
-	ÀÛ¼ºÀÏ : 
-
-	¸ñÀû   : 
-	ÀÔ·Â   : DDPIXELFORMAT* pddpf
-	         VOID* pContext
-	Ãâ·Â   : static HRESULT 
-
-	[ÀÏÀÚ][¼öÁ¤ÀÚ] : ¼öÁ¤³»¿ë
-
-*******************************************************************************************************************/
-static HRESULT WINAPI DXGEnumZBufferFormatsCallback(DDPIXELFORMAT* pddpf, VOID* pContext)
-{
-    DDPIXELFORMAT* pddpfOut = (DDPIXELFORMAT*) pContext;
-
-    if ( pddpfOut->dwRGBBitCount == pddpf->dwRGBBitCount )
-    {
-        (*pddpfOut) = (*pddpf);
-        return D3DENUMRET_CANCEL;
-    }
-
-    return D3DENUMRET_OK;
 }

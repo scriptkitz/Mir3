@@ -54,7 +54,7 @@ public:
 	__inline	HWND GetSafehWnd()					{ return m_hWnd; }
 
 //4: Message Map
-	virtual LRESULT MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	virtual LRESULT MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 	virtual LRESULT OnDestroy();
 };
 

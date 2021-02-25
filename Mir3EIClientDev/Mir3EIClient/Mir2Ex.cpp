@@ -46,6 +46,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	WSAData wsd;
 	if( WSAStartup( MAKEWORD(2, 2), &wsd ) != 0 )
 		return -1;
+	{
+		//char* a = "#JL<<<=D><<<<<<<<H_TrI^upXBM`WcHjTrtkIo<lH>xqIl!";
+		//char b[1024];
+		//strcpy(b, a);
+		//g_xLoginProc.OnMessageReceive(b);
+	}
 
 	//login
 	g_xLoginSocket.m_pxDefProc = g_xMainWnd.m_pxDefProcess = &g_xLoginProc;
@@ -83,6 +89,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 			if ( dwDelay!=0 /*&& g_xMainWnd.m_bIsWindowActive && g_xMainWnd.m_bIsWindowReady */)
 			{
+				if (g_xMainWnd.m_pD2D1DeviceContext) {
+					g_xMainWnd.m_pD2D1DeviceContext->BeginDraw();
+					g_xMainWnd.m_pD2D1DeviceContext->Clear(D2D1::ColorF(D2D1::ColorF::Black));
+				}
 				switch ( g_bProcState )
 				{
 				case _LOGIN_PROC:
@@ -96,12 +106,14 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 					g_xTeamManage.RenderScene(dwDelay);
 					break;
 				}
-				Sleep(15);//for debug
 
-				if ( FAILED(g_xMainWnd.Present()) )
+				if (g_xMainWnd.m_pD2D1DeviceContext)
 				{
-					g_xMainWnd.RestoreSurfaces();
+					g_xMainWnd.m_pD2D1DeviceContext->EndDraw();
 				}
+
+				if (FAILED(g_xMainWnd.Present()))
+					g_xMainWnd.RestoreSurfaces();
 			}
 		}
 	}

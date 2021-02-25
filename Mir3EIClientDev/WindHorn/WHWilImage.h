@@ -1,11 +1,11 @@
 /******************************************************************************************************************
                                                                                                                    
-	葛碘疙:																											
+	模块名称:																											
 																													
-	累己磊:																											
-	累己老:																											
+	作者:																											
+	创建日期:																											
 																													
-	[老磊][荐沥磊] : 荐沥 郴侩																						
+	[日期] [修订]：修订内容 																						
                                                                                                                    
 *******************************************************************************************************************/
 
@@ -20,7 +20,7 @@
 
 	CWilImageData Class Declaration
 
-   廓捞固瘤甫 皋葛府俊 肺爹窍芭唱 颇老 皋葛府甘屈怕肺 盔窍绰 困摹肺 技泼茄促.
+   将图像加载到内存中或以文件内存映射的方式设置在所需的偏移位置。
 
 *******************************************************************************************************************/
 
@@ -83,34 +83,34 @@ class CWHWilImageData
 {
 private:
 protected:
-	BOOL				m_bIsMemMapped;				// 皋葛府甘荤侩咯何.
-	BOOL				m_bIsCompressed;			// 拘绵咯何.
+	BOOL				m_bIsMemMapped;				// 是否使用内存映射。
+	BOOL				m_bIsCompressed;			// 是否压缩。 
 
-	LPBYTE				m_pbStartData;				// 单捞鸥狼 矫累林家.(傈眉 单捞鸥康开篮 颇老农扁客 鞍促.)
+	LPBYTE				m_pbStartData;				// 数据起始地址（整个数据区域与文件大小相同。） 
 
-	INT					m_nCurrImageIdx;			// 泅犁 啊府虐绊 乐绰 牢郸胶.
+	INT					m_nCurrImageIdx;			// 当前图形的索引。 
 
 
 public:
 	NEWWIXIMAGEINFO		m_stNewWixImgaeInfo;		//wix文件头
 
-	LPWILIMAGEINFO		m_lpstCurrWilImageInfo;		// 泅犁 廓颇老狼 沥焊甫 啊府虐绰 器牢磐.
+	LPWILIMAGEINFO		m_lpstCurrWilImageInfo;		// 指向当前信息的指针。 
 	LPNEWWILIMAGEINFO	m_lpstNewCurrWilImageInfo;	
 
-	BYTE*				m_pbCurrImage;				// 泅犁 廓颇老狼 捞固瘤甫 啊府虐绰 器牢磐.
+	BYTE*				m_pbCurrImage;				// 指向当前图像的指针将被归档。 
 	TCHAR				m_szWilFileName[MAX_PATH];
 
 	CWHWilImageData();
 	~CWHWilImageData();
 
 	BOOL NewLoad(CHAR* szWilFile, BOOL bComp = TRUE);
-	BOOL NewSetIndex(DWORD dwIndex);				// 寇何俊辑 傈崔罐篮 牢郸胶甫 啊瘤绊 泅犁捞固瘤狼 沥焊甫 啊府虐绰 林家甫 Setting茄促.
+	BOOL NewSetIndex(DWORD dwIndex);				// 用从外部接收到的索引设置表示当前图像信息的地址。 
 
 
 	BOOL Load(CHAR* szWilFile, BOOL bIsMemMapped = TRUE, BOOL bComp = TRUE);
 	VOID Init();
 	VOID Destroy();
-	VOID SetIndex(INT nIndex);						// 寇何俊辑 傈崔罐篮 牢郸胶甫 啊瘤绊 泅犁捞固瘤狼 沥焊甫 啊府虐绰 林家甫 Setting茄促.
+	VOID SetIndex(INT nIndex);						// 用从外部接收到的索引设置表示当前图像信息的地址。 
 };
 
 

@@ -54,6 +54,7 @@
     <IntDir>_Obj_$(Configuration)\</IntDir>
     <TargetName>WindHorn</TargetName>
     <IncludePath>.;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

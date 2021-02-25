@@ -260,7 +260,7 @@ void CMirSound::ReadWavFileList(char* fName)
 				{
 					char	temp[4];
 					int		cmpResult;
-					strncpy(temp,l_WavList->Des+j,3);
+					strncpy_s(temp,l_WavList->Des+j,3);
 					temp[3] = NULL;
 					cmpResult = strcmp(temp,"wav");
 					if(cmpResult==0)
@@ -337,7 +337,7 @@ BOOL CMirSound::FindBGMFileName(CHAR*szMapName, CHAR* szMp3FileName)
 				i += strlen(szMapName);
 				while( m_pBgmFileList[i] == 0 )
 					i++;
-				strcpy( szMp3FileName, m_pBgmFileList+i );
+				strcpy_s( szMp3FileName, strlen(m_pBgmFileList + i)+1, m_pBgmFileList+i );
 				return TRUE;
 			}
 		}

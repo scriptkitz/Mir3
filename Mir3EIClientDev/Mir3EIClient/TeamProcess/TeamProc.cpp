@@ -837,7 +837,7 @@ LRESULT CTeamProcess::OnTimer(WPARAM wParam, LPARAM lParam)
 
 			if (pszPacket)
 			{
-				strcpy(&m_szBuff[m_nBuff], pszPacket);
+				strcpy_s(&m_szBuff[m_nBuff], strlen(pszPacket)+1, pszPacket);
 
 				char *pszRemain = OnMessageReceive(m_szBuff);
 

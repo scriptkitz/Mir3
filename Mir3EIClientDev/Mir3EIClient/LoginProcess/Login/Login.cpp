@@ -153,7 +153,8 @@ HRESULT	CLogin::OnButtonUp(WPARAM wParam, LPARAM lParam)
 		if (IsInRect(tRect,LOWORD( lParam ), HIWORD( lParam ) ) )
 		{
 			switch(m_xButtons[i].m_nButtonID)
-			{	case _IMG_IDX_BTN_LOGIN:
+			{	
+			case _IMG_IDX_BTN_LOGIN:
 				{
 				//	m_fShowIDPASS = !m_fShowIDPASS;
 					if(m_nUserState == LGM_INPUT_PASSWORD)

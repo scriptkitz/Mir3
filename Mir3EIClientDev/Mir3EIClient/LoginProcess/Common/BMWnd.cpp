@@ -1,8 +1,5 @@
 #include "stdafx.h"
 
-#define WND_WIDTH		640
-#define WND_HEIGHT		480
-
 CBMWnd::CBMWnd()
 {
 	m_fIsActive = FALSE;

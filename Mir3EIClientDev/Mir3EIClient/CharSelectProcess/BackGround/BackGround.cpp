@@ -22,8 +22,8 @@ CBackGround::~CBackGround()
 VOID CBackGround::Create(CWHWilImageData* pxImage)
 {
 	m_pxImage = pxImage;
-	m_xCreateChrAvi.InitAvi(g_xSound.GetSoundObject()->GetDS());
-	m_xStartGameAvi.InitAvi(g_xSound.GetSoundObject()->GetDS());
+	m_xCreateChrAvi.InitAvi();
+	m_xStartGameAvi.InitAvi();
 }
 
 HRESULT	CBackGround::OnKeyDown(WPARAM wParam, LPARAM lParam)
@@ -129,21 +129,21 @@ VOID CBackGround::SetRenderState(INT nState)
 	{
 		case _RENDER_AVI_IN:
 		{
-			m_xCreateChrAvi.Create(AVI_CREATECHAR, FALSE);
+			m_xCreateChrAvi.SetFileName(AVI_CREATECHAR, FALSE);
 			m_xCreateChrAvi.SetDestRect(tRect);
 			m_xCreateChrAvi.Start();
 			break;
 		}
 		case _RENDER_AVI_OUT:
 		{
-			m_xCreateChrAvi.Create(AVI_CREATECHAR, FALSE,FALSE);
+			m_xCreateChrAvi.SetFileName(AVI_CREATECHAR, FALSE,FALSE);
 			m_xCreateChrAvi.SetDestRect(tRect);
 			m_xCreateChrAvi.Start();
 			break;
 		}
 		case _RENDER_AVI_START:
 		{
-			m_xStartGameAvi.Create(AVI_STARTGAME,FALSE);
+			m_xStartGameAvi.SetFileName(AVI_STARTGAME,FALSE);
 			m_xStartGameAvi.SetDestRect(tRect);
 			m_xStartGameAvi.Start();
 			break;

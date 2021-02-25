@@ -215,8 +215,8 @@ BOOL CWHWindow::Create(HINSTANCE hInst, LPTSTR lpCaption, CHAR *pszMenuName, CHA
 		return FALSE;
 	}
 
-    DWORD	dwFrameWidth    = GetSystemMetrics(SM_CXSIZEFRAME);
-    DWORD	dwFrameHeight   = GetSystemMetrics(SM_CYSIZEFRAME);
+    DWORD	dwFrameWidth    = GetSystemMetrics(SM_CXBORDER);
+    DWORD	dwFrameHeight   = GetSystemMetrics(SM_CYBORDER);
 	DWORD	dwMenuHeight;
 	
 	if ( pszMenuName != NULL )		
@@ -225,8 +225,8 @@ BOOL CWHWindow::Create(HINSTANCE hInst, LPTSTR lpCaption, CHAR *pszMenuName, CHA
 		dwMenuHeight = 0;
 
     DWORD dwCaptionHeight = GetSystemMetrics(SM_CYCAPTION);
-    DWORD dwWindowWidth   = _SCREEN_WIDTH  + dwFrameWidth * 2;
-    DWORD dwWindowHeight  = _SCREEN_HEIGHT + dwFrameHeight * 2 + dwMenuHeight + dwCaptionHeight;
+    DWORD dwWindowWidth   = 640  + dwFrameWidth * 2;
+    DWORD dwWindowHeight  = 480 + dwFrameHeight * 2;
 
     DWORD dwStyle = WS_POPUPWINDOW/*WS_OVERLAPPEDWINDOW*/ & ~WS_MAXIMIZEBOX;
 
@@ -236,9 +236,6 @@ BOOL CWHWindow::Create(HINSTANCE hInst, LPTSTR lpCaption, CHAR *pszMenuName, CHA
 
 	if ( m_hWnd == NULL )
     	return FALSE;
-
-//  ShowWindow(m_hWnd, SW_SHOW);
-//  UpdateWindow(m_hWnd);
 
 	return TRUE;
 }

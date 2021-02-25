@@ -78,6 +78,8 @@ DWORD WINAPI OnClientSockMsg(LPVOID lpParam)
 
 					if (!(g_xMsgQueue.PushQ((BYTE*)pszPacket)))
 						InsertLogMsg(_TEXT("[INFO] Not enough queue(g_xMsgQueue) buffer."));
+
+					continue;
 				}
 
 				break;

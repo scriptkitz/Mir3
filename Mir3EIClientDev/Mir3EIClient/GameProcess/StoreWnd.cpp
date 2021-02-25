@@ -383,15 +383,15 @@ BOOL CStoreWnd::SetBuyKinds(CHAR* Msg,INT Count)   // Eatch Button Divider '\n
 
 		if(nSubMenuCount>0)
 		{	
-			sprintf(szTemp,"%-14s",szGName);
+			sprintf_s(szTemp,16,"%-14s",szGName);
 			m_xKindBtn.AddButton(szTemp,rcKinds,i,szParam,RGB(255,255,0),RGB(255,0,0),nLook, nSubMenuCount);	// Add Button to class
 		}
 		else
 		{	
-			sprintf(szTemp,"%-14s",szGName);
+			sprintf_s(szTemp,16,"%-14s",szGName);
 			m_xKindBtn.AddButton(szTemp,rcKinds,i,szParam,RGB(180,180,0),RGB(255,0,0),nLook);	// Add Button to class
 		}
-
+		delete[] szTemp;
 	}
 	m_xKindBtn.ClickFreeAllBtn();
 
@@ -417,7 +417,7 @@ BOOL CStoreWnd::SetBuyItemLst(CHAR* Msg,INT Count)
 	for ( INT nLoop = 0; nLoop < Count; nLoop++ )
 	{
 		szTemp = tTxtAnalysis.GetValidStr(Msg,szDetailitem,'/');
-		strcpy(Msg, szTemp);
+		strcpy_s(Msg, strlen(szTemp)+1, szTemp);
 				
 		CLIENTITEMRCD* pxClItem;
 		pxClItem =	new	CLIENTITEMRCD;
@@ -446,7 +446,8 @@ BOOL CStoreWnd::SetBuyItemLst(CHAR* Msg,INT Count)
 		sprintf_s(szParam, "%d", pxClItem->nMakeIndex);	// 임시 Parameter를 아이템이름과 같이 처리함.
 
 		m_xItemLstBtn.AddButton(szTemp1,szTemp2,rcItem,nLoop,szParam,RGB(180,180,0),RGB(255,0,0), pxClItem->stStdItem.wLooks);	// Add Button to class
-
+		
+		delete pxClItem;
 	}
 	m_nIsReadyToDisplay=m_nIsReadyToDisplay|2;		// Item List 설정이 됬음을 알림
 		//

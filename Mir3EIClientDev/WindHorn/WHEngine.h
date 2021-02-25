@@ -19,6 +19,28 @@
 #include <dshow.h>
 #include <crtdbg.h>
 
+//WRL
+#include <wrl.h>
+
+//DirectWrite
+#include <dwrite.h>
+
+//D3D11
+#include <d3d11.h>
+//D2D
+#include <d2d1.h>
+#include <d2d1_1.h>
+#include <d2d1helper.h>
+//DXGI
+#include <dxgi.h>
+#include <dxgi1_4.h>
+#include <dxgi1_6.h>
+
+#pragma comment(lib, "d3d11.lib")
+#pragma comment (lib, "d2d1.lib")
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "Dwrite.lib")
+
 
 #pragma comment (lib, "dxguid.lib")
 #pragma comment (lib, "ddraw.lib")
@@ -31,6 +53,8 @@
 
 #define _SCREEN_WIDTH				800
 #define _SCREEN_HEIGHT				600
+#define _PATCH_SCREEN_WIDTH			640
+#define _PATCH_SCREEN_HEIGHT		480
 #define _SCREEN_BPP					16
 
 #define _DXG_SCREENMODE_WINDOW		1
@@ -47,6 +71,7 @@
 #define _MAX_DEVICES			    10
 
 #define  SAFE_DELETE(p)				{ if ( p ) { delete ( p );     ( p ) = NULL; } }
+#define  SAFE_DELETE_ARR(p)				{ if ( p ) { delete[] ( p );     ( p ) = NULL; } }
 #define  SAFE_RELEASE(p)			{ if ( p ) { ( p )->Release(); ( p ) = NULL; } }
 
 #include "WHImage.h"

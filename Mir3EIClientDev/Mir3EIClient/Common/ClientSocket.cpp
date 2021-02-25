@@ -6,7 +6,7 @@ CClientSocket::CClientSocket()
 	m_pxDefProc	 = NULL;
 	m_dwEventFilter = NULL;
 
-	m_nSync = 1;
+	m_nSync = 0;
 }
 
 
@@ -47,11 +47,22 @@ BOOL CClientSocket::ConnectToServer(HWND hWnd, CHAR* szID, INT nPort, DWORD dwMe
 			OutputDebugString(strError);
 			return FALSE;
 		}
+		ADDRINFOA addrInfo = { 0 };
+		addrInfo.ai_family = AF_INET;
+		addrInfo.ai_socktype = SOCK_STREAM;
+		addrInfo.ai_protocol = IPPROTO_TCP;
+		PADDRINFOA addrResult;
+
 
 		memset(&sockAddr, 0, sizeof(SOCKADDR_IN));
 		sockAddr.sin_family		 = AF_INET;
 		sockAddr.sin_port		 = htons( nPort );
-		sockAddr.sin_addr.s_addr = inet_addr(szID);
+
+		if (0 == getaddrinfo(szID, nullptr, &addrInfo, &addrResult))
+		{
+			sockAddr.sin_addr = ((struct sockaddr_in*)addrResult->ai_addr)->sin_addr;
+			freeaddrinfo(addrResult);
+		}
 
 		m_dwEventFilter = dwMessage;
 		if ( WSAAsyncSelect(m_sockClient, hWnd, dwMessage, FD_CONNECT|FD_READ|FD_CLOSE ) == SOCKET_ERROR)
@@ -71,7 +82,7 @@ BOOL CClientSocket::ConnectToServer(HWND hWnd, CHAR* szID, INT nPort, DWORD dwMe
 			}
 		}
 
-		m_nSync = 1;
+		//m_nSync = 0;
 	}
 
 	return TRUE;
@@ -354,6 +365,8 @@ LRESULT CClientSocket::OnSocketMessage(WPARAM wParam, LPARAM lParam)
 	return 0L;
 }
 
+
+
 VOID CClientSocket::SendPacket(_TDEFAULTMESSAGE* lpDefMsg, char *pszData)
 {
 	fnEncodeMessage(lpDefMsg, m_szEncodeDefMsg, sizeof(m_szEncodeDefMsg));
@@ -368,7 +381,27 @@ VOID CClientSocket::SendPacket(_TDEFAULTMESSAGE* lpDefMsg, char *pszData)
 	else
 		sprintf_s(m_szPacket, "#%d%s!", m_nSync, m_szEncodeDefMsg);
 
-	send(m_sockClient, m_szPacket, strlen(m_szPacket), 0);
+
+	char sb[1024];
+
+	{
+		char* KEYS = "SoftSmile";
+		unsigned char lastchar = '\x51';
+		sprintf_s(sb, 3, "%02X", lastchar);
+		for (size_t i = 0; i < strlen(m_szPacket); i++)
+		{
+			short t = m_szPacket[i];
+			t += lastchar;
+			if (t >= 0xFF) t -= 0xFF;
+			unsigned char k = KEYS[i % strlen(KEYS)];
+			t &= 0xFF;
+			unsigned char b = k ^ t;
+			sprintf_s(&sb[i*2+2], 3, "%02X", b);
+			lastchar = b;
+		}
+	}
+
+	send(m_sockClient, sb, strlen(sb), 0);
 }
 
 // **************************************************************************************

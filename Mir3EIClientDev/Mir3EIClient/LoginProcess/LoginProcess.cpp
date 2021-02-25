@@ -134,7 +134,7 @@ LRESULT CLoginProcess::DefMainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 		{
 			if ( wParam == VK_RETURN )
 			{
-				g_xMainWnd.OnSysKeyDown(wParam, lParam);
+				//g_xMainWnd.OnSysKeyDown(wParam, lParam);
 			}
 			return 0L;
 		}
@@ -157,21 +157,6 @@ LRESULT CLoginProcess::DefMainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 				case PRG_CHANGE_PASS:
 					break;
 			}
-		}
-		case WM_PAINT:
-		{
-			if (m_Progress == PRG_PATCH)
-			{
-				RenderPatch(0);
-				pPatch->DrawProgressImage();
-				return 0l;
-			}
-			if (m_Progress == PRG_QUIT)
-			{
-				SendMessage(g_xMainWnd.GetSafehWnd(), WM_DESTROY, NULL, NULL);
-				return 0l;
-			}
-			break;
 		}
 	}
 	return CWHDefProcess::DefMainWndProc(hWnd, uMsg, wParam, lParam);
@@ -381,7 +366,9 @@ LRESULT CLoginProcess::OnMouseMove(WPARAM wParam, LPARAM lParam)
 		break;
 	case PRG_LOGIN:					
 		m_xLogin.OnMouseMove( wParam, lParam);
-//		m_xSelectSrv.OnMouseMove( wParam, lParam);
+		break;
+	case PRG_SERVER_SELE:
+		m_xSelectSrv.OnMouseMove( wParam, lParam);
 		break;
 	}
 
@@ -414,7 +401,33 @@ char* CLoginProcess::OnMessageReceive(CHAR* pszMessage)
 {
 	char	*pszFirst = pszMessage;
 	char	*pszEnd;
-	
+
+	unsigned char sb[1024];
+	if(*pszFirst != '#')
+	{
+		char* KEYS = "SoftSmile";
+		unsigned char lastchar = 0;
+		for (size_t i = 0; i < strlen(pszMessage)/2; i++)
+		{
+			unsigned int b = 0;
+			sscanf_s(pszMessage + i * 2, "%02X", &b);
+			if (i == 0)
+			{
+				lastchar = b;
+				continue;
+			}
+			unsigned char k = KEYS[(i-1) % strlen(KEYS)];
+			short t = k ^ b;
+			if (t < lastchar) t += 0xFF;
+			t -= lastchar;
+			t = t & 0xFF;
+			sb[i - 1] = t;
+			sb[i] = 0;
+			lastchar = b;
+		}
+		pszFirst = (char*)sb;
+	}
+
 	while (pszEnd = strchr(pszFirst, '!'))
 	{
 		*pszEnd = '\0';
@@ -470,6 +483,9 @@ void CLoginProcess::OnSocketMessageRecieve(char *pszMsg)
 		case SM_PASSOK_SELECTSERVER:
 		{
 			m_xSelectSrv.OpenWnd();
+			char version[32] = { 0 };
+			fnDecode6BitBuf((pszMsg + DEFBLOCKSIZE), version, sizeof(version));
+
 			m_Progress = PRG_SERVER_SELE;
 			Clear(RGB(0,0,0));
 //			g_xLoginSocket.OnSelectServer(NULL);
@@ -640,17 +656,38 @@ LRESULT CLoginProcess::OnWindowMove(WPARAM wParam,LPARAM lParam)
 VOID CLoginProcess::RenderScene(INT nLoopTime)
 {
 	static	DWORD	dwLastTick = 0;
-
-	m_Image.NewSetIndex(IMAGE_INDEX_LOGINBASE);
-	if(m_Progress== PRG_QUIT){
-		SendMessage(g_xMainWnd.GetSafehWnd(), WM_DESTROY, NULL, NULL);
-		return;
-	}	
+	switch (m_Progress)
+	{
+		case PRG_QUIT:
+		{
+			SendMessage(g_xMainWnd.GetSafehWnd(), WM_DESTROY, NULL, NULL);
+			return;
+		}
+		case PRG_PATCH:
+		{
+			RenderPatch(0);
+			pPatch->DrawProgressImage();
+			break;
+		}
+		default:
+			break;
+	}
 
 	if(m_fIsConnected==CONNECT_SUCCESS)
 	{
-		Clear(0x0000);
-		m_xAvi.Render(nLoopTime);
+		if (m_Progress == PRG_INTRO)
+		{
+			m_xAvi.Render(nLoopTime);
+		}
+		else
+		{
+			m_Image.NewSetIndex(IMG_IDX_LOGIN_BACK);
+			g_xMainWnd.DrawWithImageForComp(0, 0,
+				m_Image.m_lpstNewCurrWilImageInfo->shWidth,
+				m_Image.m_lpstNewCurrWilImageInfo->shHeight,
+				(WORD*)(m_Image.m_pbCurrImage));
+		}
+
 		switch (m_Progress)
 		{
 			case PRG_CONNECT:
@@ -701,9 +738,7 @@ VOID CLoginProcess::RenderScene(INT nLoopTime)
 				break;
 			}
 		}
-	//	m_xMsgBox.RenderMessageBox(0);
-		if ( FAILED(g_xMainWnd.Present()) )
-				g_xMainWnd.RestoreSurfaces();
+
 	}
 }
 
@@ -716,8 +751,8 @@ VOID CLoginProcess::RenderIntro(INT nLoopTime)
 	{
 		m_nAnimationCounter++;
 		if(m_nAnimationCounter==50)
-			m_xAvi.SetRenderAviState(1);
-		if(m_nAnimationCounter>500)
+			m_xAvi.SetRenderAviState(_RENDER_AVI_INTRO);
+		if(m_nAnimationCounter>50 && !m_xAvi.IsPlaying())
 		{
 			m_Progress = PRG_LOGIN;
 			m_xLogin.OpenWnd();
@@ -781,47 +816,34 @@ VOID CLoginProcess::RenderNewAccount(int nLoopTime)
 VOID CLoginProcess::RenderPatch(int nLoopTime)
 {	
 	RECT tRect;
-	ShowWindow(g_xChatEditBox.GetSafehWnd(), SW_HIDE);
-	//
-	Clear((DWORD)RGB(0,0,0));
-
-/*
-	// Go Login Without Connection
-	m_Progress = PRG_INTRO;
-	m_fIsConnected	= CONNECT_SUCCESS;
-	g_xMainWnd.ResetDXG(_SCREEN_WIDTH, _SCREEN_HEIGHT, _SCREEN_BPP, _DXG_SCREENMODE_FULLSCREEN, _DXG_DEVICEMODE_PRIMARY|_DXG_DEVICEMODE_D3D);
-*/
 
 	if(pPatch->m_bEndPatch == TRUE)//GetFtpFiles()==0l)	// Patch°¡ Á¾·á µÇ¾úÀ¸¸é
 	{
 		
-		if(pPatch->m_bPatched == TRUE)	// Patch µÇ¾úÀ¸¸é Á¾·á
+		if(pPatch->m_bPatched == TRUE)	// ÓÐ¸üÐÂ²¢¸üÐÂÍê³É£¬ÆôÓÃ¸üÐÂ´¦Àí³ÌÐò¡£
 		{
-			delete pPatch;
 			char PatchName[1024];
 			ZeroMemory(PatchName,1024);
 			GetCurrentDirectory(1024,PatchName);
 			strcat_s(PatchName,MIR2_PATCH_FILE_NAME);
 			m_Progress = PRG_QUIT;
 			ShellExecute(NULL,"open",PatchName,NULL,NULL,SW_SHOWNORMAL);
-			// ½ÇÇàÀ» Á¾·áÇÏ°í ¿ÜºÎ Patch ÇÁ·Î±×·¥À» ½ÇÇà½ÃÅ²´Ù.
 		}
 		else
 		{
-			// ÆÐÄ¡ ÇÑ°ÍÀÌ ¾øÀ¸¸é
-			delete pPatch;
-
 			g_xLoginSocket.ConnectToServer(g_xMainWnd.GetSafehWnd(), m_szServerIP, m_nServerPort, ID_SOCKCLIENT_EVENT_MSG);
 			m_Progress = PRG_INTRO;
 			strcpy_s(g_szLoginServerIP, m_szServerIP);
 			g_nLoginServerPort = m_nServerPort;
 
+			DXGI_MODE_DESC desc = { 0 };
+			desc.Width = 640;
+			desc.Height = 480;
+			g_xMainWnd.m_pDXGISwapChain4->ResizeTarget(&desc);
 
-			// Full Screen À¸·Î ÀüÈ¯
-			g_xMainWnd.ResetDXG(640, 480, _SCREEN_BPP, _DXG_SCREENMODE_WINDOW, _DXG_DEVICEMODE_PRIMARY|_DXG_DEVICEMODE_D3D);
-//			g_xMainWnd.ResetDXG(640, 480, _SCREEN_BPP, _DXG_SCREENMODE_FULLSCREEN, _DXG_DEVICEMODE_PRIMARY|_DXG_DEVICEMODE_D3D);
-			SETRECT(tRect, SCR_LEFT, SCR_TOP, SCR_RIGHT, SCR_BOTTOM );
+			//g_xMainWnd.ResetDXG(640, 480, _SCREEN_BPP, _DXG_SCREENMODE_WINDOW, _DXG_DEVICEMODE_PRIMARY | _DXG_DEVICEMODE_D3D);
 		}
+		SAFE_DELETE(pPatch);
 	}
 	else
 	{
