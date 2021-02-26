@@ -137,17 +137,31 @@ BOOL CWHWilImageData::NewLoad(CHAR* szWilFile, BOOL bComp)
 			{
 				hWilMappedFile = CreateFileMapping(hWilFile, NULL, PAGE_READONLY, NULL, NULL, NULL);
 
+#ifdef _DEBUG
+				char mmssgg[521];
+				sprintf_s(mmssgg, "CreateFileMapping: %s\n", szWilFile);
+				OutputDebugString(mmssgg);
+#endif // _DEBUG
+
+
 				m_pbStartData = (BYTE*)MapViewOfFile(hWilMappedFile, FILE_MAP_READ, NULL, NULL, NULL);
 
 				if ( !m_pbStartData )
 				{
 					// Debug
+					DWORD erro = GetLastError();
 					MessageBox(NULL, "CreateFileMapping Failed", "Mir2EX :: Error", MB_ICONERROR | MB_OK);
 					CloseHandle(hWilFile);
 					CloseHandle(hWixFile);
 					m_bIsMemMapped = FALSE;
 					return FALSE;
 				}
+				MEMORY_BASIC_INFORMATION meminfo;
+				VirtualQueryEx(GetCurrentProcess(), m_pbStartData, &meminfo, sizeof(meminfo));
+
+				static INT64 aaa = 0;
+				aaa += meminfo.RegionSize;
+
 				m_bIsMemMapped = TRUE;
 				CloseHandle(hWilMappedFile);
 			}
@@ -172,8 +186,6 @@ BOOL CWHWilImageData::NewLoad(CHAR* szWilFile, BOOL bComp)
 	}
 
 	wsprintf(szMsg, "Cannot find %s file\n", szWixFile);
-	// Debug
-//	MessageBox(NULL, szMsg, "Mir2EX :: Error", MB_ICONERROR | MB_OK);
 	OutputDebugString(szMsg);
 
 	return FALSE;

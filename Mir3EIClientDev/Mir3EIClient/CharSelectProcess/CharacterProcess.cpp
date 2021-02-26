@@ -69,8 +69,6 @@ VOID CCharacterProcess::SetNextProc()
 	g_xGameProc.Load(ID_SOCKCLIENT_EVENT_MSG_1);
 	g_xChatEditBox.SetLimitText(90);
 	ShowWindow(g_xChatEditBox.GetSafehWnd(), SW_HIDE);
-	D3DUtil_SetProjectionMatrix(matProj, g_PI/2, float(600.0f/800.0f), -1.0f, 1.0f);
-    g_xMainWnd.Get3DDevice()->SetTransform(D3DTRANSFORMSTATE_PROJECTION, &matProj);
 	g_bProcState = _GAME_PROC; 
 }
 
@@ -362,6 +360,7 @@ char* CCharacterProcess::OnMessageReceive(CHAR* pszMessage)
 {
 	char	*pszFirst = pszMessage;
 	char	*pszEnd;
+
 	unsigned char sb[1024];
 	if (*pszFirst != '#')
 	{

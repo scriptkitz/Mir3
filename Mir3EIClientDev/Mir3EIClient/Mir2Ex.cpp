@@ -47,7 +47,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	if( WSAStartup( MAKEWORD(2, 2), &wsd ) != 0 )
 		return -1;
 	{
-		//char* a = "#JL<<<=D><<<<<<<<H_TrI^upXBM`WcHjTrtkIo<lH>xqIl!";
+		//CHAR szArg[5][MAX_PATH];
+		//sscanf_s("First (helloWorld): last", "%[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c", szArg[0], MAX_PATH, szArg[1], MAX_PATH, szArg[2], MAX_PATH, szArg[3], MAX_PATH, szArg[4], MAX_PATH);
+		//char* a = "#<<<<<ED><<<<<<<<D=h\Bn<WD=h\D><\D><\D><\lwZomwNgnwRwiiJimJH]DN@\Bn<\D><\D><\D><\D><\Bn<\D><\DIOVlwZomwNgnwS<fwClMPbyw?@lmJgRgggodvl\Bn<\D><\HOc@viWTiwRtiGkjdvoJfgS@qgkFmwjuiWC@v^<WD><\D><\ogO@sGv]pHjqmH?KoZVxpiFwjKWLmINtD><WD><\D>?@mxgCpgkRqgjomJv_gIFwqiWNjwBnqyJnjw{ED=h\D><\D><\DHNal{>qmGoCpjN_gHgCpgkRqh[ejwJ_g><WD><\D>>vsGW\oyWPrgS@MPcLlhsbkIF{nXOXhgk=nws^D><WD><\D><\iWC@vfJdH?HiH?[@vfJeiXO@myWRiXNxeH[eD=h\D><\D><\Bn<\D><\DGcXlJqMPOdnJ?<mI_\qJO\pD=h\D><\D>?IugoNkWk=yqAMnGdvH_\lHOTtIO`tI><WD=h\D><\D><\Bn<\D><\D><\Bn<\D><\D><\D><\D><\D><\D><\DHJshxZpfxjqjVOSyy[eD><WD><\D><\D><\D><\D><\D><\D><\D><\D?DlHOTiHODiHO<\Bl!";
 		//char b[1024];
 		//strcpy(b, a);
 		//g_xLoginProc.OnMessageReceive(b);
@@ -102,7 +104,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 					g_xChrSelProc.RenderScene(dwDelay);
 					break;
 				case _GAME_PROC:
-				//ydq	g_xGameProc.RenderScene(dwDelay);
 					g_xTeamManage.RenderScene(dwDelay);
 					break;
 				}
@@ -114,6 +115,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 				if (FAILED(g_xMainWnd.Present()))
 					g_xMainWnd.RestoreSurfaces();
+
 			}
 		}
 	}

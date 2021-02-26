@@ -6,7 +6,7 @@ CClientSocket::CClientSocket()
 	m_pxDefProc	 = NULL;
 	m_dwEventFilter = NULL;
 
-	m_nSync = 0;
+	m_nSync = 1;
 }
 
 
@@ -77,12 +77,12 @@ BOOL CClientSocket::ConnectToServer(HWND hWnd, CHAR* szID, INT nPort, DWORD dwMe
 			switch ( WSAGetLastError() )
 			{
 				case WSAEWOULDBLOCK:
-					OutputDebugString( "This socket is Non-Blocking Mode" );
+					OutputDebugString( "This socket is Non-Blocking Mode\n" );
 					break;
 			}
 		}
 
-		//m_nSync = 0;
+		m_nSync = 1;
 	}
 
 	return TRUE;
@@ -155,7 +155,8 @@ VOID CClientSocket::SendRunLogin(CHAR* szLoginID, CHAR* szCharName, INT nCertifi
 	CHAR				szLoginInfo[512];
 	CHAR				szPacket[512];
 
-	wsprintf(szLoginInfo, "**%s/%s/%d/%d/%d/1", szLoginID, szCharName, nCertification ^ 0x3EB2C5CC, nCertification ^ 0x5580AF27 ^ VersionNum, VersionNum ^ 0x0FA0280AF);
+	//wsprintf(szLoginInfo, "**%s/%s/%d/%d/%d/1", szLoginID, szCharName, nCertification ^ 0x3EB2C5CC, nCertification ^ 0x5580AF27 ^ VersionNum, VersionNum ^ 0x0FA0280AF);
+	wsprintf(szLoginInfo, "**%s/%s/%d/%d/%d/1", szLoginID, szCharName, nCertification, VersionNum);
 
 	int nPos = fnEncode6BitBuf((BYTE*)szLoginInfo, szEncodeMsg, lstrlen(szLoginInfo), sizeof(szEncodeMsg));
 	szEncodeMsg[nPos] = '\0';
@@ -381,10 +382,16 @@ VOID CClientSocket::SendPacket(_TDEFAULTMESSAGE* lpDefMsg, char *pszData)
 	else
 		sprintf_s(m_szPacket, "#%d%s!", m_nSync, m_szEncodeDefMsg);
 
-
-	char sb[1024];
-
+	if (lpDefMsg->wIdent == 2001 ||
+		lpDefMsg->wIdent == 104 || 
+		lpDefMsg->wIdent == 100 || 
+		lpDefMsg->wIdent == 103 || 
+		lpDefMsg->wIdent == 0 || 
+		lpDefMsg->wIdent == 0 || 
+		lpDefMsg->wIdent == 0 || 
+		lpDefMsg->wIdent == 0)
 	{
+		char sb[1024];
 		char* KEYS = "SoftSmile";
 		unsigned char lastchar = '\x51';
 		sprintf_s(sb, 3, "%02X", lastchar);
@@ -399,9 +406,11 @@ VOID CClientSocket::SendPacket(_TDEFAULTMESSAGE* lpDefMsg, char *pszData)
 			sprintf_s(&sb[i*2+2], 3, "%02X", b);
 			lastchar = b;
 		}
+		send(m_sockClient, sb, strlen(sb), 0);
+		return;
 	}
 
-	send(m_sockClient, sb, strlen(sb), 0);
+	send(m_sockClient, m_szPacket, strlen(m_szPacket), 0);
 }
 
 // **************************************************************************************

@@ -836,12 +836,7 @@ VOID CLoginProcess::RenderPatch(int nLoopTime)
 			strcpy_s(g_szLoginServerIP, m_szServerIP);
 			g_nLoginServerPort = m_nServerPort;
 
-			DXGI_MODE_DESC desc = { 0 };
-			desc.Width = 640;
-			desc.Height = 480;
-			g_xMainWnd.m_pDXGISwapChain4->ResizeTarget(&desc);
-
-			//g_xMainWnd.ResetDXG(640, 480, _SCREEN_BPP, _DXG_SCREENMODE_WINDOW, _DXG_DEVICEMODE_PRIMARY | _DXG_DEVICEMODE_D3D);
+			g_xMainWnd.ResetSize(_PATCH_SCREEN_WIDTH, _PATCH_SCREEN_HEIGHT);
 		}
 		SAFE_DELETE(pPatch);
 	}

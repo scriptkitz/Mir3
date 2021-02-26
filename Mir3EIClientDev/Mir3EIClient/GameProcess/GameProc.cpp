@@ -201,7 +201,7 @@ VOID CGameProcess::Load(DWORD dwMsgFilter)
 {
 	INT nCnt;
 	//全屏，窗口模式
-	g_xMainWnd.ResetDXG(_SCREEN_WIDTH, _SCREEN_HEIGHT, _SCREEN_BPP, _DXG_SCREENMODE_WINDOW, _DXG_DEVICEMODE_PRIMARY|_DXG_DEVICEMODE_D3D);
+	g_xMainWnd.ResetSize(_SCREEN_WIDTH, _SCREEN_HEIGHT);
 //	g_xMainWnd.ResetDXG(_SCREEN_WIDTH, _SCREEN_HEIGHT, _SCREEN_BPP, _DXG_SCREENMODE_FULLSCREEN, _DXG_DEVICEMODE_PRIMARY|_DXG_DEVICEMODE_D3D);
 
 
@@ -1288,10 +1288,10 @@ VOID CGameProcess::DrawObject(INT nXCnt, INT nYCnt, INT nObject)
 					D3DVECTOR	vecTrans(nStartX, nStartY, 0);
 					D3DVECTOR	vecScale(m_xMap.m_pxTileImg[nObjFileIdx]->m_lpstNewCurrWilImageInfo->shWidth, m_xMap.m_pxTileImg[nObjFileIdx]->m_lpstNewCurrWilImageInfo->shHeight, 1);
 
-					D3DUtil_InitMaterial(mtrl, (FLOAT)255/255.0f, (FLOAT)255/255.0f, (FLOAT)255/255.0f);
-					mtrl.diffuse.a = 1.0f/255.0f;
-					g_xMainWnd.Get3DDevice()->SetMaterial(&mtrl);
-					m_xImage.DrawBillBoard(g_xMainWnd.Get3DDevice(), vecTrans, vecScale, mtrl, lpddsTextr);
+					//D3DUtil_InitMaterial(mtrl, (FLOAT)255/255.0f, (FLOAT)255/255.0f, (FLOAT)255/255.0f);
+					//mtrl.diffuse.a = 1.0f/255.0f;
+					//g_xMainWnd.Get3DDevice()->SetMaterial(&mtrl);
+					//m_xImage.DrawBillBoard(g_xMainWnd.Get3DDevice(), vecTrans, vecScale, mtrl, lpddsTextr);
 				}
 			}
 		}
@@ -2077,8 +2077,6 @@ LRESULT CGameProcess::OnKeyDown(WPARAM wParam, LPARAM lParam)
 	D3DVECTOR vRotate = D3DVECTOR(0.0f, 0.0f, 0.0f);
 	D3DVECTOR vScale  = D3DVECTOR(1.0f, 1.0f, 1.0f);
 
-	g_xMainWnd.Get3DDevice()->GetTransform(D3DTRANSFORMSTATE_VIEW, &matView);
-
 	if ( m_pxMouseTargetActor )	
 	{
 		nTargetID			= m_pxMouseTargetActor->m_dwIdentity;
@@ -2275,7 +2273,8 @@ LRESULT CGameProcess::OnMsgInputted(WPARAM wParam, LPARAM lParam)
 	ZeroMemory(szArg2, MAX_PATH);
 	ZeroMemory(szArg3, MAX_PATH);
 	ZeroMemory(szArg4, MAX_PATH);
-	sscanf_s(g_xChatEditBox.m_szInputMsg, "%[^ ]%*c %[^ ]%*c %[^ ]%*c %[^ ]%*c %[^ ]%*c", szCommand, szArg1, szArg2, szArg3, szArg4);
+	sscanf_s(g_xChatEditBox.m_szInputMsg, "%[^ ]%*c %[^ ]%*c %[^ ]%*c %[^ ]%*c %[^ ]%*c", 
+		szCommand, MAX_PATH, szArg1, MAX_PATH, szArg2, MAX_PATH, szArg3, MAX_PATH, szArg4, MAX_PATH);
 	INT nArg1;	INT nArg2;	INT nArg3;	INT nArg4;
 	nArg1 = nArg2 = nArg3 = nArg4 = 0;
 	if ( !strcmp(szCommand, "@渴堪祸") )
@@ -2936,13 +2935,13 @@ void CGameProcess::OnSocketMessageRecieve(char *pszMsg)
 		fnDecodeMessage(&tdm, pszMsg);
 
 		//新版的消息头经过加密的,解密先
-		m_DecMsg.DecodeMessageHead(&tdm);
+		//m_DecMsg.DecodeMessageHead(&tdm);
 		
 		//for debug
 		char sztxt[128];
 		sprintf_s( sztxt, "RECV:nRecog=%08x,wIdent=%04x(%d),wParam=%04x,wTag=%04x,wSeries=%04x\n",
 			tdm.nRecog, tdm.wIdent, tdm.wIdent, tdm.wParam, tdm.wTag, tdm.wSeries );
-//		OutputDebugString( sztxt);
+		OutputDebugString( sztxt);
 
 
 		switch (tdm.wIdent)

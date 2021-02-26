@@ -44,8 +44,8 @@ CMirSound::CMirSound()
 	m_bPlay = TRUE;
 	m_bBGMPlay = TRUE;	// юс╫ц
 
-	ReadWavFileList( "SoundList.wwl" );
-	ReadBgmFileList( "BgmList.wwl" );
+	ReadWavFileList( "./king/SoundList.wwl" );
+	ReadBgmFileList( "./king/BgmList.wwl" );
 
 	m_ppBuffer = new CSBuffer*[MAX_KINDS_OF_WAVE];
 	for(int i = 0 ; i < MAX_KINDS_OF_WAVE ; i++)

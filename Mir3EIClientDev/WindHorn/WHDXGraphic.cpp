@@ -3,7 +3,7 @@
 
 #define _DX_DIP 64.0f
 
-#define COLOR_B16TOB32(w, s) (DWORD)(((s*((w & 0xF800) >> 8) << 0x10)/100) | (s*(((w & 0x07E0) >> 3) << 0x8)/100) | (s*((w & 0x001F) << 3)/100) | (255 << 24))
+#define COLOR_B16TOB32(w, s) (DWORD)((((w & 0xF800) >> 8) << 0x10) | (((w & 0x07E0) >> 3) << 0x8) | ((w & 0x001F) << 3) | (s*255/100 << 24))
 
 static BYTE						g_bNumDevices = 0;
 static DXG_ENUM_DEVICEINFO		g_stDXGEnumDeviceInfo[_MAX_DEVICES];
@@ -192,6 +192,8 @@ LRESULT CWHDXGraphicWindow::OnSize(WPARAM wParam, LPARAM lParam)
 	{
 		HRESULT hr = S_OK;
 		_ReleaseSurface();
+		m_pD2D1DeviceContext->EndDraw();
+		m_pD3D11DeviceContext->ClearState();
 		int w = m_rcWindow.right - m_rcWindow.left;
 		int h = m_rcWindow.bottom - m_rcWindow.top;
 		//BufferCount 0表示保留交换链存在的缓冲区数量
@@ -212,10 +214,8 @@ LRESULT CWHDXGraphicWindow::OnSize(WPARAM wParam, LPARAM lParam)
 			//现在一切都已设置。不要继续执行此方法，HandleDeviceLost将重新输入此方法并正确设置新设备。
 
 		}
-		if (SUCCEEDED(hr))
-		{
-			_CreateSurface();
-		}
+			
+		_CreateSurface();
 	}
 
  	return 0L;
@@ -317,6 +317,7 @@ HRESULT CWHDXGraphicWindow::DestroyDXGObjects()
 }
 HRESULT CWHDXGraphicWindow::_ReleaseSurface()
 {
+	m_pD2D1DeviceContext->SetTarget(nullptr);
 	SAFE_RELEASE(m_pDXGISurface);
 	SAFE_RELEASE(m_pD2D1Bitmap1);
 	return S_OK;
@@ -412,7 +413,7 @@ HRESULT CWHDXGraphicWindow::CreateDXG()
 		//禁用全屏模式ALT-ENTER切换
 		m_pDXGIFactory4->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER);
 
-		m_pDXGISwapChain4->GetCurrentBackBufferIndex();
+		//m_pDXGISwapChain4->GetCurrentBackBufferIndex();
 
 		hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &m_pD2D1Factory1);
 		if (!SUCCEEDED(hr)) return hr;
@@ -429,6 +430,14 @@ HRESULT CWHDXGraphicWindow::CreateDXG()
 		return hr;
 	}
 	return hr;
+}
+
+HRESULT CWHDXGraphicWindow::ResetSize(WORD wWidth, WORD wHeight)
+{
+	DXGI_MODE_DESC desc = { 0 };
+	desc.Width = wWidth;
+	desc.Height = wHeight;
+	return m_pDXGISwapChain4->ResizeTarget(&desc);
 }
 
 HRESULT CWHDXGraphicWindow::ResetDXG(WORD wWidth, WORD wHeight, WORD wBPP, BYTE bScreenModeFlag, BYTE bDeviceModeFlag)
@@ -701,7 +710,7 @@ BOOL CWHDXGraphicWindow::DecodeWilImageData(int nWidth, int nHeight, const WORD*
 
 	int nWidthStart = 0, nWidthEnd = 0;
 	int nCntCopyWord = 0, nCurrWidth = 0, nLastWidth = 0;
-
+	if (*(DWORD*)pwSrc == 0) pwSrc += 2; //如果前4个字节为0，则跳过前4个字节。注意pwSrc是WORD所以+2.
 	for (INT nYCnt = rc.top; nYCnt < rc.bottom; nYCnt++)
 	{
 		// 获取一行的长度（单位是字） 
@@ -833,69 +842,33 @@ WORD CWHDXGraphicWindow::ConvertColor24To16(COLORREF dwColor)
 }
 HRESULT CWHDXGraphicWindow::DrawWithGDI(RECT rc, LPDIRECTDRAWSURFACE7 pSurface, DWORD dwColor, BYTE bKind)
 {
-	POINT	pt;
-	HDC		hDC;
-	HPEN	hPen, hOldPen;
-	HBRUSH	hBrush, hOldBrush;
-	HRESULT hr;
-
-	if ( pSurface == NULL )
+	static ID2D1SolidColorBrush* brsh = nullptr;
+	if (!brsh)
 	{
-		pSurface = m_pddsBackBuffer;
+		m_pD2D1DeviceContext->CreateSolidColorBrush(D2D1::ColorF(dwColor), &brsh);
 	}
-
-	if ( pSurface == NULL )
-		return E_FAIL;
-
-	if ( FAILED(hr = pSurface->GetDC(&hDC)) )
-	{
-		return E_FAIL;
-	}
+	brsh->SetColor(D2D1::ColorF(dwColor));
 
 	switch ( bKind )
 	{
 	case 0:
 		{
-			hPen = CreatePen(PS_SOLID, NULL, dwColor);
-		
-			hOldPen = (HPEN)SelectObject(hDC, hPen);
-
-			MoveToEx(hDC, rc.left, rc.top, &pt);
-			LineTo(hDC, rc.right, rc.bottom);
-
-			SelectObject(hDC, hOldPen);
-			DeleteObject(hPen);
+			m_pD2D1DeviceContext->DrawLine(D2D1::Point2F(rc.left, rc.top), D2D1::Point2F(rc.right, rc.bottom), brsh);
 		}
 		break;
 	case 1:
 		{
-			hBrush = CreateSolidBrush(dwColor);
-
-			hOldBrush = (HBRUSH)SelectObject(hDC, hBrush);
-
-			FrameRect(hDC, &rc, hBrush);
-
-			SelectObject(hDC, hOldBrush);
-			DeleteObject(hBrush);
+			m_pD2D1DeviceContext->DrawRectangle(D2D1::RectF(rc.left, rc.top, rc.right, rc.bottom), brsh);
 		}
 		break;
 	case 2:
 		{
-			hBrush = CreateSolidBrush(dwColor);
-
-			hOldBrush = (HBRUSH)SelectObject(hDC, hBrush);
-
-			FillRect(hDC, &rc, hBrush);
-
-			SelectObject(hDC, hOldBrush);
-			DeleteObject(hBrush);
+			m_pD2D1DeviceContext->FillRectangle(D2D1::RectF(rc.left, rc.top, rc.right, rc.bottom), brsh);
 		}
 		break;
 	default:
 		break;
 	}
-
-	pSurface->ReleaseDC(hDC);
 
 	return S_OK;
 }
@@ -1210,8 +1183,6 @@ BOOL CWHDXGraphicWindow::DrawWithImageForCompMemToMem(INT nX, INT nY, INT nXSize
 				nCurrWidth = 0;
 			}
 		}
-
-		m_pddsBackBuffer->Unlock(NULL);
 		return TRUE;
 	}
 	return FALSE;
@@ -1505,8 +1476,10 @@ BOOL CWHDXGraphicWindow::DrawWithImageForCompClipRgnBase(INT nX, INT nY, INT nXS
 {
 	WORD* pwdDst = (WORD*)new DWORD[nXSize * nYSize];
 	ZeroMemory(pwdDst, nXSize * nYSize * sizeof(DWORD));
-	D2D1_RECT_F rect = D2D1::RectF(nX, nY, wClipWidth + nX, wClipHeight + nY);
-	D2D1_SIZE_U size = D2D1::SizeU(wClipWidth, wClipHeight);
+	D2D1_RECT_F rect = D2D1::RectF(nX, nY,
+		nX + nXSize < wClipWidth ? nXSize + nX : wClipWidth,
+		nY + nYSize < wClipHeight ? nYSize + nY : wClipHeight);
+	D2D1_SIZE_U size = D2D1::SizeU(nXSize, nYSize);
 	BOOL Result = FALSE;
 
 	if (DecodeWilImageData(nXSize, nYSize, pwSrc, pwdDst, wChooseColor1, wChooseColor2))
@@ -1529,7 +1502,7 @@ BOOL CWHDXGraphicWindow::DrawWithABlendCompDataWithBackBuffer(INT nX, INT nY,
 
 	if (DecodeWilImageData(nXSize, nYSize, pwSrc, pwdDst, wChooseColor1, wChooseColor2, bOpa))
 	{
-		//m_pD2D1DeviceContext->SetPrimitiveBlend(D2D1_PRIMITIVE_BLEND_ADD);
+		//m_pD2D1DeviceContext->SetPrimitiveBlend(D2D1_PRIMITIVE_BLEND_SOURCE_OVER);
 		Result = DrawImage(rect, size, pwdDst, nXSize * sizeof(DWORD));
 	}
 	SAFE_DELETE_ARR(pwdDst);

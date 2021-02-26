@@ -272,7 +272,8 @@ VOID CInterface::MsgAdd(DWORD dwFontColor, DWORD dwFontBackColor, CHAR* pszMsg)
 
 			g_xMainWnd.StringDivide(m_rcChat.right-m_rcChat.left, nLineCnt, pszMsg, pszDivied);
 
-			sscanf_s(pszDivied, "%[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c", pszArg[0], pszArg[1], pszArg[2], pszArg[3], pszArg[4]);
+			sscanf_s(pszDivied, "%[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c %[^`]%*c", 
+				pszArg[0], MAX_PATH, pszArg[1], MAX_PATH, pszArg[2], MAX_PATH, pszArg[3], MAX_PATH, pszArg[4], MAX_PATH);
 
 			if ( nLineCnt > 5 )		
 			{
